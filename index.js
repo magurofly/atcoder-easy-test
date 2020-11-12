@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      0.1.1
+// @version      0.1.2
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -469,7 +469,7 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
             statuses[i].toggleClass("label-success", result.status == "AC").toggleClass("label-warning", result.status != "AC").text(result.status).click(() => result.tab.show()).css("cursor", "pointer");
             return result;
         }));
-        if (results.every(status => status == "AC")) {
+        if (results.every(({status}) => status == "AC")) {
             resultAlert.addClass("alert-success");
         } else {
             resultAlert.addClass("alert-warning");
