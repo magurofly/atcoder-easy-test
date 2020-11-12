@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      0.1
+// @version      0.1.1
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -140,7 +140,7 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
             .appendTo("#main-div");
     });
 
-    return {
+    const menuController = {
         addTab(tabId, tabLabel, paneContent, options = {}) {
             const tab = $(`<a id="bottom-menu-tab-${tabId}" href="#" data-target="#bottom-menu-pane-${tabId}" data-toggle="tab">`)
             .click(e => {
@@ -158,14 +158,25 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
                     if (tabLi.hasClass("active") && tabs.size > 0) {
                         tabs.values().next().value.tab("show");
                     }
+                },
+
+                show() {
+                    menuController.show();
+                    tab.tab("show");
                 }
             };
             tabs.add(tab);
             if (options.closeButton) tab.append($(`<a class="bottom-menu-btn-close btn btn-link glyphicon glyphicon-remove">`).click(() => controller.close()));
             if (options.active || tabs.size == 1) tab.tab("show");
             return controller;
-        }
+        },
+
+        show() {
+            if ($("#bottom-menu-key").hasClass("collapsed")) $("#bottom-menu-key").click();
+        },
     };
+
+    return menuController;
 })(); }
 
 (function() {
@@ -258,14 +269,26 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
     }
 
     async function submitTest(input) {
-        let {id, status, error} = await getJSON("POST", "https://api.paiza.io/runners/create", {
-            source_code: getSourceCode(),
-            language: languageName,
-            input,
-            longpoll: true,
-            longpoll_timeout: 10,
-            api_key: "guest",
-        });
+        let id, status, error;
+        try {
+            const response = await getJSON("POST", "https://api.paiza.io/runners/create", {
+                source_code: getSourceCode(),
+                language: languageName,
+                input,
+                longpoll: true,
+                longpoll_timeout: 10,
+                api_key: "guest",
+            });
+            id = response.id;
+            status = response.status;
+            error = response.error;
+        } catch (error) {
+            status = "completed";
+            return {
+                status: "IE",
+                exitCode: error,
+            };
+        }
         console.log("runner id: %s: %s", id, status);
 
         while (status != "completed") {
@@ -345,13 +368,12 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
     </div>
 </div></div>
 `);
-        bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
+        const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
         $(`#atcoder-easy-test-${uid}-stdin`).val(input);
 
         const result = await submitTest(input);
 
-        $(`#atcoder-easy-test-${uid}-row-exit-code`).toggleClass("bg-danger", result.exitCode != 0);
-        $(`#atcoder-easy-test-${uid}-row-exit-code`).toggleClass("bg-success", result.exitCode == 0);
+        $(`#atcoder-easy-test-${uid}-row-exit-code`).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
         $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode);
         if ("execTime" in result) $(`#atcoder-easy-test-${uid}-exec-time`).text(result.execTime + " ms");
         if ("memory" in result) $(`#atcoder-easy-test-${uid}-memory`).text(result.memory + " KB");
@@ -359,6 +381,7 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
         $(`#atcoder-easy-test-${uid}-stderr`).val(result.stderr);
 
         result.uid = uid;
+        result.tab = tab;
         return result;
     }
 
@@ -407,12 +430,12 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
             if (result.status == "OK") {
                 if (result.stdout.trim() == output.text().trim()) {
                     $(`#atcoder-easy-test-${result.uid}-stdout`).addClass("bg-success");
-                    return "AC";
+                    result.status = "AC";
                 } else {
-                    return "WA";
+                    result.status = "WA";
                 }
             }
-            return result.status;
+            return result;
         };
         testfuncs.push(testfunc);
 
@@ -430,26 +453,32 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
     .text("Test All Samples")
     .click(async () => {
         const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
-        const progress = $(`<div class="progress-bar">`).text(`0 / ${statuses.length}`);
+        const progress = $(`<div class="progress-bar">`).text(`0 / ${testfuncs.length}`);
         let finished = 0;
+        const closeButton = $(`<button type="button" class="close" data-dismiss="alert" aria-label="close">`)
+        .append($(`<span aria-hidden="true">`).text("\xd7"));
         const resultAlert = $(`<div class="alert alert-dismissible">`)
-        .append($(`<button type="button" class="close" data-dismiss="alert" aria-label="close">`)
-                .append($(`<span aria-hidden="true">`).text("\xd7")))
+        .append(closeButton)
         .append($(`<div class="progress">`).append(progress))
         .append(...statuses)
         .appendTo(testAllResultRow);
-        const waitee = testfuncs.map(async (testfunc, i) => {
-            const status = await testfunc();
+        const results = await Promise.all(testfuncs.map(async (testfunc, i) => {
+            const result = await testfunc();
             finished++;
             progress.text(`${finished} / ${statuses.length}`).css("width", `${finished/statuses.length*100}%`);
-            statuses[i].toggleClass("label-success", status == "AC").toggleClass("label-warning", status != "AC").text(status);
-            return status;
-        });
-        if ((await Promise.all(waitee)).every(status => status == "AC")) {
+            statuses[i].toggleClass("label-success", result.status == "AC").toggleClass("label-warning", result.status != "AC").text(result.status).click(() => result.tab.show()).css("cursor", "pointer");
+            return result;
+        }));
+        if (results.every(status => status == "AC")) {
             resultAlert.addClass("alert-success");
         } else {
             resultAlert.addClass("alert-warning");
         }
+        closeButton.click(() => {
+            for (const {tab} of results) {
+                tab.close();
+            }
+        });
     });
     $("#submit").after(testAllButton).closest("form").append(testAllResultRow);
 })();
