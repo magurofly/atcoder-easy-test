@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      0.1.3
+// @version      0.1.4
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -364,22 +364,40 @@ public class prog {
         4027: new PaizaIORunner("haskell", "Haskell (GHC 8.6.5)"),
         4030: new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)"),
         4032: new PaizaIORunner("kotlin", "Kotlin (1.4.0)"),
+        4033: new WandboxRunner("lua-5.3.4", "Lua (Lua 5.3.4)"),
+        4034: new WandboxRunner("luajit-head", "Lua (LuaJIT 2.1.0-beta3)"),
         4035: new PaizaIORunner("bash", "Bash (5.0.17)"),
+        4036: new WandboxRunner("nim-1.0.6", "Nim (1.0.6)"),
         4037: new PaizaIORunner("objective-c", "Objective-C (Clang 10.0.0)"),
+        4036: new WandboxRunner("ocaml-head", "OCaml (4.13.0+dev0-2020-10-19)"),
+        4041: new WandboxRunner("fpc-3.0.2", "Pascal (FPC 3.0.2)"),
         4042: new PaizaIORunner("perl", "Perl (5.30.0)"),
         4043: new PaizaIORunner("perl", "Perl (5.30.0)"),
         4044: new PaizaIORunner("php", "PHP (7.4.10)"),
-        4046: new PaizaIORunner("python", "Python (2.7.18rc1)"),
-        4047: new PaizaIORunner("python3", "Python (3.8.2)"),
+        4046: new PaizaIORunner("pypy-head", "PyPy2 (7.3.4-alpha0)"),
+        4047: new PaizaIORunner("pypy-7.2.0-3", "PyPy3 (7.2.0)"),
         4049: new PaizaIORunner("ruby", "Ruby (2.7.1)"),
         4050: new PaizaIORunner("rust", "Rust (1.43.0)"),
         4051: new PaizaIORunner("scala", "Scala (2.13.3)"),
         4052: new PaizaIORunner("java", "Java (OpenJDK 15)"),
         4053: new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)"),
         4055: new PaizaIORunner("swift", "Swift (5.2.5)"),
+        4056: {
+            label: "Text (JavaScript)",
+            name: "text",
+            async run(sourceCode, input) {
+                return {
+                    status: "OK",
+                    exitCode: 0,
+                    stdout: sourceCode,
+                };
+            },
+        },
+        4057: new WandboxRunner("typescript-3.8.3", "TypeScript (3.8.3)"),
         4058: new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
         4060: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
         4061: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
+        4067: new WandboxRunner("vim-head", "Vim (8.2.1975)"),
     };
 
     return {
