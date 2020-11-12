@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      0.1.2
+// @version      0.1.3
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -12,6 +12,12 @@
 // * `$`
 // * `getSourceCode`
 
+// This scripts consists of three modules:
+// * bottom menu
+// * code runner
+// * view
+
+// -- bottom menu --
 if (!window.bottomMenu) { var bottomMenu = (function () {
     'use strict';
 
@@ -179,154 +185,232 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
     return menuController;
 })(); }
 
-(function() {
+// -- code runner --
+var codeRunner = (function() {
     'use strict';
 
-    let languageName = null;
+    function buildParams(data) {
+        return Object.entries(data).map(([key, value]) =>
+                                            encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
+    }
 
-    const languageIdMap = {
-        4001: "c", 4002: "c",
-        4003: "cpp", 4004: "cpp",
-        4005: "java", 4052: "java",
-        4046: "python",
-        4006: "python3", 4047: "python3",
-        4007: "bash", 4035: "bash",
-        4010: "csharp", 4011: "csharp", 4012: "csharp",
-        4013: "clojure",
-        4015: "d", 4016: "d", 4017: "d",
-        4020: "erlang",
-        4021: "elixir",
-        4022: "fsharp", 4023: "fsharp",
-        4026: "go",
-        4027: "haskell",
-        4030: "javascript",
-        4032: "kotlin",
-        4037: "objective-c",
-        4042: "perl", 4043: "perl",
-        4044: "php",
-        4049: "ruby",
-        4050: "rust",
-        4051: "scala",
-        4053: "scheme",
-        4055: "swift",
-        4058: "vb",
-        4060: "cobol", 4061: "cobol",
-    };
-
-    const languageLabelMap = {
-        c: "C (C17 / Clang 10.0.0)",
-        cpp: "C++ (C17++ / Clang 10.0.0)",
-        java: "Java (OpenJDK 15)",
-        python: "Python (2.7.18rc1)",
-        python3: "Python (3.8.2)",
-        bash: "Bash (5.0.17)",
-        csharp: "C# (Mono-mcs 6.8.0.105)",
-        clojure: "Clojure (1.10.1-1)",
-        d: "D (LDC 1.23.0)",
-        erlang: "Erlang (10.6.4)",
-        elixir: "Elixir (1.10.4)",
-        fsharp: "F# (Interactive 4.0)",
-        go: "Go (1.15)",
-        haskell: "Haskell (GHC 8.6.5)",
-        javascript: "JavaScript (Node.js 12.18.3)",
-        kotlin: "Kotlin (1.4.0)",
-        "objective-c": "Objective-C (Clang 10.0.0)",
-        perl: "Perl (5.30.0)",
-        php: "PHP (7.4.10)",
-        ruby: "Ruby (2.7.1)",
-        rust: "Rust (1.43.0)",
-        scala: "Scala (2.13.3)",
-        scheme: "Scheme (Gauche 0.9.6)",
-        swift: "Swift (5.2.5)",
-        vb: "Visual Basic (.NET Core 4.0.1)",
-        cobol: "COBOL - Free (OpenCOBOL 2.2.0)",
-    };
-
-    function setLanguage() {
-        const languageId = $("#select-lang>select").val();
-        if (languageId in languageIdMap) {
-            languageName = languageIdMap[languageId];
-            $("#atcoder-easy-test-language").css("color", "#fff").val(languageLabelMap[languageName]);
-            $("#atcoder-easy-test-run").removeClass("disabled");
-        } else {
-            $("#atcoder-easy-test-language").css("color", "#f55").val("language not supported on paiza.io");
-            $("#atcoder-easy-test-run").addClass("disabled");
+    class WandboxRunner {
+        constructor(name, label, options = {}) {
+            this.name = name;
+            this.label = label + " [Wandbox]";
         }
-        console.log(languageId);
-    }
 
-    async function getJSON(method, url, data) {
-        const params = Object.entries(data).map(([key, value]) =>
-                                                encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
-        const response = await fetch(url + "?" + params, {
-            method,
-            mode: "cors",
-            headers: {
-                "Accept": "application/json",
-            },
-        });
-        return await response.json();
-    }
+        run(sourceCode, input) {
+            return this.request(Object.assign(JSON.stringify({
+                compiler: this.name,
+                code: sourceCode,
+                stdin: input,
+            }), this.options));
+        }
 
-    async function submitTest(input) {
-        let id, status, error;
-        try {
-            const response = await getJSON("POST", "https://api.paiza.io/runners/create", {
-                source_code: getSourceCode(),
-                language: languageName,
-                input,
-                longpoll: true,
-                longpoll_timeout: 10,
-                api_key: "guest",
-            });
-            id = response.id;
-            status = response.status;
-            error = response.error;
-        } catch (error) {
-            status = "completed";
-            return {
-                status: "IE",
-                exitCode: error,
+        async request(body) {
+            const startTime = Date.now();
+            let res;
+            try {
+                res = await fetch("https://wandbox.org/api/compile.json", {
+                    method: "POST",
+                    mode: "cors",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body,
+                }).then(r => r.json());
+            } catch (error) {
+                return {
+                    status: "IE",
+                    stderr: error,
+                };
+            }
+            const endTime = Date.now();
+
+            const result = {
+                status: "OK",
+                exitCode: res.status,
+                execTime: endTime - startTime,
+                stdout: res.program_output,
+                stderr: res.program_error,
             };
-        }
-        console.log("runner id: %s: %s", id, status);
+            if (res.status != 0) {
+                if (res.signal) {
+                    result.exitCode += " (" + res.signal + ")";
+                }
+                if (res.compiler_error) {
+                    result.status = "CE";
+                    result.stdout = res.compiler_output;
+                    result.stderr = res.compiler_error;
+                } else {
+                    result.status = "RE";
+                }
+            }
 
-        while (status != "completed") {
-            let response = await getJSON("GET", "https://api.paiza.io/runners/get_status", {
+            return result;
+        }
+    }
+
+    class PaizaIORunner {
+        constructor(name, label) {
+            this.name = name;
+            this.label = label + "[PaizaIO]";
+        }
+
+        async run(sourceCode, input) {
+            let id, status, error;
+            try {
+                const res = await fetch("https://api.paiza.io/runners/create?" + buildParams({
+                    source_code: sourceCode,
+                    language: this.name,
+                    input,
+                    longpoll: true,
+                    longpoll_timeout: 10,
+                    api_key: "guest",
+                }), {
+                    method: "POST",
+                    mode: "cors",
+                }).then(r => r.json());
+                id = res.id;
+                status = res.status;
+                error = res.error;
+            } catch (error) {
+                return {
+                    status: "IE",
+                    stderr: error,
+                };
+            }
+
+            while (status == "running") {
+                const res = await (await fetch("https://api.paiza.io/runners/get_status?" + buildParams({
+                    id,
+                    api_key: "guest",
+                }), {
+                    mode: "cors",
+                })).json();
+                status = res.status;
+                error = res.error;
+            }
+
+            const res = await fetch("https://api.paiza.io/runners/get_details?" + buildParams({
                 id,
                 api_key: "guest",
-            });
-            console.log("%s: %s" ,id, status);
-            status = response.status;
-            error = response.error;
-        }
+            }), {
+                mode: "cors",
+            }).then(r => r.json());
 
-        if (error) console.error("%s: %s", id, error);
-
-        let {build_stderr, build_exit_code, build_result, stdout, stderr, exit_code, time, memory, result} = await getJSON("GET", "https://api.paiza.io/runners/get_details", {
-            id,
-            api_key: "guest",
-        });
-
-        console.info("%s: %s", id, result);
-
-        if (build_exit_code != 0) {
-            return {
-                status: "CE",
-                exitCode: build_exit_code,
-                stderr: build_stderr,
+            const result = {
+                exitCode: res.exit_code,
+                execTime: +res.time * 1e3,
+                memory: +res.memory * 1e-3,
             };
-        }
 
-        return {
-            status: exit_code == 0 ? "OK" : result == "timeout" ? "TLE" : "RE",
-            exitCode: exit_code,
-            execTime: +time * 1e3,
-            memory: memory * 1e-3,
-            stdout,
-            stderr,
-        };
+            if (res.build_result == "failure") {
+                result.status = "CE";
+                result.exitCode = res.build_exit_code;
+                result.stdout = res.build_stdout;
+                result.stderr = res.build_stderr;
+            } else {
+                result.status = (res.result == "timeout") ? "TLE" : (res.result == "failure") ? "RE" : "OK";
+                result.exitCode = res.exit_code;
+                result.stdout = res.stdout;
+                result.stderr = res.stderr;
+            }
+
+            return result;
+        }
     }
+
+    const wandboxJavaRunner = new WandboxRunner("openjdk-jdk-11+28", "Java (openjdk-11+28)");
+    wandboxJavaRunner.run = function (sourceCode, input) {
+        return this.request(JSON.stringify({
+            compiler: this.name,
+            code: `
+public class prog {
+    public static void main(String[] args) {
+        Main.main(args);
+    }
+}
+            `,
+            codes: [{
+                file: "Main.java",
+                code: sourceCode,
+            }],
+            stdin: input,
+        }));
+    };
+
+    const runners = {
+        4001: new WandboxRunner("gcc-9.2.0-c", "C (GCC 9.2.0)"),
+        4002: new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
+        4003: new WandboxRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
+        4004: new PaizaIORunner("cpp", "C++ (C17++ / Clang 10.0.0)"),
+        4005: wandboxJavaRunner,
+        4006: new PaizaIORunner("python3", "Python (3.8.2)"),
+        4007: new PaizaIORunner("bash", "Bash (5.0.17)"),
+        4010: new PaizaIORunner("csharp", "C# (Mono-mcs 6.8.0.105)"),
+        4011: new PaizaIORunner("csharp", "C# (Mono-mcs 6.8.0.105)"),
+        4012: new PaizaIORunner("csharp", "C# (Mono-mcs 6.8.0.105)"),
+        4013: new PaizaIORunner("clojure", "Clojure (1.10.1-1)"),
+        4015: new PaizaIORunner("d", "D (LDC 1.23.0)"),
+        4016: new PaizaIORunner("d", "D (LDC 1.23.0)"),
+        4017: new PaizaIORunner("d", "D (LDC 1.23.0)"),
+        4020: new PaizaIORunner("erlang", "Erlang (10.6.4)"),
+        4021: new PaizaIORunner("elixir", "Elixir (1.10.4)"),
+        4022: new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
+        4023: new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
+        4026: new PaizaIORunner("go", "Go (1.15)"),
+        4027: new PaizaIORunner("haskell", "Haskell (GHC 8.6.5)"),
+        4030: new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)"),
+        4032: new PaizaIORunner("kotlin", "Kotlin (1.4.0)"),
+        4035: new PaizaIORunner("bash", "Bash (5.0.17)"),
+        4037: new PaizaIORunner("objective-c", "Objective-C (Clang 10.0.0)"),
+        4042: new PaizaIORunner("perl", "Perl (5.30.0)"),
+        4043: new PaizaIORunner("perl", "Perl (5.30.0)"),
+        4044: new PaizaIORunner("php", "PHP (7.4.10)"),
+        4046: new PaizaIORunner("python", "Python (2.7.18rc1)"),
+        4047: new PaizaIORunner("python3", "Python (3.8.2)"),
+        4049: new PaizaIORunner("ruby", "Ruby (2.7.1)"),
+        4050: new PaizaIORunner("rust", "Rust (1.43.0)"),
+        4051: new PaizaIORunner("scala", "Scala (2.13.3)"),
+        4052: new PaizaIORunner("java", "Java (OpenJDK 15)"),
+        4053: new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)"),
+        4055: new PaizaIORunner("swift", "Swift (5.2.5)"),
+        4058: new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
+        4060: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
+        4061: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
+    };
+
+    return {
+        run(languageId, sourceCode, input) {
+            if (!(languageId in runners)) {
+                return Promise.reject("language not supported");
+            }
+            return runners[languageId].run(sourceCode, input);
+        },
+
+        getEnvironment(languageId) {
+            if (!(languageId in runners)) {
+                return Promise.reject("language not supported");
+            }
+            return Promise.resolve(runners[languageId].label);
+        },
+    };
+})();
+
+(function () {
+    function setLanguage() {
+        const languageId = $("#select-lang>select").val();
+        codeRunner.getEnvironment(languageId).then(label => {
+            $("#atcoder-easy-test-language").css("color", "#fff").val(label);
+            $("#atcoder-easy-test-run").removeClass("disabled");
+        }, error => {
+            $("#atcoder-easy-test-language").css("color", "#f55").val(error);
+            $("#atcoder-easy-test-run").addClass("disabled");
+        });
+    }
+    setLanguage();
 
     async function runTest(input, title = "") {
         const uid = Date.now().toString();
@@ -371,7 +455,7 @@ if (!window.bottomMenu) { var bottomMenu = (function () {
         const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
         $(`#atcoder-easy-test-${uid}-stdin`).val(input);
 
-        const result = await submitTest(input);
+        const result = await codeRunner.run($("#select-lang>select").val(), getSourceCode(), input);
 
         $(`#atcoder-easy-test-${uid}-row-exit-code`).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
         $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode);
