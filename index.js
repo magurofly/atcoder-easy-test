@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      0.1.4
+// @version      0.1.5
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -239,10 +239,10 @@ var codeRunner = (function() {
                 if (res.signal) {
                     result.exitCode += " (" + res.signal + ")";
                 }
-                if (res.compiler_error) {
+                result.stdout = (res.compiler_output || "") + (result.stdout || "");
+                result.stderr = (res.compiler_error || "") + (result.stderr || "");
+                if (res.compiler_output || res.compiler_error) {
                     result.status = "CE";
-                    result.stdout = res.compiler_output;
-                    result.stderr = res.compiler_error;
                 } else {
                     result.status = "RE";
                 }
@@ -322,35 +322,36 @@ var codeRunner = (function() {
         }
     }
 
-    const wandboxJavaRunner = new WandboxRunner("openjdk-jdk-11+28", "Java (openjdk-11+28)");
-    wandboxJavaRunner.run = function (sourceCode, input) {
-        return this.request(JSON.stringify({
-            compiler: this.name,
-            code: `
+    class WandboxJavaRunner extends WandboxRunner {
+        run(sourceCode, input) {
+            return this.request(JSON.stringify({
+                compiler: this.name,
+                code: `
 public class prog {
     public static void main(String[] args) {
         Main.main(args);
     }
 }
-            `,
-            codes: [{
-                file: "Main.java",
-                code: sourceCode,
-            }],
-            stdin: input,
-        }));
-    };
+                `,
+                codes: [{
+                    file: "Main.java",
+                    code: sourceCode,
+                }],
+                stdin: input,
+            }));
+        }
+    }
 
     const runners = {
         4001: new WandboxRunner("gcc-9.2.0-c", "C (GCC 9.2.0)"),
         4002: new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
         4003: new WandboxRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
-        4004: new PaizaIORunner("cpp", "C++ (C17++ / Clang 10.0.0)"),
-        4005: wandboxJavaRunner,
+        4004: new WandboxRunner("clang-10.0.0", "C++ (Clang 10.0.0)"),
+        4005: new WandboxJavaRunner("openjdk-jdk-11+28", "Java (openjdk-11+28)"),
         4006: new PaizaIORunner("python3", "Python (3.8.2)"),
         4007: new PaizaIORunner("bash", "Bash (5.0.17)"),
-        4010: new PaizaIORunner("csharp", "C# (Mono-mcs 6.8.0.105)"),
-        4011: new PaizaIORunner("csharp", "C# (Mono-mcs 6.8.0.105)"),
+        4010: new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)"),
+        4011: new WandboxRunner("mono-head", "C# (Mono-mcs 5.19.0.0)"),
         4012: new PaizaIORunner("csharp", "C# (Mono-mcs 6.8.0.105)"),
         4013: new PaizaIORunner("clojure", "Clojure (1.10.1-1)"),
         4015: new PaizaIORunner("d", "D (LDC 1.23.0)"),
@@ -360,8 +361,8 @@ public class prog {
         4021: new PaizaIORunner("elixir", "Elixir (1.10.4)"),
         4022: new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
         4023: new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
-        4026: new PaizaIORunner("go", "Go (1.15)"),
-        4027: new PaizaIORunner("haskell", "Haskell (GHC 8.6.5)"),
+        4026: new WandboxRunner("go-1.14.1", "Go (1.14.1)"),
+        4027: new WandboxRunner("ghc-head", "Haskell (GHC 8.7.20181121)"),
         4030: new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)"),
         4032: new PaizaIORunner("kotlin", "Kotlin (1.4.0)"),
         4033: new WandboxRunner("lua-5.3.4", "Lua (Lua 5.3.4)"),
@@ -374,12 +375,12 @@ public class prog {
         4042: new PaizaIORunner("perl", "Perl (5.30.0)"),
         4043: new PaizaIORunner("perl", "Perl (5.30.0)"),
         4044: new PaizaIORunner("php", "PHP (7.4.10)"),
-        4046: new PaizaIORunner("pypy-head", "PyPy2 (7.3.4-alpha0)"),
-        4047: new PaizaIORunner("pypy-7.2.0-3", "PyPy3 (7.2.0)"),
+        4046: new WandboxRunner("pypy-head", "PyPy2 (7.3.4-alpha0)"),
+        4047: new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)"),
         4049: new PaizaIORunner("ruby", "Ruby (2.7.1)"),
-        4050: new PaizaIORunner("rust", "Rust (1.43.0)"),
+        4050: new WandboxRunner("rust-head", "Rust (1.37.0-dev)"),
         4051: new PaizaIORunner("scala", "Scala (2.13.3)"),
-        4052: new PaizaIORunner("java", "Java (OpenJDK 15)"),
+        4052: new WandboxJavaRunner("openjdk-jdk8u121-b13", "Java (jdk8u121-b13)"),
         4053: new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)"),
         4055: new PaizaIORunner("swift", "Swift (5.2.5)"),
         4056: {
@@ -393,7 +394,10 @@ public class prog {
                 };
             },
         },
-        4057: new WandboxRunner("typescript-3.8.3", "TypeScript (3.8.3)"),
+        4057: new WandboxRunner("typescript-3.8.3", "TypeScript (3.8.3)", {
+            "compiler-option-raw": `--types=node --moduleResolution=node --lib=esnext`,
+            "runtime-option-raw": `--types=node --moduleResolution=node --lib=esnext`,
+        }),
         4058: new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
         4060: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
         4061: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
@@ -423,9 +427,11 @@ public class prog {
         codeRunner.getEnvironment(languageId).then(label => {
             $("#atcoder-easy-test-language").css("color", "#fff").val(label);
             $("#atcoder-easy-test-run").removeClass("disabled");
+            $("#atcoder-easy-test-btn-test-all").attr("disabled", false);
         }, error => {
             $("#atcoder-easy-test-language").css("color", "#f55").val(error);
             $("#atcoder-easy-test-run").addClass("disabled");
+            $("#atcoder-easy-test-btn-test-all").attr("disabled", true);
         });
     }
     setLanguage();
@@ -551,9 +557,10 @@ public class prog {
     }
 
     const testAllResultRow = $(`<div class="row">`);
-    const testAllButton = $(`<a class="btn btn-default btn-sm" style="margin-left: 5px">`)
+    const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px">`)
     .text("Test All Samples")
     .click(async () => {
+        if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
         const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
         const progress = $(`<div class="progress-bar">`).text(`0 / ${testfuncs.length}`);
         let finished = 0;
