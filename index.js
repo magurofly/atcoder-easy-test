@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -18,176 +18,20 @@
 // * code runner
 // * view
 
-// -- bottom menu --
-if (!window.bottomMenu) { var bottomMenu = (function () {
-    'use strict';
+(function script() {
 
-    const tabs = new Set();
-
-    $(() => {
-        $(`<style>`)
-            .text(`
-
-#bottom-menu-wrapper {
-    background: transparent;
-    border: none;
-    pointer-events: none;
-    padding: 0;
+if (typeof unsafeWindow !== "undefined") {
+    console.log(unsafeWindow);
+    unsafeWindow.eval(`(${script})();`);
+    console.log("Script run in unsafeWindow");
+    return;
 }
-
-#bottom-menu-wrapper>.container {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    padding: 0;
-}
-
-#bottom-menu-wrapper>.container>.navbar-header {
-    float: none;
-}
-
-#bottom-menu-key {
-    display: block;
-    float: none;
-    margin: 0 auto;
-    padding: 10px 3em;
-    border-radius: 5px 5px 0 0;
-    background: #000;
-    opacity: 0.85;
-    color: #FFF;
-    cursor: pointer;
-    pointer-events: auto;
-    text-align: center;
-}
-
-#bottom-menu-key.collapsed:before {
-    content: "\\e260";
-}
-
-#bottom-menu-tabs {
-    padding: 3px 0 0 10px;
-}
-
-#bottom-menu-tabs a {
-    pointer-events: auto;
-}
-
-#bottom-menu {
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    max-height: unset;
-}
-
-#bottom-menu.collapse:not(.in) {
-    display: none !important;
-}
-
-#bottom-menu-tabs>li>a {
-    background: rgba(100, 100, 100, 0.5);
-    border: solid 1px #ccc;
-    color: #fff;
-}
-
-#bottom-menu-tabs>li>a:hover {
-    background: rgba(150, 150, 150, 0.5);
-    border: solid 1px #ccc;
-    color: #333;
-}
-
-#bottom-menu-tabs>li.active>a {
-    background: #eee;
-    border: solid 1px #ccc;
-    color: #333;
-}
-
-.bottom-menu-btn-close {
-    font-size: 8pt;
-    vertical-align: baseline;
-    padding: 0 0 0 6px;
-    margin-right: -6px;
-}
-
-#bottom-menu-contents {
-    padding: 5px 15px;
-    max-height: 50vh;
-    overflow-y: auto;
-}
-
-#bottom-menu-contents .panel {
-    color: #333;
-}
-
-
-
-#atcoder-easy-test-language {
-    border: none;
-    background: transparent;
-    font: inherit;
-    color: #fff;
-}
-
-`)
-            .appendTo("head");
-        $(`<div id="bottom-menu-wrapper" class="navbar navbar-default navbar-fixed-bottom">`)
-            .html(`
-<div class="container">
-    <div class="navbar-header">
-        <button id="bottom-menu-key" type="button" class="navbar-toggle collapsed glyphicon glyphicon-menu-down" data-toggle="collapse" data-target="#bottom-menu">
-        </button>
-    </div>
-    <div id="bottom-menu" class="collapse navbar-collapse">
-        <ul id="bottom-menu-tabs" class="nav nav-tabs">
-        </ul>
-        <div id="bottom-menu-contents" class="tab-content">
-        </div>
-    </div>
-</div>
-`)
-            .appendTo("#main-div");
-    });
-
-    const menuController = {
-        addTab(tabId, tabLabel, paneContent, options = {}) {
-            const tab = $(`<a id="bottom-menu-tab-${tabId}" href="#" data-target="#bottom-menu-pane-${tabId}" data-toggle="tab">`)
-            .click(e => {
-                e.preventDefault();
-                tab.tab("show");
-            })
-            .append(tabLabel);
-            const tabLi = $(`<li>`).append(tab).appendTo("#bottom-menu-tabs");
-            const pane = $(`<div class="tab-pane" id="bottom-menu-pane-${tabId}">`).append(paneContent).appendTo("#bottom-menu-contents");
-            const controller = {
-                close() {
-                    tabLi.remove();
-                    pane.remove();
-                    tabs.delete(tab);
-                    if (tabLi.hasClass("active") && tabs.size > 0) {
-                        tabs.values().next().value.tab("show");
-                    }
-                },
-
-                show() {
-                    menuController.show();
-                    tab.tab("show");
-                }
-            };
-            tabs.add(tab);
-            if (options.closeButton) tab.append($(`<a class="bottom-menu-btn-close btn btn-link glyphicon glyphicon-remove">`).click(() => controller.close()));
-            if (options.active || tabs.size == 1) tab.tab("show");
-            return controller;
-        },
-
-        show() {
-            if ($("#bottom-menu-key").hasClass("collapsed")) $("#bottom-menu-key").click();
-        },
-    };
-
-    return menuController;
-})(); }
+const $ = window.$;
+const getSourceCode = window.getSourceCode;
+const csrfToken = window.csrfToken;
 
 // -- code runner --
-var codeRunner = (function() {
+const codeRunner = (function() {
     'use strict';
 
     function buildParams(data) {
@@ -452,6 +296,8 @@ var codeRunner = (function() {
         runners[languageId] = new AtCoderRunner(languageId, elem.text());
     });
 
+    console.info("codeRunner OK");
+
     return {
         run(languageId, sourceCode, input) {
             if (!(languageId in runners)) {
@@ -469,7 +315,175 @@ var codeRunner = (function() {
     };
 })();
 
-(function () {
+
+// -- bottom menu --
+const bottomMenu = (function () {
+    'use strict';
+
+    const tabs = new Set();
+
+    const bottomMenuKey = $(`<button id="bottom-menu-key" type="button" class="navbar-toggle collapsed glyphicon glyphicon-menu-down" data-toggle="collapse" data-target="#bottom-menu">`);
+    const bottomMenuTabs = $(`<ul id="bottom-menu-tabs" class="nav nav-tabs">`);
+    const bottomMenuContents = $(`<div id="bottom-menu-contents" class="tab-content">`);
+
+    $(() => {
+        $(`<style>`)
+            .text(`
+
+#bottom-menu-wrapper {
+    background: transparent;
+    border: none;
+    pointer-events: none;
+    padding: 0;
+}
+
+#bottom-menu-wrapper>.container {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 0;
+}
+
+#bottom-menu-wrapper>.container>.navbar-header {
+    float: none;
+}
+
+#bottom-menu-key {
+    display: block;
+    float: none;
+    margin: 0 auto;
+    padding: 10px 3em;
+    border-radius: 5px 5px 0 0;
+    background: #000;
+    opacity: 0.85;
+    color: #FFF;
+    cursor: pointer;
+    pointer-events: auto;
+    text-align: center;
+}
+
+#bottom-menu-key.collapsed:before {
+    content: "\\e260";
+}
+
+#bottom-menu-tabs {
+    padding: 3px 0 0 10px;
+}
+
+#bottom-menu-tabs a {
+    pointer-events: auto;
+}
+
+#bottom-menu {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    max-height: unset;
+}
+
+#bottom-menu.collapse:not(.in) {
+    display: none !important;
+}
+
+#bottom-menu-tabs>li>a {
+    background: rgba(100, 100, 100, 0.5);
+    border: solid 1px #ccc;
+    color: #fff;
+}
+
+#bottom-menu-tabs>li>a:hover {
+    background: rgba(150, 150, 150, 0.5);
+    border: solid 1px #ccc;
+    color: #333;
+}
+
+#bottom-menu-tabs>li.active>a {
+    background: #eee;
+    border: solid 1px #ccc;
+    color: #333;
+}
+
+.bottom-menu-btn-close {
+    font-size: 8pt;
+    vertical-align: baseline;
+    padding: 0 0 0 6px;
+    margin-right: -6px;
+}
+
+#bottom-menu-contents {
+    padding: 5px 15px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+#bottom-menu-contents .panel {
+    color: #333;
+}
+
+
+
+#atcoder-easy-test-language {
+    border: none;
+    background: transparent;
+    font: inherit;
+    color: #fff;
+}
+
+`)
+            .appendTo("head");
+        const bottomMenu = $(`<div id="bottom-menu" class="collapse navbar-collapse">`).append(bottomMenuTabs, bottomMenuContents);
+        $(`<div id="bottom-menu-wrapper" class="navbar navbar-default navbar-fixed-bottom">`)
+        .append($(`<div class="container">`)
+            .append(
+                $(`<div class="navbar-header">`).append(bottomMenuKey),
+                bottomMenu))
+        .appendTo("#main-div");
+    });
+
+    const menuController = {
+        addTab(tabId, tabLabel, paneContent, options = {}) {
+            console.log("addTab: %s (%s)", tabLabel, tabId, paneContent);
+            const tab = $(`<a id="bottom-menu-tab-${tabId}" href="#" data-target="#bottom-menu-pane-${tabId}" data-toggle="tab">`)
+            .click(e => {
+                e.preventDefault();
+                tab.tab("show");
+            })
+            .append(tabLabel);
+            const tabLi = $(`<li>`).append(tab).appendTo(bottomMenuTabs);
+            const pane = $(`<div class="tab-pane" id="bottom-menu-pane-${tabId}">`).append(paneContent).appendTo(bottomMenuContents);
+            console.dirxml(bottomMenuContents);
+            const controller = {
+                close() {
+                    tabLi.remove();
+                    pane.remove();
+                    tabs.delete(tab);
+                    if (tabLi.hasClass("active") && tabs.size > 0) {
+                        tabs.values().next().value.tab("show");
+                    }
+                },
+
+                show() {
+                    menuController.show();
+                    tab.tab("show");
+                }
+            };
+            tabs.add(tab);
+            if (options.closeButton) tab.append($(`<a class="bottom-menu-btn-close btn btn-link glyphicon glyphicon-remove">`).click(() => controller.close()));
+            if (options.active || tabs.size == 1) pane.ready(() => tab.tab("show"));
+            return controller;
+        },
+
+        show() {
+            if (bottomMenuKey.hasClass("collapsed")) bottomMenuKey.click();
+        },
+    };
+
+    console.info("bottomMenu OK");
+
+    return menuController;
+})();
+
+$(() => {
     function setLanguage() {
         const languageId = $("#select-lang>select").val();
         codeRunner.getEnvironment(languageId).then(label => {
@@ -527,7 +541,7 @@ var codeRunner = (function() {
         const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
         $(`#atcoder-easy-test-${uid}-stdin`).val(input);
 
-        const result = await codeRunner.run($("#select-lang>select").val(), getSourceCode(), input);
+        const result = await codeRunner.run($("#select-lang>select").val(), window.getSourceCode(), input);
 
         $(`#atcoder-easy-test-${uid}-row-exit-code`).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
         $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode);
@@ -540,6 +554,8 @@ var codeRunner = (function() {
         result.tab = tab;
         return result;
     }
+
+    console.log("bottomMenu", bottomMenu);
 
     bottomMenu.addTab("easy-test", "Easy Test", $(`<form id="atcoder-easy-test-container" class="form-horizontal">`)
                       .html(`
@@ -571,9 +587,10 @@ var codeRunner = (function() {
         </div>
     </div>
 </div>
-`), { active: true });
+`).ready(() => {
     $("#atcoder-easy-test-run").click(() => runTest($("#atcoder-easy-test-input").val()));
     $("#select-lang>select").on("change", () => setLanguage());
+}), { active: true });
 
     const testfuncs = [];
 
@@ -638,4 +655,8 @@ var codeRunner = (function() {
         });
     });
     $("#submit").after(testAllButton).closest("form").append(testAllResultRow);
+
+    console.info("view OK");
+});
+
 })();
