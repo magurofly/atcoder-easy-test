@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      0.1.5
+// @version      0.1.6
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -11,6 +11,7 @@
 // This script uses variables from page below:
 // * `$`
 // * `getSourceCode`
+// * `csrfToken`
 
 // This scripts consists of three modules:
 // * bottom menu
@@ -194,6 +195,10 @@ var codeRunner = (function() {
                                             encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
     }
 
+    function sleep(ms) {
+        return new Promise(done => setTimeout(done, ms));
+    }
+
     class WandboxRunner {
         constructor(name, label, options = {}) {
             this.name = name;
@@ -255,7 +260,7 @@ var codeRunner = (function() {
     class PaizaIORunner {
         constructor(name, label) {
             this.name = name;
-            this.label = label + "[PaizaIO]";
+            this.label = label + " [PaizaIO]";
         }
 
         async run(sourceCode, input) {
@@ -322,23 +327,72 @@ var codeRunner = (function() {
         }
     }
 
-    class WandboxJavaRunner extends WandboxRunner {
-        run(sourceCode, input) {
-            return this.request(JSON.stringify({
-                compiler: this.name,
-                code: `
-public class prog {
-    public static void main(String[] args) {
-        Main.main(args);
-    }
-}
-                `,
-                codes: [{
-                    file: "Main.java",
-                    code: sourceCode,
-                }],
-                stdin: input,
-            }));
+    let waitAtCoderCustomTest = Promise.resolve();
+    const AtCoderCustomTestBase = location.href.replace(/\/tasks\/.+$/, "/custom_test");
+    const AtCoderCustomTestResultAPI = AtCoderCustomTestBase + "/json?reload=true";
+    const AtCoderCustomTestSubmitAPI = AtCoderCustomTestBase + "/submit/json";
+    class AtCoderRunner {
+        constructor(languageId, label) {
+            this.languageId = languageId;
+            this.label = label + " [AtCoder]";
+        }
+
+        async run(sourceCode, input) {
+            const promise = this.submit(sourceCode, input);
+            waitAtCoderCustomTest = promise;
+            return await promise;
+        }
+
+        async submit(sourceCode, input) {
+            try {
+                await waitAtCoderCustomTest;
+            } catch (error) {
+                console.error(error);
+            }
+
+            const error = await fetch(AtCoderCustomTestSubmitAPI, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                body: buildParams({
+                    "data.LanguageId": this.languageId,
+                    sourceCode,
+                    input,
+                    csrf_token: csrfToken,
+                }),
+            }).then(r => r.text());
+
+            if (error) {
+                throw new Error(error)
+            }
+
+            await sleep(100);
+
+            for (;;) {
+                const data = await fetch(AtCoderCustomTestResultAPI, {
+                    method: "GET",
+                    credentials: "include",
+                }).then(r => r.json());
+
+                if (!("Result" in data)) continue;
+                const result = data.Result;
+
+                if ("Interval" in data) {
+                    await sleep(data.Interval);
+                    continue;
+                }
+
+                return {
+                    status: (result.ExitCode == 0) ? "OK" : (result.TimeConsumption == -1) ? "CE" : "RE",
+                    exitCode: result.ExitCode,
+                    execTime: result.TimeConsumption,
+                    memory: result.MemoryConsumption,
+                    stdout: data.Stdout,
+                    stderr: data.Stderr,
+                };
+            }
         }
     }
 
@@ -347,7 +401,6 @@ public class prog {
         4002: new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
         4003: new WandboxRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
         4004: new WandboxRunner("clang-10.0.0", "C++ (Clang 10.0.0)"),
-        4005: new WandboxJavaRunner("openjdk-jdk-11+28", "Java (openjdk-11+28)"),
         4006: new PaizaIORunner("python3", "Python (3.8.2)"),
         4007: new PaizaIORunner("bash", "Bash (5.0.17)"),
         4010: new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)"),
@@ -380,7 +433,6 @@ public class prog {
         4049: new PaizaIORunner("ruby", "Ruby (2.7.1)"),
         4050: new WandboxRunner("rust-head", "Rust (1.37.0-dev)"),
         4051: new PaizaIORunner("scala", "Scala (2.13.3)"),
-        4052: new WandboxJavaRunner("openjdk-jdk8u121-b13", "Java (jdk8u121-b13)"),
         4053: new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)"),
         4055: new PaizaIORunner("swift", "Swift (5.2.5)"),
         4056: {
@@ -403,6 +455,13 @@ public class prog {
         4061: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
         4067: new WandboxRunner("vim-head", "Vim (8.2.1975)"),
     };
+
+    $("#select-lang option[value]").each((_, e) => {
+        const elem = $(e);
+        const languageId = elem.val();
+        if (languageId in runners) return;
+        runners[languageId] = new AtCoderRunner(languageId, elem.text());
+    });
 
     return {
         run(languageId, sourceCode, input) {
