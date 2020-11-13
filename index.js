@@ -446,14 +446,9 @@ var codeRunner = (function() {
                 };
             },
         },
-        4057: new WandboxRunner("typescript-3.8.3", "TypeScript (3.8.3)", {
-            "compiler-option-raw": `--types=node --moduleResolution=node --lib=esnext`,
-            "runtime-option-raw": `--types=node --moduleResolution=node --lib=esnext`,
-        }),
         4058: new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
         4060: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
         4061: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
-        4067: new WandboxRunner("vim-head", "Vim (8.2.1975)"),
     };
 
     $("#select-lang option[value]").each((_, e) => {
