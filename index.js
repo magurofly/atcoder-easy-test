@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.1.0
+// @version      1.1.1
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -190,6 +190,7 @@ const codeRunner = (function() {
             let allHeaders = false;
             if (files.has("all")) {
                 allHeaders = true;
+                files.delete("all");
                 for (const file of allFiles) {
                     files.add(file);
                 }
