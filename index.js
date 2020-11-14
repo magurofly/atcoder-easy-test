@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.0.2
+// @version      1.1.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -50,6 +50,8 @@ const codeRunner = (function() {
         }
 
         run(sourceCode, input) {
+            let options = this.options;
+            if (typeof options == "function") options = options(sourceCode, input);
             return this.request(Object.assign(JSON.stringify({
                 compiler: this.name,
                 code: sourceCode,
@@ -171,6 +173,83 @@ const codeRunner = (function() {
         }
     }
 
+    const loader = {
+        loaded: {},
+        async load(url, options = { mode: "cors", }) {
+            if (!(url in this.loaded)) {
+                this.loaded[url] = await fetch(url, options);
+            }
+            return this.loaded[url];
+        },
+    };
+
+    class WandboxCppRunner extends WandboxRunner {
+        async run(sourceCode, input) {
+            const allFiles = ["convolution", "dsu", "fenwicktree", "internal_bit", "internal_math", "internal_queue", "internal_scc", "internal_type_traits", "lazysegtree", "math", "maxflow", "mincostflow", "modint", "scc", "segtree", "string", "twosat"];
+            const files = new Set(["all"].concat(allFiles).filter(file => new RegExp(String.raw`^#\s*include\s*<atcoder/${file}>`, "m").test(sourceCode)));
+            let allHeaders = false;
+            if (files.has("all")) {
+                allHeaders = true;
+                for (const file of allFiles) {
+                    files.add(file);
+                }
+            }
+
+            if (files.has("convolution")) {
+                files.add("modint");
+            }
+            if (files.has("convolution") || files.has("lazysegtree") || files.has("segtree")) {
+                files.add("internal_bit");
+            }
+            if (files.has("maxflow")) {
+                files.add("internal_queue");
+            }
+            if (files.has("scc") || files.has("twosat")) {
+                files.add("internal_scc");
+            }
+            if (files.has("math") || files.has("modint")) {
+                files.add("internal_math");
+            }
+            if (files.has("fenwicktree") || files.has("fenwicktree")) {
+                files.add("internal_type_traits");
+            }
+
+            const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library/atcoder/";
+
+            const codePromises = [];
+            const codes = [];
+            for (const file of files) {
+                codePromises.push(fetch(ACLBase + file + ".hpp", {
+                    mode: "cors",
+                    cache: "force-cache",
+                })
+                    .then(r => r.text())
+                    .then(code => codes.push({ file: "atcoder/" + file, code })));
+            }
+            if (allHeaders) {
+                codePromises.push(fetch(ACLBase + "all", {
+                    mode: "cors",
+                    cache: "force-cache",
+                })
+                    .then(r => r.text())
+                    .then(code => codes.push({ file: "atcoder/all", code })));
+            }
+
+            await Promise.all(codePromises);
+
+
+            let options = this.options;
+            if (typeof options == "function") options = options(sourceCode, input);
+            return await this.request(Object.assign(JSON.stringify({
+                compiler: this.name,
+                code: sourceCode,
+                stdin: input,
+                codes,
+                "compiler-option-raw": "-I.",
+            }), this.options));
+        }
+    }
+
     let waitAtCoderCustomTest = Promise.resolve();
     const AtCoderCustomTestBase = location.href.replace(/\/tasks\/.+$/, "/custom_test");
     const AtCoderCustomTestResultAPI = AtCoderCustomTestBase + "/json?reload=true";
@@ -243,8 +322,8 @@ const codeRunner = (function() {
     const runners = {
         4001: new WandboxRunner("gcc-9.2.0-c", "C (GCC 9.2.0)"),
         4002: new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
-        4003: new WandboxRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
-        4004: new WandboxRunner("clang-10.0.0", "C++ (Clang 10.0.0)"),
+        4003: new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
+        4004: new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)"),
         4006: new PaizaIORunner("python3", "Python (3.8.2)"),
         4007: new PaizaIORunner("bash", "Bash (5.0.17)"),
         4010: new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)"),
@@ -287,6 +366,8 @@ const codeRunner = (function() {
         },
         4058: new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
         4061: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
+        4101: new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
+        4102: new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)"),
     };
 
     $("#select-lang option[value]").each((_, e) => {
