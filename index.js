@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.1.1
+// @version      1.2.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -43,10 +43,60 @@ const codeRunner = (function() {
         return new Promise(done => setTimeout(done, ms));
     }
 
-    class WandboxRunner {
+    class CodeRunner {
+        constructor(label, site) {
+            this.label = `${label} [${site}]`;
+        }
+
+        async test(sourceCode, input, supposedOutput, options) {
+            const result = await this.run(sourceCode, input);
+            if (result.status != "OK" || typeof supposedOutput !== "string") return result;
+            let output = result.stdout;
+
+            if (options.trim) {
+                supposedOutput = supposedOutput.trim();
+                output = output.trim();
+            }
+
+            let equals = (x, y) => x === y;
+
+            if ("allowableError" in options) {
+                const floatPattern = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/;
+                const superEquals = equals;
+                equals = (x, y) => {
+                    if (floatPattern.test(x) && floatPattern.test(y)) return Math.abs(parseFloat(x) - parseFloat(y)) <= options.allowableError;
+                    return superEquals(x, y);
+                }
+            }
+
+            if (options.split) {
+                const superEquals = equals;
+                equals = (x, y) => {
+                    x = x.split(/\s+/);
+                    y = y.split(/\s+/);
+                    if (x.length != y.length) return false;
+                    const len = x.length;
+                    for (let i = 0; i < len; i++) {
+                        if (!superEquals(x[i], y[i])) return false;
+                    }
+                    return true;
+                }
+            }
+
+            if (equals(output, supposedOutput)) {
+                result.status = "AC";
+            } else {
+                result.status = "WA";
+            }
+
+            return result;
+        }
+    }
+
+    class WandboxRunner extends CodeRunner {
         constructor(name, label, options = {}) {
+            super(label, "Wandbox");
             this.name = name;
-            this.label = label + " [Wandbox]";
         }
 
         run(sourceCode, input) {
@@ -103,10 +153,10 @@ const codeRunner = (function() {
         }
     }
 
-    class PaizaIORunner {
+    class PaizaIORunner extends CodeRunner {
         constructor(name, label) {
+            super(label, "PaizaIO");
             this.name = name;
-            this.label = label + " [PaizaIO]";
         }
 
         async run(sourceCode, input) {
@@ -255,10 +305,10 @@ const codeRunner = (function() {
     const AtCoderCustomTestBase = location.href.replace(/\/tasks\/.+$/, "/custom_test");
     const AtCoderCustomTestResultAPI = AtCoderCustomTestBase + "/json?reload=true";
     const AtCoderCustomTestSubmitAPI = AtCoderCustomTestBase + "/submit/json";
-    class AtCoderRunner {
+    class AtCoderRunner extends CodeRunner {
         constructor(languageId, label) {
+            super(label, "AtCoder");
             this.languageId = languageId;
-            this.label = label + " [AtCoder]";
         }
 
         async run(sourceCode, input) {
@@ -321,42 +371,50 @@ const codeRunner = (function() {
     }
 
     const runners = {
-        4001: new WandboxRunner("gcc-9.2.0-c", "C (GCC 9.2.0)"),
-        4002: new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
-        4003: new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
-        4004: new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)"),
-        4006: new PaizaIORunner("python3", "Python (3.8.2)"),
-        4007: new PaizaIORunner("bash", "Bash (5.0.17)"),
-        4010: new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)"),
-        4011: new WandboxRunner("mono-head", "C# (Mono-mcs 5.19.0.0)"),
-        4013: new PaizaIORunner("clojure", "Clojure (1.10.1-1)"),
-        4017: new PaizaIORunner("d", "D (LDC 1.23.0)"),
-        4020: new PaizaIORunner("erlang", "Erlang (10.6.4)"),
-        4021: new PaizaIORunner("elixir", "Elixir (1.10.4)"),
-        4022: new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
-        4023: new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
-        4026: new WandboxRunner("go-1.14.1", "Go (1.14.1)"),
-        4027: new WandboxRunner("ghc-head", "Haskell (GHC 8.7.20181121)"),
-        4030: new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)"),
-        4032: new PaizaIORunner("kotlin", "Kotlin (1.4.0)"),
-        4033: new WandboxRunner("lua-5.3.4", "Lua (Lua 5.3.4)"),
-        4034: new WandboxRunner("luajit-head", "Lua (LuaJIT 2.1.0-beta3)"),
-        4036: new WandboxRunner("nim-1.0.6", "Nim (1.0.6)"),
-        4037: new PaizaIORunner("objective-c", "Objective-C (Clang 10.0.0)"),
-        4039: new WandboxRunner("ocaml-head", "OCaml (4.13.0+dev0-2020-10-19)"),
-        4041: new WandboxRunner("fpc-3.0.2", "Pascal (FPC 3.0.2)"),
-        4042: new PaizaIORunner("perl", "Perl (5.30.0)"),
-        4044: new PaizaIORunner("php", "PHP (7.4.10)"),
-        4046: new WandboxRunner("pypy-head", "PyPy2 (7.3.4-alpha0)"),
-        4047: new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)"),
-        4049: new PaizaIORunner("ruby", "Ruby (2.7.1)"),
-        4050: new WandboxRunner("rust-head", "Rust (1.37.0-dev)"),
-        4051: new PaizaIORunner("scala", "Scala (2.13.3)"),
-        4053: new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)"),
-        4055: new PaizaIORunner("swift", "Swift (5.2.5)"),
-        4056: {
+        4001: [new WandboxRunner("gcc-9.2.0-c", "C (GCC 9.2.0)")],
+        4002: [new PaizaIORunner("c", "C (C17 / Clang 10.0.0)")],
+        4003: [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)")],
+        4004: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)")],
+        4006: [new PaizaIORunner("python3", "Python (3.8.2)")],
+        4007: [new PaizaIORunner("bash", "Bash (5.0.17)")],
+        4010: [new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)")],
+        4011: [new WandboxRunner("mono-head", "C# (Mono-mcs 5.19.0.0)")],
+        4013: [new PaizaIORunner("clojure", "Clojure (1.10.1-1)")],
+        4017: [new PaizaIORunner("d", "D (LDC 1.23.0)")],
+        4020: [new PaizaIORunner("erlang", "Erlang (10.6.4)")],
+        4021: [new PaizaIORunner("elixir", "Elixir (1.10.4)")],
+        4022: [new PaizaIORunner("fsharp", "F# (Interactive 4.0)")],
+        4023: [new PaizaIORunner("fsharp", "F# (Interactive 4.0)")],
+        4026: [new WandboxRunner("go-1.14.1", "Go (1.14.1)")],
+        4027: [new WandboxRunner("ghc-head", "Haskell (GHC 8.7.20181121)")],
+        4030: [new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)")],
+        4032: [new PaizaIORunner("kotlin", "Kotlin (1.4.0)")],
+        4033: [new WandboxRunner("lua-5.3.4", "Lua (Lua 5.3.4)")],
+        4034: [new WandboxRunner("luajit-head", "Lua (LuaJIT 2.1.0-beta3)")],
+        4036: [new WandboxRunner("nim-1.0.6", "Nim (1.0.6)")],
+        4037: [new PaizaIORunner("objective-c", "Objective-C (Clang 10.0.0)")],
+        4039: [new WandboxRunner("ocaml-head", "OCaml (4.13.0+dev0-2020-10-19)")],
+        4041: [new WandboxRunner("fpc-3.0.2", "Pascal (FPC 3.0.2)")],
+        4042: [new PaizaIORunner("perl", "Perl (5.30.0)")],
+        4044: [
+            new PaizaIORunner("php", "PHP (7.4.10)"),
+            new WandboxRunner("php-7.3.3", "PHP (7.3.3)"),
+        ],
+        4046: [new WandboxRunner("pypy-head", "PyPy2 (7.3.4-alpha0)")],
+        4047: [new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)")],
+        4049: [
+            new PaizaIORunner("ruby", "Ruby (2.7.1)"),
+            new WandboxRunner("ruby-2.7.0-preview1", "Ruby (2.7.0-preview1)"),
+        ],
+        4050: [
+            new WandboxRunner("rust-head", "Rust (1.37.0-dev)"),
+            new PaizaIORunner("rust", "Rust (1.43.0)"),
+        ],
+        4051: [new PaizaIORunner("scala", "Scala (2.13.3)")],
+        4053: [new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)")],
+        4055: [new PaizaIORunner("swift", "Swift (5.2.5)")],
+        4056: [{
             label: "Text (JavaScript)",
-            name: "text",
             async run(sourceCode, input) {
                 return {
                     status: "OK",
@@ -364,35 +422,35 @@ const codeRunner = (function() {
                     stdout: sourceCode,
                 };
             },
-        },
-        4058: new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
-        4061: new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
-        4101: new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)"),
-        4102: new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)"),
+        }],
+        4058: [new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)")],
+        4061: [new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)")],
+        4101: [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)")],
+        4102: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)")],
     };
 
     $("#select-lang option[value]").each((_, e) => {
         const elem = $(e);
         const languageId = elem.val();
-        if (languageId in runners) return;
-        runners[languageId] = new AtCoderRunner(languageId, elem.text());
+        if (!(languageId in runners)) runners[languageId] = [];
+        runners[languageId].push(new AtCoderRunner(languageId, elem.text()));
     });
 
     console.info("codeRunner OK");
 
     return {
-        run(languageId, sourceCode, input) {
+        run(languageId, index, sourceCode, input, supposedOutput = null, options = { trim: true, split: true, }) {
             if (!(languageId in runners)) {
                 return Promise.reject("language not supported");
             }
-            return runners[languageId].run(sourceCode, input);
+            return runners[languageId][index].test(sourceCode, input, supposedOutput, options);
         },
 
         getEnvironment(languageId) {
             if (!(languageId in runners)) {
                 return Promise.reject("language not supported");
             }
-            return Promise.resolve(runners[languageId].label);
+            return Promise.resolve(runners[languageId].map(runner => runner.label));
         },
     };
 })();
@@ -502,15 +560,6 @@ const bottomMenu = (function () {
     color: #333;
 }
 
-
-
-#atcoder-easy-test-language {
-    border: none;
-    background: transparent;
-    font: inherit;
-    color: #fff;
-}
-
 `)
             .appendTo("head");
         const bottomMenu = $(`<div id="bottom-menu" class="collapse navbar-collapse">`).append(bottomMenuTabs, bottomMenuContents);
@@ -566,21 +615,7 @@ const bottomMenu = (function () {
 })();
 
 $(() => {
-    function setLanguage() {
-        const languageId = $("#select-lang>select").val();
-        codeRunner.getEnvironment(languageId).then(label => {
-            $("#atcoder-easy-test-language").css("color", "#fff").val(label);
-            $("#atcoder-easy-test-run").removeClass("disabled");
-            $("#atcoder-easy-test-btn-test-all").attr("disabled", false);
-        }, error => {
-            $("#atcoder-easy-test-language").css("color", "#f55").val(error);
-            $("#atcoder-easy-test-run").addClass("disabled");
-            $("#atcoder-easy-test-btn-test-all").attr("disabled", true);
-        });
-    }
-    setLanguage();
-
-    async function runTest(input, title = "") {
+    async function runTest(title, input, output = null) {
         const uid = Date.now().toString();
         title = title ? "Result " + title : "Result";
         const content = $(`<div class="container">`)
@@ -623,7 +658,12 @@ $(() => {
         const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
         $(`#atcoder-easy-test-${uid}-stdin`).val(input);
 
-        const result = await codeRunner.run($("#select-lang>select").val(), window.getSourceCode(), input);
+        const options = { trim: true, split: true, };
+        if ($("#atcoder-easy-test-allowable-error-check").prop("checked")) {
+            options.allowableError = parseFloat($("#atcoder-easy-test-allowable-error").val());
+        }
+
+        const result = await codeRunner.run($("#select-lang>select").val(), +$("#atcoder-easy-test-language").val(), window.getSourceCode(), input, output, options);
 
         $(`#atcoder-easy-test-${uid}-row-exit-code`).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
         $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode);
@@ -646,7 +686,23 @@ $(() => {
         <div class="form-group">
             <label class="control-label col-sm-2">Test Environment</label>
             <div class="col-sm-8">
-                <input id="atcoder-easy-test-language" class="form-control" readonly>
+                <select class="form-control" id="atcoder-easy-test-language"></select>
+                <!--input id="atcoder-easy-test-language" type="text" class="form-control" readonly-->
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12 col-md-10">
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="atcoder-easy-test-allowable-error-check">Allowable Error</label>
+            <div class="col-sm-8">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <input id="atcoder-easy-test-allowable-error-check" type="checkbox" checked>
+                    </span>
+                    <input id="atcoder-easy-test-allowable-error" type="text" class="form-control" value="1e-6">
+                </div>
             </div>
         </div>
     </div>
@@ -669,9 +725,43 @@ $(() => {
         </div>
     </div>
 </div>
+<style>
+#atcoder-easy-test-language {
+    border: none;
+    background: transparent;
+    font: inherit;
+    color: #fff;
+}
+#atcoder-easy-test-language option {
+    border: none;
+    color: #333;
+    font: inherit;
+}
+</style>
 `).ready(() => {
-    $("#atcoder-easy-test-run").click(() => runTest($("#atcoder-easy-test-input").val()));
+    $("#atcoder-easy-test-run").click(() => runTest("", $("#atcoder-easy-test-input").val()));
     $("#select-lang>select").on("change", () => setLanguage());
+    $("#atcoder-easy-test-allowable-error").attr("disabled", this.checked);
+    $("#atcoder-easy-test-allowable-error-check").on("change", function () {
+        $("#atcoder-easy-test-allowable-error").attr("disabled", !this.checked);
+    });
+
+    function setLanguage() {
+        const languageId = $("#select-lang>select").val();
+        codeRunner.getEnvironment(languageId).then(labels => {
+            console.log(`language: ${labels[0]} (${languageId})`);
+            $("#atcoder-easy-test-language").css("color", "#fff").empty().append(labels.map((label, index) => $(`<option>`).val(index).text(label)));
+            $("#atcoder-easy-test-run").removeClass("disabled");
+            $("#atcoder-easy-test-btn-test-all").attr("disabled", false);
+        }, error => {
+            console.log(`language: ? (${languageId})`);
+            $("#atcoder-easy-test-language").css("color", "#f55").empty().append($(`<option>`).text(error));
+            $("#atcoder-easy-test-run").addClass("disabled");
+            $("#atcoder-easy-test-btn-test-all").attr("disabled", true);
+        });
+    }
+
+    setLanguage();
 }), { active: true });
 
     const testfuncs = [];
@@ -681,14 +771,9 @@ $(() => {
         const input = $(testcases[i]), output = $(testcases[i+1]);
         const testfunc = async () => {
             const title = input.closest(".part").find("h3")[0].childNodes[0].data;
-            const result = await runTest(input.text(), title);
-            if (result.status == "OK") {
-                if (result.stdout.trim() == output.text().trim()) {
-                    $(`#atcoder-easy-test-${result.uid}-stdout`).addClass("bg-success");
-                    result.status = "AC";
-                } else {
-                    result.status = "WA";
-                }
+            const result = await runTest(title, input.text(), output.text());
+            if (result.status == "OK" || result.status == "AC") {
+                $(`#atcoder-easy-test-${result.uid}-stdout`).addClass("bg-success");
             }
             return result;
         };
