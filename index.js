@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.2.0
+// @version      1.2.1
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -508,6 +508,7 @@ const bottomMenu = (function () {
 
 #bottom-menu-tabs {
     padding: 3px 0 0 10px;
+    cursor: n-resize;
 }
 
 #bottom-menu-tabs a {
@@ -569,6 +570,27 @@ const bottomMenu = (function () {
                 $(`<div class="navbar-header">`).append(bottomMenuKey),
                 bottomMenu))
         .appendTo("#main-div");
+
+        let resizeStart = null;
+        bottomMenuTabs.on({
+            mousedown({target, pageY}) {
+                if (!$(target).is("#bottom-menu-tabs")) return;
+                resizeStart = {y: pageY, height: bottomMenuContents.height()};
+            },
+            mousemove(e) {
+                if (!resizeStart) return;
+                e.preventDefault();
+                bottomMenuContents.height(resizeStart.height - (e.pageY - resizeStart.y));
+            },
+        });
+        $(document).on({
+            mouseup() {
+                resizeStart = null;
+            },
+            mouseleave() {
+                resizeStart = null;
+            },
+        });
     });
 
     const menuController = {
