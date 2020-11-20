@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.2.1
+// @version      1.2.2
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -19,6 +19,8 @@
 // * view
 
 (function script() {
+
+const VERSION = "1.2.2";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -703,6 +705,7 @@ $(() => {
 
     bottomMenu.addTab("easy-test", "Easy Test", $(`<form id="atcoder-easy-test-container" class="form-horizontal">`)
                       .html(`
+<small style="position: absolute; bottom: 0; right: 0;">AtCoder Easy Test v${VERSION}</small>
 <div class="row">
     <div class="col-12 col-md-10">
         <div class="form-group">
