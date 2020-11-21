@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.2.2
+// @version      1.2.3
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.2.2";
+const VERSION = "1.2.3";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
