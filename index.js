@@ -53,7 +53,7 @@ const codeRunner = (function() {
         async test(sourceCode, input, supposedOutput, options) {
             const result = await this.run(sourceCode, input);
             if (result.status != "OK" || typeof supposedOutput !== "string") return result;
-            let output = result.stdout;
+            let output = result.stdout || "";
 
             if (options.trim) {
                 supposedOutput = supposedOutput.trim();
