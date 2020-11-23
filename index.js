@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.2.3
+// @version      1.3.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.2.3";
+const VERSION = "1.3.0";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -631,6 +631,10 @@ const bottomMenu = (function () {
         show() {
             if (bottomMenuKey.hasClass("collapsed")) bottomMenuKey.click();
         },
+
+        toggle() {
+            bottomMenuKey.click();
+        },
     };
 
     console.info("bottomMenu OK");
@@ -790,6 +794,7 @@ $(() => {
 }), { active: true });
 
     const testfuncs = [];
+    const runButtons = [];
 
     const testcases = $(".lang>span:nth-child(1) .div-btn-copy+pre[id]").toArray();
     for (let i = 0; i < testcases.length; i += 2) {
@@ -811,11 +816,16 @@ $(() => {
             if ($("#bottom-menu-key").hasClass("collapsed")) $("#bottom-menu-key").click();
         });
         input.closest(".part").find(".btn-copy").eq(0).after(runButton);
+        runButtons.push(runButton);
     }
 
     const testAllResultRow = $(`<div class="row">`);
     const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px">`)
     .text("Test All Samples")
+    .attr({
+        title: "Alt+Enter",
+        "data-toggle": "tooltip",
+    })
     .click(async () => {
         if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
         const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
@@ -847,6 +857,18 @@ $(() => {
         });
     });
     $("#submit").after(testAllButton).closest("form").append(testAllResultRow);
+    $(document).on("keydown", e => {
+        if (e.altKey) {
+            switch (e.key) {
+                case "Enter":
+                    testAllButton.click();
+                    break;
+                case "Escape":
+                    bottomMenu.toggle();
+                    break;
+            }
+        }
+    });
 
     console.info("view OK");
 });
