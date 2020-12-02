@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.3.2
+// @version      1.3.3
 // @updateURL    https://raw.githubusercontent.com/magurofly/atcoder-easy-test/master/atcoder.user.js
 // @description  Make testing sample cases easy
 // @author       magurofly
@@ -21,7 +21,7 @@
 
 (function script() {
 
-const VERSION = "1.3.2";
+const VERSION = "1.3.3";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -797,7 +797,7 @@ $(() => {
     const testfuncs = [];
     const runButtons = [];
 
-    const testcases = $("#task-statement .div-btn-copy+pre").toArray();
+    const testcases = $("#task-statement .div-btn-copy+pre").toArray().filter(e => !$(e).closest(".io-style")[0]);
     for (let i = 0; i < testcases.length; i += 2) {
         const input = $(testcases[i]), output = $(testcases[i+1]);
         const testfunc = async () => {
