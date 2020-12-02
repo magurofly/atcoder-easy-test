@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.3.1
+// @version      1.3.2
 // @updateURL    https://raw.githubusercontent.com/magurofly/atcoder-easy-test/master/atcoder.user.js
 // @description  Make testing sample cases easy
 // @author       magurofly
@@ -21,7 +21,7 @@
 
 (function script() {
 
-const VERSION = "1.3.0";
+const VERSION = "1.3.2";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -375,9 +375,9 @@ const codeRunner = (function() {
 
     const runners = {
         4001: [new WandboxRunner("gcc-9.2.0-c", "C (GCC 9.2.0)")],
-        4002: [new PaizaIORunner("c", "C (C17 / Clang 10.0.0)")],
-        4003: [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)")],
-        4004: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)")],
+        4002: [new PaizaIORunner("c", "C (C17 / Clang 10.0.0)", )],
+        4003: [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)", {options: "warning,boost-1.73.0-gcc-10.1.0,gnu++11"})],
+        4004: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)", {options: "warning,boost-nothing-clang-10.0.0,c++11"})],
         4006: [new PaizaIORunner("python3", "Python (3.8.2)")],
         4007: [new PaizaIORunner("bash", "Bash (5.0.17)")],
         4010: [new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)")],
@@ -797,7 +797,7 @@ $(() => {
     const testfuncs = [];
     const runButtons = [];
 
-    const testcases = $(".lang>span:nth-child(1) .div-btn-copy+pre[id]").toArray();
+    const testcases = $("#task-statement .div-btn-copy+pre").toArray();
     for (let i = 0; i < testcases.length; i += 2) {
         const input = $(testcases[i]), output = $(testcases[i+1]);
         const testfunc = async () => {
