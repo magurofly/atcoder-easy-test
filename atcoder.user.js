@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.3.4
+// @version      1.3.5
 // @updateURL    https://raw.githubusercontent.com/magurofly/atcoder-easy-test/master/atcoder.user.js
 // @description  Make testing sample cases easy
 // @author       magurofly
@@ -21,7 +21,7 @@
 
 (function script() {
 
-const VERSION = "1.3.4";
+const VERSION = "1.3.5";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -406,10 +406,12 @@ const codeRunner = (function() {
         4046: [new WandboxRunner("pypy-head", "PyPy2 (7.3.4-alpha0)")],
         4047: [new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)")],
         4049: [
+            new WandboxRunner("ruby-head", "Ruby (HEAD 3.0.0dev)"),
             new PaizaIORunner("ruby", "Ruby (2.7.1)"),
             new WandboxRunner("ruby-2.7.0-preview1", "Ruby (2.7.0-preview1)"),
         ],
         4050: [
+            new AtCoderRunner(4050, "Rust (1.42.0)"),
             new WandboxRunner("rust-head", "Rust (1.37.0-dev)"),
             new PaizaIORunner("rust", "Rust (1.43.0)"),
         ],
@@ -436,6 +438,7 @@ const codeRunner = (function() {
         const elem = $(e);
         const languageId = elem.val();
         if (!(languageId in runners)) runners[languageId] = [];
+        if (runners[languageId].some(runner => runner instanceof AtCoderRunner)) return;
         runners[languageId].push(new AtCoderRunner(languageId, elem.text()));
     });
 
