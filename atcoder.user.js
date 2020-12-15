@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.3.5
+// @version      1.3.6
 // @updateURL    https://raw.githubusercontent.com/magurofly/atcoder-easy-test/master/atcoder.user.js
 // @description  Make testing sample cases easy
 // @author       magurofly
@@ -21,7 +21,7 @@
 
 (function script() {
 
-const VERSION = "1.3.5";
+const VERSION = "1.3.6";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -100,6 +100,7 @@ const codeRunner = (function() {
         constructor(name, label, options = {}) {
             super(label, "Wandbox");
             this.name = name;
+            this.options = options;
         }
 
         run(sourceCode, input) {
@@ -294,13 +295,13 @@ const codeRunner = (function() {
 
             let options = this.options;
             if (typeof options == "function") options = options(sourceCode, input);
-            return await this.request(Object.assign(JSON.stringify({
+            return await this.request(JSON.stringify(Object.assign({
                 compiler: this.name,
                 code: sourceCode,
                 stdin: input,
                 codes,
                 "compiler-option-raw": "-I.",
-            }), this.options));
+            }, options)));
         }
     }
 
@@ -376,8 +377,8 @@ const codeRunner = (function() {
     const runners = {
         4001: [new WandboxRunner("gcc-9.2.0-c", "C (GCC 9.2.0)")],
         4002: [new PaizaIORunner("c", "C (C17 / Clang 10.0.0)", )],
-        4003: [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)", {options: "warning,boost-1.73.0-gcc-10.1.0,gnu++11"})],
-        4004: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)", {options: "warning,boost-nothing-clang-10.0.0,c++11"})],
+        4003: [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)", {options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17"})],
+        4004: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)", {options: "warning,boost-nothing-clang-10.0.0,c++17"})],
         4006: [new PaizaIORunner("python3", "Python (3.8.2)")],
         4007: [new PaizaIORunner("bash", "Bash (5.0.17)")],
         4010: [new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)")],
