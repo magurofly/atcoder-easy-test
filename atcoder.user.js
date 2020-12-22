@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.3.6
+// @version      1.4.0
 // @updateURL    https://raw.githubusercontent.com/magurofly/atcoder-easy-test/master/atcoder.user.js
 // @description  Make testing sample cases easy
 // @author       magurofly
@@ -21,7 +21,7 @@
 
 (function script() {
 
-const VERSION = "1.3.6";
+const VERSION = "1.4.0";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -93,6 +93,13 @@ const codeRunner = (function() {
             }
 
             return result;
+        }
+    }
+
+    class CustomRunner extends CodeRunner {
+        constructor(label, run) {
+            super(label, "Browser");
+            this.run = run;
         }
     }
 
@@ -419,16 +426,15 @@ const codeRunner = (function() {
         4051: [new PaizaIORunner("scala", "Scala (2.13.3)")],
         4053: [new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)")],
         4055: [new PaizaIORunner("swift", "Swift (5.2.5)")],
-        4056: [{
-            label: "Text (JavaScript)",
-            async run(sourceCode, input) {
+        4056: [new CustomRunner("Text",
+            async (sourceCode, input) => {
                 return {
                     status: "OK",
                     exitCode: 0,
                     stdout: sourceCode,
                 };
-            },
-        }],
+            }
+        )],
         4058: [new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)")],
         4061: [new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)")],
         4101: [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)")],
@@ -648,6 +654,33 @@ const bottomMenu = (function () {
 })();
 
 $(() => {
+    // returns [{input, output, anchor}]
+    function getTestCases() {
+        const selectors = [
+            "#task-statement p+pre.literal-block",
+            "#task-statement pre.source-code-for-copy",
+            "#task-statement .div-btn-copy+pre",
+            "#task-statement>.part>h3+section>pre",
+            "#task-statement pre",
+        ];
+
+        for (const selector of selectors) {
+            const e = $(selector);
+            if (e.length == 0) continue;
+            const testcases = [];
+            for (let i = 0; i < e.length; i += 2) {
+                testcases.push({
+                    input: (e[i]||{}).textContent,
+                    output: (e[i+1]||{}).textContent,
+                    anchor: $(e[i]).closest(".part,.section").find("h3"),
+                });
+            }
+            return testcases;
+        }
+
+        return [];
+    }
+
     async function runTest(title, input, output = null) {
         const uid = Date.now().toString();
         title = title ? "Result " + title : "Result";
@@ -801,12 +834,11 @@ $(() => {
     const testfuncs = [];
     const runButtons = [];
 
-    const testcases = $("#task-statement .div-btn-copy+pre").toArray().filter(e => e.offsetParent && !$(e).closest(".io-style")[0]);
-    for (let i = 0; i < testcases.length; i += 2) {
-        const input = $(testcases[i]), output = $(testcases[i+1]);
+    const testcases = getTestCases();
+    for (const {input, output, anchor} of testcases) {
         const testfunc = async () => {
-            const title = input.closest(".part").find("h3")[0].childNodes[0].data;
-            const result = await runTest(title, input.text(), output.text());
+            const title = anchor[0].childNodes[0].data;
+            const result = await runTest(title, input, output);
             if (result.status == "OK" || result.status == "AC") {
                 $(`#atcoder-easy-test-${result.uid}-stdout`).addClass("bg-success");
             }
@@ -820,7 +852,7 @@ $(() => {
             await testfunc();
             if ($("#bottom-menu-key").hasClass("collapsed")) $("#bottom-menu-key").click();
         });
-        input.closest(".part").find(".btn-copy").eq(0).after(runButton);
+        anchor.append(runButton);
         runButtons.push(runButton);
     }
 
