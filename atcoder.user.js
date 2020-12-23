@@ -1,8 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.4.0
-// @updateURL    https://raw.githubusercontent.com/magurofly/atcoder-easy-test/master/atcoder.user.js
+// @version      1.4.1
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -21,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.4.0";
+const VERSION = "1.4.1";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -508,11 +507,17 @@ const bottomMenu = (function () {
     padding: 10px 3em;
     border-radius: 5px 5px 0 0;
     background: #000;
-    opacity: 0.85;
+    opacity: 0.5;
     color: #FFF;
     cursor: pointer;
     pointer-events: auto;
     text-align: center;
+}
+
+@media screen and (max-width: 767px) {
+    #bottom-menu-key {
+        opacity: 0.25;
+    }
 }
 
 #bottom-menu-key.collapsed:before {
