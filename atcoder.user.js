@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.4.1
+// @version      1.5.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.4.1";
+const VERSION = "1.5.0";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -692,43 +692,53 @@ $(() => {
         title = title ? "Result " + title : "Result";
         const content = $(`<div class="container">`)
         .html(`
-<div class="row"><div class="form-group">
-    <label class="control-label col-sm-2" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
-    <div class="col-sm-8">
-        <textarea id="atcoder-easy-test-${uid}-stdin" class="form-control" rows="5" readonly></textarea>
-    </div>
-</div></div>
-<div class="row"><div class="col-sm-4 col-sm-offset-4">
-        <div class="panel panel-default"><table class="table table-bordered">
-            <tr id="atcoder-easy-test-${uid}-row-exit-code">
+<div class="row">
+    <div class="col-12 ${(output == null) ? "" : "col-md-6"}"><div class="form-group">
+        <label class="control-label col-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
+        <div class="col-12">
+            <textarea id="atcoder-easy-test-${uid}-stdin" class="form-control" rows="3" readonly></textarea>
+        </div>
+    </div></div>${(output == null) ? "" : `
+    <div class="col-12 col-md-6"><div class="form-group">
+        <label class="control-label col-12" for="atcoder-easy-test-${uid}-expected">Expected Output</label>
+        <div class="col-12">
+            <textarea id="atcoder-easy-test-${uid}-expected" class="form-control" rows="3" readonly></textarea>
+        </div>
+    </div></div>
+`}
+</div>
+<div class="row"><div class="col-sm-6 col-sm-offset-3">
+        <div class="panel panel-default"><table class="table table-condensed">
+            <tr>
                 <th class="text-center">Exit Code</th>
-                <td id="atcoder-easy-test-${uid}-exit-code" class="text-right"></td>
-            </tr>
-            <tr id="atcoder-easy-test-${uid}-row-exec-time">
                 <th class="text-center">Exec Time</th>
-                <td id="atcoder-easy-test-${uid}-exec-time" class="text-right"></td>
-            </tr>
-            <tr id="atcoder-easy-test-${uid}-row-memory">
                 <th class="text-center">Memory</th>
-                <td id="atcoder-easy-test-${uid}-memory" class="text-right"></td>
+            </tr>
+            <tr>
+                <td id="atcoder-easy-test-${uid}-exit-code" class="text-center"></td>
+                <td id="atcoder-easy-test-${uid}-exec-time" class="text-center"></td>
+                <td id="atcoder-easy-test-${uid}-memory" class="text-center"></td>
             </tr>
         </table></div>
 </div></div>
-<div class="row"><div class="form-group">
-    <label class="control-label col-sm-2" for="atcoder-easy-test-${uid}-stdout">Standard Output</label>
-    <div class="col-sm-8">
-        <textarea id="atcoder-easy-test-${uid}-stdout" class="form-control" rows="5" readonly></textarea>
-    </div>
-</div></div>
-<div class="row"><div class="form-group">
-    <label class="control-label col-sm-2" for="atcoder-easy-test-${uid}-stderr">Standard Error</label>
-    <div class="col-sm-8">
-        <textarea id="atcoder-easy-test-${uid}-stderr" class="form-control" rows="5" readonly></textarea>
-    </div>
-</div></div>
+<div class="row">
+    <div class="col-12 col-md-6"><div class="form-group">
+        <label class="control-label col-12" for="atcoder-easy-test-${uid}-stdout">Standard Output</label>
+        <div class="col-12">
+            <textarea id="atcoder-easy-test-${uid}-stdout" class="form-control" rows="5" readonly></textarea>
+        </div>
+    </div></div>
+    <div class="col-12 col-md-6"><div class="form-group">
+        <label class="control-label col-12" for="atcoder-easy-test-${uid}-stderr">Standard Error</label>
+        <div class="col-12">
+            <textarea id="atcoder-easy-test-${uid}-stderr" class="form-control" rows="5" readonly></textarea>
+        </div>
+    </div></div>
+</div>
 `);
         const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
         $(`#atcoder-easy-test-${uid}-stdin`).val(input);
+        $(`#atcoder-easy-test-${uid}-expected`).val(output);
 
         const options = { trim: true, split: true, };
         if ($("#atcoder-easy-test-allowable-error-check").prop("checked")) {
@@ -737,8 +747,7 @@ $(() => {
 
         const result = await codeRunner.run($("#select-lang>select").val(), +$("#atcoder-easy-test-language").val(), window.getSourceCode(), input, output, options);
 
-        $(`#atcoder-easy-test-${uid}-row-exit-code`).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
-        $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode);
+        $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
         if ("execTime" in result) $(`#atcoder-easy-test-${uid}-exec-time`).text(result.execTime + " ms");
         if ("memory" in result) $(`#atcoder-easy-test-${uid}-memory`).text(result.memory + " KB");
         $(`#atcoder-easy-test-${uid}-stdout`).val(result.stdout);
