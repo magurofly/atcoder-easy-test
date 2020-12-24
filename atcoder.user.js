@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.0
+// @version      1.5.0beta
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.0";
+const VERSION = "1.5.0β";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -545,21 +545,24 @@ const bottomMenu = (function () {
 }
 
 #bottom-menu-tabs>li>a {
-    background: rgba(100, 100, 100, 0.5);
+    background: rgba(150, 150, 150, 0.5);
+    color: #000;
     border: solid 1px #ccc;
-    color: #fff;
+    filter: brightness(0.5);
 }
 
 #bottom-menu-tabs>li>a:hover {
     background: rgba(150, 150, 150, 0.5);
     border: solid 1px #ccc;
-    color: #333;
+    color: #111;
+    filter: brightness(0.75);
 }
 
 #bottom-menu-tabs>li.active>a {
     background: #eee;
     border: solid 1px #ccc;
     color: #333;
+    filter: none;
 }
 
 .bottom-menu-btn-close {
@@ -636,7 +639,11 @@ const bottomMenu = (function () {
                 show() {
                     menuController.show();
                     tab.tab("show");
-                }
+                },
+
+                set color(color) {
+                    tab.css("background-color", color);
+                },
             };
             tabs.add(tab);
             if (options.closeButton) tab.append($(`<a class="bottom-menu-btn-close btn btn-link glyphicon glyphicon-remove">`).click(() => controller.close()));
@@ -693,15 +700,15 @@ $(() => {
         const content = $(`<div class="container">`)
         .html(`
 <div class="row">
-    <div class="col-12 ${(output == null) ? "" : "col-md-6"}"><div class="form-group">
-        <label class="control-label col-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
-        <div class="col-12">
+    <div class="col-xs-12 ${(output == null) ? "" : "col-md-6"}"><div class="form-group">
+        <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
+        <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-stdin" class="form-control" rows="3" readonly></textarea>
         </div>
     </div></div>${(output == null) ? "" : `
-    <div class="col-12 col-md-6"><div class="form-group">
-        <label class="control-label col-12" for="atcoder-easy-test-${uid}-expected">Expected Output</label>
-        <div class="col-12">
+    <div class="col-xs-12 col-md-6"><div class="form-group">
+        <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-expected">Expected Output</label>
+        <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-expected" class="form-control" rows="3" readonly></textarea>
         </div>
     </div></div>
@@ -722,15 +729,15 @@ $(() => {
         </table></div>
 </div></div>
 <div class="row">
-    <div class="col-12 col-md-6"><div class="form-group">
-        <label class="control-label col-12" for="atcoder-easy-test-${uid}-stdout">Standard Output</label>
-        <div class="col-12">
+    <div class="col-xs-12 col-md-6"><div class="form-group">
+        <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdout">Standard Output</label>
+        <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-stdout" class="form-control" rows="5" readonly></textarea>
         </div>
     </div></div>
-    <div class="col-12 col-md-6"><div class="form-group">
-        <label class="control-label col-12" for="atcoder-easy-test-${uid}-stderr">Standard Error</label>
-        <div class="col-12">
+    <div class="col-xs-12 col-md-6"><div class="form-group">
+        <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stderr">Standard Error</label>
+        <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-stderr" class="form-control" rows="5" readonly></textarea>
         </div>
     </div></div>
@@ -747,10 +754,18 @@ $(() => {
 
         const result = await codeRunner.run($("#select-lang>select").val(), +$("#atcoder-easy-test-language").val(), window.getSourceCode(), input, output, options);
 
+        if (result.status == "AC") {
+            tab.color = "#dff0d8";
+            $(`#atcoder-easy-test-${uid}-stdout`).css("background-color", "#dff0d8");
+        } else if (result.status != "OK") {
+            tab.color = "#fcf8e3";
+            if (result.status == "WA") $(`#atcoder-easy-test-${uid}-stdout`).css("background-color", "#fcf8e3");
+        }
+
         $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
         if ("execTime" in result) $(`#atcoder-easy-test-${uid}-exec-time`).text(result.execTime + " ms");
         if ("memory" in result) $(`#atcoder-easy-test-${uid}-memory`).text(result.memory + " KB");
-        $(`#atcoder-easy-test-${uid}-stdout`).val(result.stdout);
+        $(`#atcoder-easy-test-${uid}-stdout`).val(result.stdout).toggleClass("bg-success", result.status == "AC").toggleClass("bg-danger", result.status == "WA");
         $(`#atcoder-easy-test-${uid}-stderr`).val(result.stderr);
 
         result.uid = uid;
@@ -762,23 +777,26 @@ $(() => {
 
     bottomMenu.addTab("easy-test", "Easy Test", $(`<form id="atcoder-easy-test-container" class="form-horizontal">`)
                       .html(`
-<small style="position: absolute; bottom: 0; right: 0;">AtCoder Easy Test v${VERSION}</small>
+<small style="position: absolute; display: block; bottom: 0; right: 0; padding: 1% 2%; width: 95%; text-align: right;">AtCoder Easy Test v${VERSION}</small>
 <div class="row">
-    <div class="col-12 col-md-10">
+    <div class="col-xs-12 col-lg-8">
         <div class="form-group">
             <label class="control-label col-sm-2">Test Environment</label>
-            <div class="col-sm-8">
+            <div class="col-sm-10">
                 <select class="form-control" id="atcoder-easy-test-language"></select>
-                <!--input id="atcoder-easy-test-language" type="text" class="form-control" readonly-->
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-sm-2" for="atcoder-easy-test-input">Standard Input</label>
+            <div class="col-sm-10">
+                <textarea id="atcoder-easy-test-input" name="input" class="form-control" rows="3"></textarea>
             </div>
         </div>
     </div>
-</div>
-<div class="row">
-    <div class="col-12 col-md-10">
+    <div class="col-xs-12 col-lg-4">
         <div class="form-group">
             <label class="control-label col-sm-2" for="atcoder-easy-test-allowable-error-check">Allowable Error</label>
-            <div class="col-sm-8">
+            <div class="col-sm-10">
                 <div class="input-group">
                     <span class="input-group-addon">
                         <input id="atcoder-easy-test-allowable-error-check" type="checkbox" checked>
@@ -787,21 +805,16 @@ $(() => {
                 </div>
             </div>
         </div>
-    </div>
-</div>
-<div class="row">
-    <div class="col-12 col-md-10">
         <div class="form-group">
-            <label class="control-label col-sm-2" for="atcoder-easy-test-input">Standard Input</label>
-            <div class="col-sm-8">
-                <textarea id="atcoder-easy-test-input" name="input" class="form-control" rows="5"></textarea>
+            <label class="control-label col-sm-2" for="atcoder-easy-test-output">Expected Output</label>
+            <div class="col-sm-10">
+                <textarea id="atcoder-easy-test-output" name="output" class="form-control" rows="3"></textarea>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-4">
-        <label class="control-label col-sm-2"></label>
-        <div class="form-group">
-            <div class="col-sm-8">
+    <div class="col-xs-12">
+        <div class="col-xs-11 col-xs-offset=1">
+            <div class="form-group">
                  <a id="atcoder-easy-test-run" class="btn btn-primary">Run</a>
             </div>
         </div>
@@ -821,7 +834,12 @@ $(() => {
 }
 </style>
 `).ready(() => {
-    $("#atcoder-easy-test-run").click(() => runTest("", $("#atcoder-easy-test-input").val()));
+    $("#atcoder-easy-test-run").click(() => {
+        const title = "";
+        const input = $("#atcoder-easy-test-input").val();
+        const output = $("#atcoder-easy-test-output").val();
+        runTest(title, input, output || null);
+    });
     $("#select-lang>select").on("change", () => setLanguage());
     $("#atcoder-easy-test-allowable-error").attr("disabled", this.checked);
     $("#atcoder-easy-test-allowable-error-check").on("change", function () {
