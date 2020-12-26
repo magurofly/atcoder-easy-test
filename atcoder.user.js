@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.0beta
+// @version      1.5.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.0β";
+const VERSION = "1.5.0";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -31,6 +31,10 @@ if (typeof unsafeWindow !== "undefined") {
 const $ = window.$;
 const getSourceCode = window.getSourceCode;
 const csrfToken = window.csrfToken;
+
+const $id = document.getElementById.bind(document);
+const $select = document.querySelector.bind(document);
+const $selectAll = document.querySelectorAll.bind(document);
 
 // -- code runner --
 const codeRunner = (function() {
@@ -441,11 +445,10 @@ const codeRunner = (function() {
     };
 
     $("#select-lang option[value]").each((_, e) => {
-        const elem = $(e);
-        const languageId = elem.val();
+        const languageId = e.value;
         if (!(languageId in runners)) runners[languageId] = [];
         if (runners[languageId].some(runner => runner instanceof AtCoderRunner)) return;
-        runners[languageId].push(new AtCoderRunner(languageId, elem.text()));
+        runners[languageId].push(new AtCoderRunner(languageId, e.textContent));
     });
 
     console.info("codeRunner OK");
@@ -595,7 +598,7 @@ const bottomMenu = (function () {
         let resizeStart = null;
         bottomMenuTabs.on({
             mousedown({target, pageY}) {
-                if (!$(target).is("#bottom-menu-tabs")) return;
+                if (target.id != "bottom-menu-tabs") return;
                 resizeStart = {y: pageY, height: bottomMenuContents.height()};
             },
             mousemove(e) {
@@ -678,7 +681,7 @@ $(() => {
         ];
 
         for (const selector of selectors) {
-            const e = $(selector);
+            const e = $selectAll(selector);
             if (e.length == 0) continue;
             const testcases = [];
             for (let i = 0; i < e.length; i += 2) {
@@ -744,15 +747,15 @@ $(() => {
 </div>
 `);
         const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
-        $(`#atcoder-easy-test-${uid}-stdin`).val(input);
-        $(`#atcoder-easy-test-${uid}-expected`).val(output);
+        $id(`atcoder-easy-test-${uid}-stdin`).value = input;
+        $id(`atcoder-easy-test-${uid}-expected`).value = output;
 
         const options = { trim: true, split: true, };
-        if ($("#atcoder-easy-test-allowable-error-check").prop("checked")) {
-            options.allowableError = parseFloat($("#atcoder-easy-test-allowable-error").val());
+        if ($id("atcoder-easy-test-allowable-error-check").checked) {
+            options.allowableError = parseFloat($id("atcoder-easy-test-allowable-error").value);
         }
 
-        const result = await codeRunner.run($("#select-lang>select").val(), +$("#atcoder-easy-test-language").val(), window.getSourceCode(), input, output, options);
+        const result = await codeRunner.run($select("#select-lang>select").value, +$id("atcoder-easy-test-language").value, window.getSourceCode(), input, output, options);
 
         if (result.status == "AC") {
             tab.color = "#dff0d8";
@@ -765,7 +768,7 @@ $(() => {
         $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
         if ("execTime" in result) $(`#atcoder-easy-test-${uid}-exec-time`).text(result.execTime + " ms");
         if ("memory" in result) $(`#atcoder-easy-test-${uid}-memory`).text(result.memory + " KB");
-        $(`#atcoder-easy-test-${uid}-stdout`).val(result.stdout).toggleClass("bg-success", result.status == "AC").toggleClass("bg-danger", result.status == "WA");
+        $(`#atcoder-easy-test-${uid}-stdout`).val(result.stdout);
         $(`#atcoder-easy-test-${uid}-stderr`).val(result.stderr);
 
         result.uid = uid;
