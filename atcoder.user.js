@@ -35,6 +35,12 @@ const csrfToken = window.csrfToken;
 const $id = document.getElementById.bind(document);
 const $select = document.querySelector.bind(document);
 const $selectAll = document.querySelectorAll.bind(document);
+const $create = (tagName, attrs = {}, children = []) => {
+    const e = document.createElement(tagName);
+    for (const name in attrs) e.setAttribute(name, attrs[name]);
+    for (const child of children) e.appendChild(child);
+    return e;
+};
 
 // -- code runner --
 const codeRunner = (function() {
@@ -89,11 +95,7 @@ const codeRunner = (function() {
                 }
             }
 
-            if (equals(output, supposedOutput)) {
-                result.status = "AC";
-            } else {
-                result.status = "WA";
-            }
+            result.status = equals(output, supposedOutput) ? "AC" : "WA";
 
             return result;
         }
@@ -482,8 +484,8 @@ const bottomMenu = (function () {
     const bottomMenuContents = $(`<div id="bottom-menu-contents" class="tab-content">`);
 
     $(() => {
-        $(`<style>`)
-            .text(`
+        const style = $create("style");
+        style.textContent = `
 
 #bottom-menu-wrapper {
     background: transparent;
@@ -585,8 +587,8 @@ const bottomMenu = (function () {
     color: #333;
 }
 
-`)
-            .appendTo("head");
+`;
+        document.head.appendChild(style);
         const bottomMenu = $(`<div id="bottom-menu" class="collapse navbar-collapse">`).append(bottomMenuTabs, bottomMenuContents);
         $(`<div id="bottom-menu-wrapper" class="navbar navbar-default navbar-fixed-bottom">`)
         .append($(`<div class="container">`)
@@ -607,14 +609,8 @@ const bottomMenu = (function () {
                 bottomMenuContents.height(resizeStart.height - (e.pageY - resizeStart.y));
             },
         });
-        $(document).on({
-            mouseup() {
-                resizeStart = null;
-            },
-            mouseleave() {
-                resizeStart = null;
-            },
-        });
+        document.addEventListener("mouseup", () => { resizeStart = null; });
+        document.addEventListener("mouseleave", () => { resizeStart = null; });
     });
 
     const menuController = {
@@ -700,8 +696,8 @@ $(() => {
     async function runTest(title, input, output = null) {
         const uid = Date.now().toString();
         title = title ? "Result " + title : "Result";
-        const content = $(`<div class="container">`)
-        .html(`
+        const content = $create("div", { class: "container" });
+        content.innerHTML = `
 <div class="row">
     <div class="col-xs-12 ${(output == null) ? "" : "col-md-6"}"><div class="form-group">
         <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
@@ -745,7 +741,7 @@ $(() => {
         </div>
     </div></div>
 </div>
-`);
+`;
         const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
         $id(`atcoder-easy-test-${uid}-stdin`).value = input;
         $id(`atcoder-easy-test-${uid}-expected`).value = output;
@@ -893,12 +889,8 @@ $(() => {
     }
 
     const testAllResultRow = $(`<div class="row">`);
-    const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px">`)
+    const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px" title="Alt+Enter" data-toggle="tooltip">`)
     .text("Test All Samples")
-    .attr({
-        title: "Alt+Enter",
-        "data-toggle": "tooltip",
-    })
     .click(async () => {
         if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
         const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
