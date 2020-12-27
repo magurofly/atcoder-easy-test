@@ -446,27 +446,23 @@ const codeRunner = (function() {
         4102: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)")],
     };
 
-    $("#select-lang option[value]").each((_, e) => {
+    for (const e of $selectAll("#select-lang option[value]")) {
         const languageId = e.value;
         if (!(languageId in runners)) runners[languageId] = [];
-        if (runners[languageId].some(runner => runner instanceof AtCoderRunner)) return;
+        if (runners[languageId].some(runner => runner instanceof AtCoderRunner)) continue;
         runners[languageId].push(new AtCoderRunner(languageId, e.textContent));
-    });
+    }
 
     console.info("codeRunner OK");
 
     return {
         run(languageId, index, sourceCode, input, supposedOutput = null, options = { trim: true, split: true, }) {
-            if (!(languageId in runners)) {
-                return Promise.reject("language not supported");
-            }
+            if (!(languageId in runners)) return Promise.reject("language not supported");
             return runners[languageId][index].test(sourceCode, input, supposedOutput, options);
         },
 
         getEnvironment(languageId) {
-            if (!(languageId in runners)) {
-                return Promise.reject("language not supported");
-            }
+            if (!(languageId in runners)) return Promise.reject("language not supported");
             return Promise.resolve(runners[languageId].map(runner => runner.label));
         },
     };
@@ -553,14 +549,14 @@ const bottomMenu = (function () {
     background: rgba(150, 150, 150, 0.5);
     color: #000;
     border: solid 1px #ccc;
-    filter: brightness(0.5);
+    filter: brightness(0.75);
 }
 
 #bottom-menu-tabs>li>a:hover {
     background: rgba(150, 150, 150, 0.5);
     border: solid 1px #ccc;
     color: #111;
-    filter: brightness(0.75);
+    filter: brightness(0.9);
 }
 
 #bottom-menu-tabs>li.active>a {
@@ -745,7 +741,7 @@ $(() => {
 `;
         const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
         $id(`atcoder-easy-test-${uid}-stdin`).value = input;
-        $id(`atcoder-easy-test-${uid}-expected`).value = output;
+        if (output != null) $id(`atcoder-easy-test-${uid}-expected`).value = output;
 
         const options = { trim: true, split: true, };
         if ($id("atcoder-easy-test-allowable-error-check").checked) {
@@ -756,17 +752,20 @@ $(() => {
 
         if (result.status == "AC") {
             tab.color = "#dff0d8";
-            $(`#atcoder-easy-test-${uid}-stdout`).css("background-color", "#dff0d8");
+            $id(`atcoder-easy-test-${uid}-stdout`).style.backgroundColor = "#dff0d8";
         } else if (result.status != "OK") {
             tab.color = "#fcf8e3";
-            if (result.status == "WA") $(`#atcoder-easy-test-${uid}-stdout`).css("background-color", "#fcf8e3");
+            if (result.status == "WA") $id(`atcoder-easy-test-${uid}-stdout`).style.backgroundColor = "#fcf8e3";
         }
 
-        $(`#atcoder-easy-test-${uid}-exit-code`).text(result.exitCode).toggleClass("bg-danger", result.exitCode != 0).toggleClass("bg-success", result.exitCode == 0);
-        if ("execTime" in result) $(`#atcoder-easy-test-${uid}-exec-time`).text(result.execTime + " ms");
-        if ("memory" in result) $(`#atcoder-easy-test-${uid}-memory`).text(result.memory + " KB");
-        $(`#atcoder-easy-test-${uid}-stdout`).val(result.stdout);
-        $(`#atcoder-easy-test-${uid}-stderr`).val(result.stderr);
+        const eExitCode = $id(`atcoder-easy-test-${uid}-exit-code`);
+        eExitCode.textContent = result.exitCode;
+        eExitCode.classList.toggle("bg-success", result.exitCode == 0);
+        eExitCode.classList.toggle("bg-danger", result.exitCode != 0);
+        if ("execTime" in result) $id(`atcoder-easy-test-${uid}-exec-time`).textContent = result.execTime + " ms";
+        if ("memory" in result) $id(`atcoder-easy-test-${uid}-memory`).textContent = result.memory + " KB";
+        $id(`atcoder-easy-test-${uid}-stdout`).value = result.stdout || "";
+        $id(`atcoder-easy-test-${uid}-stderr`).value = result.stderr || "";
 
         result.uid = uid;
         result.tab = tab;
@@ -834,31 +833,38 @@ $(() => {
 }
 </style>
 `).ready(() => {
-    $("#atcoder-easy-test-run").click(() => {
+    $id("atcoder-easy-test-run").addEventListener("click", () => {
         const title = "";
-        const input = $("#atcoder-easy-test-input").val();
-        const output = $("#atcoder-easy-test-output").val();
+        const input = $id("atcoder-easy-test-input").value;
+        const output = $id("atcoder-easy-test-output").value;
         runTest(title, input, output || null);
     });
-    $("#select-lang>select").on("change", () => setLanguage());
-    $("#atcoder-easy-test-allowable-error").attr("disabled", this.checked);
-    $("#atcoder-easy-test-allowable-error-check").on("change", function () {
-        $("#atcoder-easy-test-allowable-error").attr("disabled", !this.checked);
-    });
+    $("#select-lang>select").change(() => setLanguage()); //NOTE: This event is only for jQuery; do not replce with Vanilla
+    $id("atcoder-easy-test-allowable-error").disabled = this.checked;
+    $id("atcoder-easy-test-allowable-error-check").addEventListener("change", e => { $id("atcoder-easy-test-allowable-error").disabled = !e.target.checked; });
 
-    function setLanguage() {
-        const languageId = $("#select-lang>select").val();
-        codeRunner.getEnvironment(languageId).then(labels => {
+    async function setLanguage() {
+        const languageId = $select("#select-lang>select").value;
+        const eTestLanguage = $id("atcoder-easy-test-language");
+        while (eTestLanguage.firstChild) eTestLanguage.removeChild(eTestLanguage.firstChild);
+        try {
+            const labels = await codeRunner.getEnvironment(languageId);
             console.log(`language: ${labels[0]} (${languageId})`);
-            $("#atcoder-easy-test-language").css("color", "#fff").empty().append(labels.map((label, index) => $(`<option>`).val(index).text(label)));
-            $("#atcoder-easy-test-run").removeClass("disabled");
-            $("#atcoder-easy-test-btn-test-all").attr("disabled", false);
-        }, error => {
+            labels.forEach((label, index) => {
+                const option = $create("option", {value: index});
+                option.textContent = label;
+                eTestLanguage.appendChild(option);
+            });
+            $id("atcoder-easy-test-run").classList.remove("disabled");
+            $id("atcoder-easy-test-btn-test-all").disabled = false;
+        } catch (error) {
             console.log(`language: ? (${languageId})`);
-            $("#atcoder-easy-test-language").css("color", "#f55").empty().append($(`<option>`).text(error));
-            $("#atcoder-easy-test-run").addClass("disabled");
-            $("#atcoder-easy-test-btn-test-all").attr("disabled", true);
-        });
+            const option = $create("option", { "class": "fg-danger" });
+            option.textContent = error;
+            eTestLanguage.appendChild(option);
+            $id("atcoder-easy-test-run").classList.add("disabled");
+            $id("atcoder-easy-test-btn-test-all").disabled = true;
+        }
     }
 
     setLanguage();
@@ -873,7 +879,7 @@ $(() => {
             const title = anchor[0].childNodes[0].data;
             const result = await runTest(title, input, output);
             if (result.status == "OK" || result.status == "AC") {
-                $(`#atcoder-easy-test-${result.uid}-stdout`).addClass("bg-success");
+                $id(`atcoder-easy-test-${result.uid}-stdout`).classList.add("bg-success");
             }
             return result;
         };
@@ -883,7 +889,7 @@ $(() => {
         .text("Run")
         .click(async () => {
             await testfunc();
-            if ($("#bottom-menu-key").hasClass("collapsed")) $("#bottom-menu-key").click();
+            if ($id("bottom-menu-key").classList.contains("collapsed")) $id("bottom-menu-key").click();
         });
         anchor.append(runButton);
         runButtons.push(runButton);
@@ -923,7 +929,7 @@ $(() => {
         });
     });
     $("#submit").after(testAllButton).closest("form").append(testAllResultRow);
-    $(document).on("keydown", e => {
+    document.addEventListener("keydown", e => {
         if (e.altKey) {
             switch (e.key) {
                 case "Enter":
