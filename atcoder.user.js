@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.4.1
+// @version      1.4.2
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.4.1";
+const VERSION = "1.4.2";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -666,6 +666,7 @@ $(() => {
             "#task-statement pre.source-code-for-copy",
             "#task-statement .lang>*:nth-child(1) .div-btn-copy+pre",
             "#task-statement .div-btn-copy+pre",
+            "#task-statement>.part pre.linenums",
             "#task-statement>.part>h3+section>pre",
             "#task-statement pre",
         ];
