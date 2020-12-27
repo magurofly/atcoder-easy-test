@@ -672,6 +672,7 @@ $(() => {
             "#task-statement pre.source-code-for-copy",
             "#task-statement .lang>*:nth-child(1) .div-btn-copy+pre",
             "#task-statement .div-btn-copy+pre",
+            "#task-statement>.part pre.linenums",
             "#task-statement>.part>h3+section>pre",
             "#task-statement pre",
         ];
