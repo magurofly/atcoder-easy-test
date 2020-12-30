@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.3
+// @version      1.5.4
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.3";
+const VERSION = "1.5.4";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -280,7 +280,7 @@ const codeRunner = (function() {
                 files.add("internal_type_traits");
             }
 
-            const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library/atcoder/";
+            const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library@1.2/atcoder/";
 
             const codePromises = [];
             const codes = [];
