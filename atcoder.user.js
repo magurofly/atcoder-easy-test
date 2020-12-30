@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.1
+// @version      1.5.2
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.1";
+const VERSION = "1.5.2";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -908,7 +908,7 @@ $(() => {
         .append(closeButton)
         .append($(`<div class="progress">`).append(progress))
         .append(...statuses)
-        .appendTo(testAllResultRow);
+        .prependTo(testAllResultRow);
         const results = await Promise.all(testfuncs.map(async (testfunc, i) => {
             const result = await testfunc();
             finished++;
