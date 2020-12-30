@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.2
+// @version      1.5.3
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.2";
+const VERSION = "1.5.3";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -695,13 +695,13 @@ $(() => {
         const content = $create("div", { class: "container" });
         content.innerHTML = `
 <div class="row">
-    <div class="col-xs-12 ${(output == null) ? "" : "col-md-6"}"><div class="form-group">
+    <div class="${(output == null) ? "col-xs-12" : "col-xs-6"}"><div class="form-group">
         <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
         <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-stdin" class="form-control" rows="3" readonly></textarea>
         </div>
     </div></div>${(output == null) ? "" : `
-    <div class="col-xs-12 col-md-6"><div class="form-group">
+    <div class="col-xs-6"><div class="form-group">
         <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-expected">Expected Output</label>
         <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-expected" class="form-control" rows="3" readonly></textarea>
@@ -775,7 +775,7 @@ $(() => {
 
     bottomMenu.addTab("easy-test", "Easy Test", $(`<form id="atcoder-easy-test-container" class="form-horizontal">`)
                       .html(`
-<small style="position: absolute; display: block; bottom: 0; right: 0; padding: 1% 2%; width: 95%; text-align: right;">AtCoder Easy Test v${VERSION}</small>
+<small style="position: absolute; display: block; bottom: 0; right: 0; padding: 1% 4%; width: 95%; text-align: right;">AtCoder Easy Test v${VERSION}</small>
 <div class="row">
     <div class="col-xs-12 col-lg-8">
         <div class="form-group">
@@ -792,23 +792,26 @@ $(() => {
         </div>
     </div>
     <div class="col-xs-12 col-lg-4">
-        <div class="form-group">
-            <label class="control-label col-sm-2" for="atcoder-easy-test-allowable-error-check">Allowable Error</label>
-            <div class="col-sm-10">
-                <div class="input-group">
-                    <span class="input-group-addon">
-                        <input id="atcoder-easy-test-allowable-error-check" type="checkbox" checked>
-                    </span>
-                    <input id="atcoder-easy-test-allowable-error" type="text" class="form-control" value="1e-6">
+        <details close>
+            <summary>Expected Output</summary>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="atcoder-easy-test-allowable-error-check">Allowable Error</label>
+                <div class="col-sm-10">
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <input id="atcoder-easy-test-allowable-error-check" type="checkbox" checked>
+                        </span>
+                        <input id="atcoder-easy-test-allowable-error" type="text" class="form-control" value="1e-6">
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="form-group">
-            <label class="control-label col-sm-2" for="atcoder-easy-test-output">Expected Output</label>
-            <div class="col-sm-10">
-                <textarea id="atcoder-easy-test-output" name="output" class="form-control" rows="3"></textarea>
+            <div class="form-group">
+                <label class="control-label col-sm-2" for="atcoder-easy-test-output">Expected Output</label>
+                <div class="col-sm-10">
+                    <textarea id="atcoder-easy-test-output" name="output" class="form-control" rows="3"></textarea>
+                </div>
             </div>
-        </div>
+        </details>
     </div>
     <div class="col-xs-12">
         <div class="col-xs-11 col-xs-offset=1">
