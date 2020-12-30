@@ -695,13 +695,13 @@ $(() => {
         const content = $create("div", { class: "container" });
         content.innerHTML = `
 <div class="row">
-    <div class="${(output == null) ? "col-xs-12" : "col-xs-6"}"><div class="form-group">
+    <div class="col-xs-12 ${(output == null) ? "" : "col-sm-6"}"><div class="form-group">
         <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
         <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-stdin" class="form-control" rows="3" readonly></textarea>
         </div>
     </div></div>${(output == null) ? "" : `
-    <div class="col-xs-6"><div class="form-group">
+    <div class="col-xs-12 col-sm-6"><div class="form-group">
         <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-expected">Expected Output</label>
         <div class="col-xs-12">
             <textarea id="atcoder-easy-test-${uid}-expected" class="form-control" rows="3" readonly></textarea>
