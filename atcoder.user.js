@@ -47,8 +47,7 @@ const codeRunner = (function() {
     'use strict';
 
     function buildParams(data) {
-        return Object.entries(data).map(([key, value]) =>
-                                            encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
+        return Object.entries(data).map(([key, value]) => encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
     }
 
     function sleep(ms) {
