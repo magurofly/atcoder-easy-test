@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.4
+// @version      1.5.5
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.4";
+const VERSION = "1.5.5";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -137,6 +137,7 @@ const codeRunner = (function() {
                     body,
                 }).then(r => r.json());
             } catch (error) {
+                console.error(error);
                 return {
                     status: "IE",
                     stderr: error,
@@ -238,81 +239,43 @@ const codeRunner = (function() {
         }
     }
 
-    const loader = {
-        loaded: {},
-        async load(url, options = { mode: "cors", }) {
-            if (!(url in this.loaded)) {
-                this.loaded[url] = await fetch(url, options);
-            }
-            return this.loaded[url];
-        },
-    };
-
     class WandboxCppRunner extends WandboxRunner {
         async run(sourceCode, input) {
-            const allFiles = ["convolution", "dsu", "fenwicktree", "internal_bit", "internal_math", "internal_queue", "internal_scc", "internal_type_traits", "lazysegtree", "math", "maxflow", "mincostflow", "modint", "scc", "segtree", "string", "twosat"];
-            const files = new Set(["all"].concat(allFiles).filter(file => new RegExp(String.raw`^#\s*include\s*<atcoder/${file}>`, "m").test(sourceCode)));
-            let allHeaders = false;
-            if (files.has("all")) {
-                allHeaders = true;
-                files.delete("all");
-                for (const file of allFiles) {
-                    files.add(file);
-                }
+          const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library/atcoder/";
+          const files = new Map();
+          const includeHeader = async source => {
+            const pattern = /^#\s*include\s*[<"]atcoder\/([^>"]+)[>"]/gm;
+            const loaded = [];
+            let match;
+            while (match = pattern.exec(source)) {
+              const file = match[1];
+              if (files.has(file)) continue;
+              files.set(file, null);
+              loaded.push([file, fetch(ACLBase + file, { mode: "cors", cache: "force-cache", }).then(r => r.text())]);
             }
-
-            if (files.has("convolution")) {
-                files.add("modint");
+            const included = await Promise.all(loaded.map(async ([file, r]) => {
+              const source = await r;
+              files.set(file, source);
+              return source;
+            }));
+            for (const source of included) {
+              await includeHeader(source);
             }
-            if (files.has("convolution") || files.has("lazysegtree") || files.has("segtree")) {
-                files.add("internal_bit");
-            }
-            if (files.has("maxflow")) {
-                files.add("internal_queue");
-            }
-            if (files.has("scc") || files.has("twosat")) {
-                files.add("internal_scc");
-            }
-            if (files.has("math") || files.has("modint")) {
-                files.add("internal_math");
-            }
-            if (files.has("fenwicktree") || files.has("fenwicktree")) {
-                files.add("internal_type_traits");
-            }
-
-            const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library@1.2/atcoder/";
-
-            const codePromises = [];
-            const codes = [];
-            for (const file of files) {
-                codePromises.push(fetch(ACLBase + file + ".hpp", {
-                    mode: "cors",
-                    cache: "force-cache",
-                })
-                    .then(r => r.text())
-                    .then(code => codes.push({ file: "atcoder/" + file, code })));
-            }
-            if (allHeaders) {
-                codePromises.push(fetch(ACLBase + "all", {
-                    mode: "cors",
-                    cache: "force-cache",
-                })
-                    .then(r => r.text())
-                    .then(code => codes.push({ file: "atcoder/all", code })));
-            }
-
-            await Promise.all(codePromises);
-
-
-            let options = this.options;
-            if (typeof options == "function") options = options(sourceCode, input);
-            return await this.request(JSON.stringify(Object.assign({
-                compiler: this.name,
-                code: sourceCode,
-                stdin: input,
-                codes,
-                "compiler-option-raw": "-I.",
-            }, options)));
+          };
+          await includeHeader(sourceCode);
+          const codes = [];
+          for (const [file, code] of files) {
+            codes.push({ file, code, });
+          }
+          let options = this.options;
+          if (typeof options == "function") options = options(sourceCode, input);
+          return await this.request(JSON.stringify(Object.assign({
+              compiler: this.name,
+              code: sourceCode,
+              stdin: input,
+              codes,
+              "compiler-option-raw": "-I.",
+          }, options)));
         }
     }
 
@@ -680,7 +643,7 @@ $(() => {
                 testcases.push({
                     input: (e[i]||{}).textContent,
                     output: (e[i+1]||{}).textContent,
-                    anchor: $(e[i]).closest(".part,.section").find("h3"),
+                    anchor: $(e[i]).closest(".part,section").find("h3"),
                 });
             }
             return testcases;
