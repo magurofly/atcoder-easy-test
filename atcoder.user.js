@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.6
+// @version      1.5.7
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.6";
+const VERSION = "1.5.7";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -626,24 +626,25 @@ $(() => {
     // returns [{input, output, anchor}]
     function getTestCases() {
         const selectors = [
-            "#task-statement p+pre.literal-block",
-            "#task-statement pre.source-code-for-copy",
-            "#task-statement .lang>*:nth-child(1) .div-btn-copy+pre",
-            "#task-statement .div-btn-copy+pre",
-            "#task-statement>.part pre.linenums",
-            "#task-statement>.part>h3+section>pre",
-            "#task-statement pre",
+            ["#task-statement p+pre.literal-block", ".section"], // utpc2011_1
+            ["#task-statement pre.source-code-for-copy", ".part"],
+            ["#task-statement .lang>*:nth-child(1) .div-btn-copy+pre", ".part"],
+            ["#task-statement .div-btn-copy+pre", ".part"],
+            ["#task-statement>.part pre.linenums", ".part"], // abc003_4
+            ["#task-statement>.part:not(.io-style)>h3+section>pre", ".part"],
+            ["#task-statement pre", ".part"],
         ];
 
-        for (const selector of selectors) {
+        for (const [selector, closestSelector] of selectors) {
             const e = $selectAll(selector);
             if (e.length == 0) continue;
             const testcases = [];
             for (let i = 0; i < e.length; i += 2) {
+                const container = e[i].closest(closestSelector);
                 testcases.push({
                     input: (e[i]||{}).textContent,
                     output: (e[i+1]||{}).textContent,
-                    anchor: $(e[i]).closest(".part,section").find("h3"),
+                    anchor: container.querySelector("h3"),
                 });
             }
             return testcases;
@@ -841,7 +842,7 @@ $(() => {
     const testcases = getTestCases();
     for (const {input, output, anchor} of testcases) {
         const testfunc = async () => {
-            const title = anchor[0].childNodes[0].data;
+            const title = anchor.childNodes[0].data;
             const result = await runTest(title, input, output);
             if (result.status == "OK" || result.status == "AC") {
                 $id(`atcoder-easy-test-${result.uid}-stdout`).classList.add("bg-success");
@@ -856,7 +857,7 @@ $(() => {
             await testfunc();
             if ($id("bottom-menu-key").classList.contains("collapsed")) $id("bottom-menu-key").click();
         });
-        anchor.append(runButton);
+        anchor.appendChild(runButton[0]);
         runButtons.push(runButton);
     }
 
