@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.8
+// @version      1.6.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -18,9 +18,12 @@
 // * code runner
 // * view
 
+// This scripts may load scripts below to run code:
+// * https://cdn.jsdelivr.net/gh/pythonpad/brython-runner/lib/brython-runner.bundle.js
+
 (function script() {
 
-const VERSION = "1.5.8";
+const VERSION = "1.6.0";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -348,12 +351,57 @@ const codeRunner = (function() {
         }
     }
 
+    let brythonRunnerLoaded = false;
+    const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
+        if (!brythonRunnerLoaded) {
+            await new Promise((resolve) => {
+                const script = $create("script");
+                script.src = "https://cdn.jsdelivr.net/gh/pythonpad/brython-runner/lib/brython-runner.bundle.js";
+                script.onload = () => {
+                    brythonRunnerLoaded = true;
+                    resolve();
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        let stdout = "";
+        let stderr = "";
+        let stdinOffset = 0;
+        const runner = new BrythonRunner({
+            stdout: { write(content) { stdout += content; }, flush() {} },
+            stderr: { write(content) { stderr += content; }, flush() {} },
+            stdin: { async readline() {
+                let index = input.indexOf("\n", stdinOffset) + 1;
+                if (index == 0) index = input.length;
+                const text = input.slice(stdinOffset, index);
+                stdinOffset = index;
+                return text;
+            } },
+        });
+
+        const timeStart = Date.now();
+        await runner.runCode(sourceCode);
+        const timeEnd = Date.now();
+
+        return {
+            status: "OK",
+            exitCode: 0,
+            execTime: (timeEnd - timeStart),
+            stdout,
+            stderr,
+        };
+    });
+
     const runners = {
         4001: [new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)")],
         4002: [new PaizaIORunner("c", "C (C17 / Clang 10.0.0)", )],
         4003: [new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 10.1.0)", {options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17"})],
         4004: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)", {options: "warning,boost-nothing-clang-10.0.0,c++17"})],
-        4006: [new PaizaIORunner("python3", "Python (3.8.2)")],
+        4006: [
+            new PaizaIORunner("python3", "Python (3.8.2)"),
+            brythonRunner,
+        ],
         4007: [new PaizaIORunner("bash", "Bash (5.0.17)")],
         4010: [new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)")],
         4011: [new WandboxRunner("mono-head", "C# (Mono-mcs 5.19.0.0)")],
