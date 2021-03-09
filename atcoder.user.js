@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.5.7
+// @version      1.5.8
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -20,7 +20,7 @@
 
 (function script() {
 
-const VERSION = "1.5.7";
+const VERSION = "1.5.8";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -241,14 +241,14 @@ const codeRunner = (function() {
 
     class WandboxCppRunner extends WandboxRunner {
         async run(sourceCode, input) {
-          const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library/atcoder/";
+          const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library/";
           const files = new Map();
           const includeHeader = async source => {
             const pattern = /^#\s*include\s*[<"]atcoder\/([^>"]+)[>"]/gm;
             const loaded = [];
             let match;
             while (match = pattern.exec(source)) {
-              const file = match[1];
+              const file = "atcoder/" + match[1];
               if (files.has(file)) continue;
               files.set(file, null);
               loaded.push([file, fetch(ACLBase + file, { mode: "cors", cache: "force-cache", }).then(r => r.text())]);
@@ -349,9 +349,9 @@ const codeRunner = (function() {
     }
 
     const runners = {
-        4001: [new WandboxRunner("gcc-10.1.0-c", "C (GCC 9.2.0)")],
+        4001: [new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)")],
         4002: [new PaizaIORunner("c", "C (C17 / Clang 10.0.0)", )],
-        4003: [new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 9.2.0)", {options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17"})],
+        4003: [new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 10.1.0)", {options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17"})],
         4004: [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)", {options: "warning,boost-nothing-clang-10.0.0,c++17"})],
         4006: [new PaizaIORunner("python3", "Python (3.8.2)")],
         4007: [new PaizaIORunner("bash", "Bash (5.0.17)")],
