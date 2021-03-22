@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.6.0
+// @version      1.6.1
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -23,7 +23,7 @@
 
 (function script() {
 
-const VERSION = "1.6.0";
+const VERSION = "1.6.1";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -688,7 +688,7 @@ $(() => {
             if (e.length == 0) continue;
             const testcases = [];
             for (let i = 0; i < e.length; i += 2) {
-                const container = e[i].closest(closestSelector);
+                const container = e[i].closest(closestSelector) || e[i].parentElement;
                 testcases.push({
                     input: (e[i]||{}).textContent,
                     output: (e[i+1]||{}).textContent,
@@ -884,71 +884,85 @@ $(() => {
     setLanguage();
 }), { active: true });
 
-    const testfuncs = [];
-    const runButtons = [];
+    try {
+        const testfuncs = [];
+        const runButtons = [];
 
-    const testcases = getTestCases();
-    for (const {input, output, anchor} of testcases) {
-        const testfunc = async () => {
-            const title = anchor.childNodes[0].data;
-            const result = await runTest(title, input, output);
-            if (result.status == "OK" || result.status == "AC") {
-                $id(`atcoder-easy-test-${result.uid}-stdout`).classList.add("bg-success");
-            }
-            return result;
-        };
-        testfuncs.push(testfunc);
+        const testcases = getTestCases();
+        for (const {input, output, anchor} of testcases) {
+            const testfunc = async () => {
+                const title = anchor.childNodes[0].data;
+                const result = await runTest(title, input, output);
+                if (result.status == "OK" || result.status == "AC") {
+                    $id(`atcoder-easy-test-${result.uid}-stdout`).classList.add("bg-success");
+                }
+                return result;
+            };
+            testfuncs.push(testfunc);
 
-        const runButton = $(`<a class="btn btn-primary btn-sm" style="vertical-align: top; margin-left: 0.5em">`)
-        .text("Run")
+            const runButton = $(`<a class="btn btn-primary btn-sm" style="vertical-align: top; margin-left: 0.5em">`)
+            .text("Run")
+            .click(async () => {
+                await testfunc();
+                if ($id("bottom-menu-key").classList.contains("collapsed")) $id("bottom-menu-key").click();
+            });
+            anchor.appendChild(runButton[0]);
+            runButtons.push(runButton);
+        }
+
+        const testAllResultRow = $(`<div class="row">`);
+        const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px" title="Alt+Enter" data-toggle="tooltip">`)
+        .text("Test All Samples")
         .click(async () => {
-            await testfunc();
-            if ($id("bottom-menu-key").classList.contains("collapsed")) $id("bottom-menu-key").click();
+            if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
+            const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
+            const progress = $(`<div class="progress-bar">`).text(`0 / ${testfuncs.length}`);
+            let finished = 0;
+            const closeButton = $(`<button type="button" class="close" data-dismiss="alert" aria-label="close">`)
+            .append($(`<span aria-hidden="true">`).text("\xd7"));
+            const resultAlert = $(`<div class="alert alert-dismissible">`)
+            .append(closeButton)
+            .append($(`<div class="progress">`).append(progress))
+            .append(...statuses)
+            .prependTo(testAllResultRow);
+            const results = await Promise.all(testfuncs.map(async (testfunc, i) => {
+                const result = await testfunc();
+                finished++;
+                progress.text(`${finished} / ${statuses.length}`).css("width", `${finished/statuses.length*100}%`);
+                statuses[i].toggleClass("label-success", result.status == "AC").toggleClass("label-warning", result.status != "AC").text(result.status).click(() => result.tab.show()).css("cursor", "pointer");
+                return result;
+            }));
+            if (results.every(({status}) => status == "AC")) {
+                resultAlert.addClass("alert-success");
+            } else {
+                resultAlert.addClass("alert-warning");
+            }
+            closeButton.click(() => {
+                for (const {tab} of results) {
+                    tab.close();
+                }
+            });
         });
-        anchor.appendChild(runButton[0]);
-        runButtons.push(runButton);
+        $("#submit").after(testAllButton).closest("form").append(testAllResultRow);
+        document.addEventListener("keydown", e => {
+            if (e.altKey) {
+                switch (e.key) {
+                    case "Enter":
+                        testAllButton.click();
+                        break;
+                    case "Escape":
+                        bottomMenu.toggle();
+                        break;
+                }
+            }
+        });
+    } catch (e) {
+        console.error(e);
     }
 
-    const testAllResultRow = $(`<div class="row">`);
-    const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px" title="Alt+Enter" data-toggle="tooltip">`)
-    .text("Test All Samples")
-    .click(async () => {
-        if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
-        const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
-        const progress = $(`<div class="progress-bar">`).text(`0 / ${testfuncs.length}`);
-        let finished = 0;
-        const closeButton = $(`<button type="button" class="close" data-dismiss="alert" aria-label="close">`)
-        .append($(`<span aria-hidden="true">`).text("\xd7"));
-        const resultAlert = $(`<div class="alert alert-dismissible">`)
-        .append(closeButton)
-        .append($(`<div class="progress">`).append(progress))
-        .append(...statuses)
-        .prependTo(testAllResultRow);
-        const results = await Promise.all(testfuncs.map(async (testfunc, i) => {
-            const result = await testfunc();
-            finished++;
-            progress.text(`${finished} / ${statuses.length}`).css("width", `${finished/statuses.length*100}%`);
-            statuses[i].toggleClass("label-success", result.status == "AC").toggleClass("label-warning", result.status != "AC").text(result.status).click(() => result.tab.show()).css("cursor", "pointer");
-            return result;
-        }));
-        if (results.every(({status}) => status == "AC")) {
-            resultAlert.addClass("alert-success");
-        } else {
-            resultAlert.addClass("alert-warning");
-        }
-        closeButton.click(() => {
-            for (const {tab} of results) {
-                tab.close();
-            }
-        });
-    });
-    $("#submit").after(testAllButton).closest("form").append(testAllResultRow);
     document.addEventListener("keydown", e => {
         if (e.altKey) {
             switch (e.key) {
-                case "Enter":
-                    testAllButton.click();
-                    break;
                 case "Escape":
                     bottomMenu.toggle();
                     break;
