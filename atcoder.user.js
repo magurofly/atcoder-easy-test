@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.7.1
+// @version      1.8.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -23,7 +23,7 @@
 
 (function script() {
 
-const VERSION = "1.7.1";
+const VERSION = "1.8.0";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -471,6 +471,12 @@ const codeRunner = (function() {
     return {
         run(languageId, index, sourceCode, input, supposedOutput = null, options = { trim: true, split: true, }) {
             if (!(languageId in runners)) return Promise.reject("language not supported");
+
+            // save last code
+            localStorage.AtCoderEasyTest$lastPage = location.pathname;
+            localStorage.AtCoderEasyTest$lastCode = sourceCode;
+
+            // run
             return runners[languageId][index].test(sourceCode, input, supposedOutput, options);
         },
 
@@ -912,6 +918,21 @@ $(() => {
             anchor.appendChild(runButton[0]);
             runButtons.push(runButton);
         }
+
+        const restoreLastPlayButton = $(`<a id="atcoder-easy-test-restore-last-play" class="btn btn-danger btn-sm">`)
+        .text("Restore Last Play")
+        .click(async () => {
+            if (localStorage.AtCoderEasyTest$lastPage !== location.pathname) {
+                alert(`Saved source code not found for ${location.pathname}`);
+                return;
+            }
+            if (confirm("Your current code will be replaced. Are you sure?")) {
+                const lastCode = localStorage.AtCoderEasyTest$lastCode;
+                $('.plain-textarea').val(lastCode);
+                $('.editor').data('editor').doc.setValue(lastCode);
+            }
+        })
+        .appendTo(".editor-buttons");
 
         const fnTestAll = async () => {
             const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
