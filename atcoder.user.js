@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.7.0
+// @version      1.7.1
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -23,7 +23,7 @@
 
 (function script() {
 
-const VERSION = "1.7.0";
+const VERSION = "1.7.1";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -945,7 +945,7 @@ $(() => {
         };
 
         const testAllResultRow = $(`<div class="row">`);
-        const testAndSubmitButton = $(`<a id="atcoder-easy-test-btn-test-and-submit" class="btn btn-info btn" style="margin-left: 5px" title="Ctrl+Enter" data-toggle="tooltip">`)
+        const testAndSubmitButton = $(`<a id="atcoder-easy-test-btn-test-and-submit" class="btn btn-info btn" style="margin-left: 1rem" title="Ctrl+Enter" data-toggle="tooltip">`)
         .text("Test & Submit")
         .click(async () => {
             if (testAndSubmitButton.hasClass("disabled")) throw new Error("Button is disabled");
@@ -964,7 +964,7 @@ $(() => {
                 testAndSubmitButton.removeClass("disabled");
             }
         });
-        const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px" title="Alt+Enter" data-toggle="tooltip">`)
+        const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 1rem" title="Alt+Enter" data-toggle="tooltip">`)
         .text("Test All Samples")
         .click(async () => {
             if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
