@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.6.1
+// @version      1.7.0
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
-// @grant        none
+// @grant        unsafeWindow
 // ==/UserScript==
 
 // This script uses variables from page below:
@@ -23,13 +23,16 @@
 
 (function script() {
 
-const VERSION = "1.6.1";
+const VERSION = "1.7.0";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
     unsafeWindow.eval(`(${script})();`);
     console.log("Script run in unsafeWindow");
     return;
+}
+if (typeof window === "undefined") {
+    this.window = this.unsafeWindow;
 }
 const $ = window.$;
 const getSourceCode = window.getSourceCode;
@@ -429,8 +432,8 @@ const codeRunner = (function() {
         4046: [new WandboxRunner("pypy-head", "PyPy2 (7.3.4-alpha0)")],
         4047: [new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)")],
         4049: [
-            new WandboxRunner("ruby-head", "Ruby (HEAD 3.0.0dev)"),
             new PaizaIORunner("ruby", "Ruby (2.7.1)"),
+            new WandboxRunner("ruby-head", "Ruby (HEAD 3.0.0dev)"),
             new WandboxRunner("ruby-2.7.0-preview1", "Ruby (2.7.0-preview1)"),
         ],
         4050: [
@@ -910,11 +913,7 @@ $(() => {
             runButtons.push(runButton);
         }
 
-        const testAllResultRow = $(`<div class="row">`);
-        const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px" title="Alt+Enter" data-toggle="tooltip">`)
-        .text("Test All Samples")
-        .click(async () => {
-            if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
+        const fnTestAll = async () => {
             const statuses = testfuncs.map(_ => $(`<div class="label label-default" style="margin: 3px">`).text("WJ..."));
             const progress = $(`<div class="progress-bar">`).text(`0 / ${testfuncs.length}`);
             let finished = 0;
@@ -942,8 +941,36 @@ $(() => {
                     tab.close();
                 }
             });
+            return results;
+        };
+
+        const testAllResultRow = $(`<div class="row">`);
+        const testAndSubmitButton = $(`<a id="atcoder-easy-test-btn-test-and-submit" class="btn btn-info btn" style="margin-left: 5px" title="Ctrl+Enter" data-toggle="tooltip">`)
+        .text("Test & Submit")
+        .click(async () => {
+            if (testAndSubmitButton.hasClass("disabled")) throw new Error("Button is disabled");
+            testAndSubmitButton.addClass("disabled");
+            try {
+                const results = await fnTestAll();
+                if (results.every(({status}) => status == "AC")) {
+                    // submit
+                    $("#submit").click();
+                } else {
+                    // failed to submit
+                }
+            } catch(e) {
+                throw e;
+            } finally {
+                testAndSubmitButton.removeClass("disabled");
+            }
         });
-        $("#submit").after(testAllButton).closest("form").append(testAllResultRow);
+        const testAllButton = $(`<a id="atcoder-easy-test-btn-test-all" class="btn btn-default btn-sm" style="margin-left: 5px" title="Alt+Enter" data-toggle="tooltip">`)
+        .text("Test All Samples")
+        .click(async () => {
+            if (testAllButton.attr("disabled")) throw new Error("Button is disabled");
+            await fnTestAll();
+        });
+        $("#submit").after(testAllButton).after(testAndSubmitButton).closest("form").append(testAllResultRow);
         document.addEventListener("keydown", e => {
             if (e.altKey) {
                 switch (e.key) {
@@ -952,6 +979,13 @@ $(() => {
                         break;
                     case "Escape":
                         bottomMenu.toggle();
+                        break;
+                }
+            }
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case "Enter":
+                        testAndSubmitButton.click();
                         break;
                 }
             }
