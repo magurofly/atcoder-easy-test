@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.8.0
+// @version      1.8.1
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -23,7 +23,7 @@
 
 (function script() {
 
-const VERSION = "1.8.0";
+const VERSION = "1.8.1";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -46,6 +46,49 @@ const $create = (tagName, attrs = {}, children = []) => {
     for (const name in attrs) e.setAttribute(name, attrs[name]);
     for (const child of children) e.appendChild(child);
     return e;
+};
+
+// -- code saver --
+const codeSaver = {
+    LIMIT: 10,
+    get() {
+        let data = localStorage.AtCoderEasyTest$lastCode;
+        try {
+            if (typeof data == "string") {
+                data = JSON.parse(data);
+            } else {
+                data = [];
+            }
+        } catch(e) {
+            data = [{
+                path: localStorage.AtCoderEasyTest$lastPage,
+                code: data,
+            }];
+        }
+        return data;
+    },
+    set(data) {
+        localStorage.AtCoderEasyTest$lastCode = JSON.stringify(data);
+    },
+    // @param code to save
+    save(code) {
+        let data = this.get();
+        const idx = data.findIndex(({path}) => path == location.pathname);
+        if (idx != -1) data.splice(idx, idx + 1);
+        data.push({
+            path: location.pathname,
+            code,
+        });
+        while (data.length > this.LIMIT) data.shift();
+        this.set(data);
+    },
+    // @return promise(code)
+    restore() {
+        const data = this.get();
+        const idx = data.findIndex(({path}) => path == location.pathname);
+        if (idx == -1 || !(data[idx] instanceof Object)) return Promise.reject(`no saved code found for ${location.pathname}`);
+        return Promise.resolve(data[idx].code);
+    },
 };
 
 // -- code runner --
@@ -473,8 +516,7 @@ const codeRunner = (function() {
             if (!(languageId in runners)) return Promise.reject("language not supported");
 
             // save last code
-            localStorage.AtCoderEasyTest$lastPage = location.pathname;
-            localStorage.AtCoderEasyTest$lastCode = sourceCode;
+            codeSaver.save(sourceCode);
 
             // run
             return runners[languageId][index].test(sourceCode, input, supposedOutput, options);
@@ -922,14 +964,15 @@ $(() => {
         const restoreLastPlayButton = $(`<a id="atcoder-easy-test-restore-last-play" class="btn btn-danger btn-sm">`)
         .text("Restore Last Play")
         .click(async () => {
-            if (localStorage.AtCoderEasyTest$lastPage !== location.pathname) {
-                alert(`Saved source code not found for ${location.pathname}`);
+            try {
+                const lastCode = await codeSaver.restore();
+                if (confirm("Your current code will be replaced. Are you sure?")) {
+                    $('.plain-textarea').val(lastCode);
+                    $('.editor').data('editor').doc.setValue(lastCode);
+                }
+            } catch (reason) {
+                alert(reason);
                 return;
-            }
-            if (confirm("Your current code will be replaced. Are you sure?")) {
-                const lastCode = localStorage.AtCoderEasyTest$lastCode;
-                $('.plain-textarea').val(lastCode);
-                $('.editor').data('editor').doc.setValue(lastCode);
             }
         })
         .appendTo(".editor-buttons");
