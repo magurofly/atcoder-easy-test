@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AtCoder Easy Test
 // @namespace    http://atcoder.jp/
-// @version      1.8.1
+// @version      1.8.2
 // @description  Make testing sample cases easy
 // @author       magurofly
 // @match        https://atcoder.jp/contests/*/tasks/*
@@ -23,7 +23,7 @@
 
 (function script() {
 
-const VERSION = "1.8.1";
+const VERSION = "1.8.2";
 
 if (typeof unsafeWindow !== "undefined") {
     console.log(unsafeWindow);
@@ -735,7 +735,10 @@ $(() => {
         ];
 
         for (const [selector, closestSelector] of selectors) {
-            const e = $selectAll(selector);
+            const e = [... $selectAll(selector)].filter(e => {
+                if ($(e).closest(".io-style").length) return false;
+                return true;
+            });
             if (e.length == 0) continue;
             const testcases = [];
             for (let i = 0; i < e.length; i += 2) {
