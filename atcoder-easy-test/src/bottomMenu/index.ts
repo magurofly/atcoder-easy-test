@@ -45,7 +45,7 @@ let tabs = new Set();
 /** 下メニューの操作 */
 const menuController = {
   /** 下メニューにタブを追加する */
-  addTab(tabId: string, tabLabel: string, paneContent: Node, options = {}) {
+  addTab(tabId: string, tabLabel: string, paneContent: Node, options = {}): TabController {
     console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
 
     // タブを追加
@@ -86,6 +86,8 @@ const menuController = {
         tab.style.backgroundColor = color;
       },
     };
+
+    return controller;
   },
 
   /** 下メニューを表示する */
