@@ -28,49 +28,49 @@ async function runTest(title: string, input: string, output: string | null = nul
   const content = document.createElement("div");
   content.className = "container";
   content.innerHTML = `
-  <div class="row">
+<div class="row">
   <div class="col-xs-12 ${(output == null) ? "" : "col-sm-6"}"><div class="form-group">
-  <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
-  <div class="col-xs-12">
-  <textarea id="atcoder-easy-test-${uid}-stdin" class="form-control" rows="3" readonly></textarea>
-  </div>
+    <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdin">Standard Input</label>
+    <div class="col-xs-12">
+      <textarea id="atcoder-easy-test-${uid}-stdin" class="form-control" rows="3" readonly></textarea>
+    </div>
   </div></div>${(output == null) ? "" : `
-  <div class="col-xs-12 col-sm-6"><div class="form-group">
+<div class="col-xs-12 col-sm-6"><div class="form-group">
   <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-expected">Expected Output</label>
   <div class="col-xs-12">
-  <textarea id="atcoder-easy-test-${uid}-expected" class="form-control" rows="3" readonly></textarea>
+    <textarea id="atcoder-easy-test-${uid}-expected" class="form-control" rows="3" readonly></textarea>
   </div>
-  </div></div>
+</div></div>
   `}
-  </div>
-  <div class="row"><div class="col-sm-6 col-sm-offset-3">
+</div>
+<div class="row"><div class="col-sm-6 col-sm-offset-3">
   <div class="panel panel-default"><table class="table table-condensed">
-  <tr>
-  <th class="text-center">Exit Code</th>
-  <th class="text-center">Exec Time</th>
-  <th class="text-center">Memory</th>
-  </tr>
-  <tr>
-  <td id="atcoder-easy-test-${uid}-exit-code" class="text-center"></td>
-  <td id="atcoder-easy-test-${uid}-exec-time" class="text-center"></td>
-  <td id="atcoder-easy-test-${uid}-memory" class="text-center"></td>
-  </tr>
+    <tr>
+      <th class="text-center">Exit Code</th>
+      <th class="text-center">Exec Time</th>
+      <th class="text-center">Memory</th>
+    </tr>
+    <tr>
+      <td id="atcoder-easy-test-${uid}-exit-code" class="text-center"></td>
+      <td id="atcoder-easy-test-${uid}-exec-time" class="text-center"></td>
+      <td id="atcoder-easy-test-${uid}-memory" class="text-center"></td>
+    </tr>
   </table></div>
-  </div></div>
-  <div class="row">
+</div></div>
+<div class="row">
   <div class="col-xs-12 col-md-6"><div class="form-group">
-  <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdout">Standard Output</label>
-  <div class="col-xs-12">
-  <textarea id="atcoder-easy-test-${uid}-stdout" class="form-control" rows="5" readonly></textarea>
-  </div>
+    <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stdout">Standard Output</label>
+    <div class="col-xs-12">
+      <textarea id="atcoder-easy-test-${uid}-stdout" class="form-control" rows="5" readonly></textarea>
+    </div>
   </div></div>
   <div class="col-xs-12 col-md-6"><div class="form-group">
-  <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stderr">Standard Error</label>
-  <div class="col-xs-12">
-  <textarea id="atcoder-easy-test-${uid}-stderr" class="form-control" rows="5" readonly></textarea>
-  </div>
+    <label class="control-label col-xs-12" for="atcoder-easy-test-${uid}-stderr">Standard Error</label>
+    <div class="col-xs-12">
+      <textarea id="atcoder-easy-test-${uid}-stderr" class="form-control" rows="5" readonly></textarea>
+    </div>
   </div></div>
-  </div>
+</div>
   `;
   const tab = bottomMenu.addTab("easy-test-result-" + uid, title, content, { active: true, closeButton: true });
   content.querySelector<HTMLTextAreaElement>(`atcoder-easy-test-${uid}-stdin`).value = input;
