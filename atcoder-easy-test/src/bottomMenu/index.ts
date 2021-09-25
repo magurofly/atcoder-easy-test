@@ -1,8 +1,11 @@
-import bottomMenu from "./bottomMenu.html";
-import style from "./style.html";
+import { html2element } from "../util";
+import hBottomMenu from "./bottomMenu.html";
+import hStyle from "./style.html";
 
-declare const style: HTMLStyleElement;
-declare const bottomMenu: HTMLDivElement;
+declare const hStyle: string;
+declare const hBottomMenu: string;
+const style = html2element(hStyle) as HTMLStyleElement;
+const bottomMenu = html2element(hBottomMenu) as HTMLDivElement;
 
 unsafeWindow.document.head.appendChild(style);
 unsafeWindow.document.getElementById("main-div").appendChild(bottomMenu);
