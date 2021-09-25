@@ -1,5 +1,6 @@
 import typescript from "rollup-plugin-typescript";
 import html from "rollup-plugin-html";
+import jscc from 'rollup-plugin-jscc';
 import packageJson from "./package.json";
 
 export default [
@@ -30,6 +31,11 @@ export default [
                 include: "**/*.html"
             }),
             typescript(),
+            jscc({
+                values: {
+                    _ATCODER_EASY_TEST_VERSION: packageJson.version,
+                }
+            }),
         ]
     }
 ];
