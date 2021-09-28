@@ -2,11 +2,11 @@ import Options from "./Options";
 import Result from "./Result";
 
 export default abstract class CodeRunner {
-  label: string;
-  site: string;
+  abstract get label(): string;
+  abstract get site(): string;
   
   constructor(label, site) {
-    this.label = `${label} [${site}]`;
+    (this as any).label = `${label} [${site}]`;
   }
   
   async test(sourceCode: string, input: string, supposedOutput: string | null, options: Options): Promise<Result> {

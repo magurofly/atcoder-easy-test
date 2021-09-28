@@ -64,8 +64,6 @@ const codeSaver = {
 };
 
 class CodeRunner {
-    label;
-    site;
     constructor(label, site) {
         this.label = `${label} [${site}]`;
     }
@@ -496,14 +494,29 @@ var codeRunner = {
     },
 };
 
-const tabTemplate = html2element(hTabTemplate);
+const eventListeners = {};
+const events = {
+    on(name, listener) {
+        const listeners = (name in eventListeners ? eventListeners[name] : eventListeners[name] = []);
+        listeners.push(listener);
+    },
+    trig(name) {
+        if (name in eventListeners) {
+            for (const listener of eventListeners[name])
+                listener();
+        }
+    },
+};
+
+var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
+
 class ResultTabContent {
     _title;
     _uid;
     _element;
     constructor() {
         this._uid = Date.now().toString(16);
-        this._element = tabTemplate.cloneNode(true);
+        this._element = html2element(hTabTemplate);
         this._element.id = `atcoder-easy-test-result-${this._uid}`;
     }
     get uid() {
@@ -533,7 +546,7 @@ class ResultTabContent {
         return this._get("expected-output").style;
     }
     set output(output) {
-        this._get("");
+        this._get("output").value = output;
     }
     get outputStyle() {
         return this._get("output").style;
@@ -561,7 +574,11 @@ class ResultTabContent {
     }
 }
 
-const style = html2element(hStyle);
+var hBottomMenu = "<div id=\"bottom-menu-wrapper\" class=\"navbar navbar-default navbar-fixed-bottom\">\n  <div class=\"container\">\n    <div class=\"navbar-header\">\n      <button id=\"bottom-menu-key\" type=\"button\" class=\"navbar-toggle collapsed glyphicon glyphicon-menu-down\" data-toggle=\"collapse\" data-target=\"#bottom-menu\"></button>\n    </div>\n    <div id=\"bottom-menu\" class=\"collapse navbar-collapse\">\n      <ul id=\"bottom-menu-tabs\" class=\"nav nav-tabs\"></ul>\n      <div id=\"bottom-menu-contents\" class=\"tab-content\"></div>\n    </div>\n  </div>\n</div>";
+
+var hStyle$1 = "<style>\n#bottom-menu-wrapper {\n  background: transparent;\n  border: none;\n  pointer-events: none;\n  padding: 0;\n}\n\n#bottom-menu-wrapper>.container {\n  position: absolute;\n  bottom: 0;\n  width: 100%;\n  padding: 0;\n}\n\n#bottom-menu-wrapper>.container>.navbar-header {\n  float: none;\n}\n\n#bottom-menu-key {\n  display: block;\n  float: none;\n  margin: 0 auto;\n  padding: 10px 3em;\n  border-radius: 5px 5px 0 0;\n  background: #000;\n  opacity: 0.5;\n  color: #FFF;\n  cursor: pointer;\n  pointer-events: auto;\n  text-align: center;\n}\n\n@media screen and (max-width: 767px) {\n  #bottom-menu-key {\n    opacity: 0.25;\n  }\n}\n\n#bottom-menu-key.collapsed:before {\n  content: \"\\e260\";\n}\n\n#bottom-menu-tabs {\n  padding: 3px 0 0 10px;\n  cursor: n-resize;\n}\n\n#bottom-menu-tabs a {\n  pointer-events: auto;\n}\n\n#bottom-menu {\n  pointer-events: auto;\n  background: rgba(0, 0, 0, 0.8);\n  color: #fff;\n  max-height: unset;\n}\n\n#bottom-menu.collapse:not(.in) {\n  display: none !important;\n}\n\n#bottom-menu-tabs>li>a {\n  background: rgba(150, 150, 150, 0.5);\n  color: #000;\n  border: solid 1px #ccc;\n  filter: brightness(0.75);\n}\n\n#bottom-menu-tabs>li>a:hover {\n  background: rgba(150, 150, 150, 0.5);\n  border: solid 1px #ccc;\n  color: #111;\n  filter: brightness(0.9);\n}\n\n#bottom-menu-tabs>li.active>a {\n  background: #eee;\n  border: solid 1px #ccc;\n  color: #333;\n  filter: none;\n}\n\n.bottom-menu-btn-close {\n  font-size: 8pt;\n  vertical-align: baseline;\n  padding: 0 0 0 6px;\n  margin-right: -6px;\n}\n\n#bottom-menu-contents {\n  padding: 5px 15px;\n  max-height: 50vh;\n  overflow-y: auto;\n}\n\n#bottom-menu-contents .panel {\n  color: #333;\n}\n</style>";
+
+const style = html2element(hStyle$1);
 const bottomMenu = html2element(hBottomMenu);
 unsafeWindow.document.head.appendChild(style);
 unsafeWindow.document.getElementById("main-div").appendChild(bottomMenu);
@@ -584,7 +601,7 @@ const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents");
         event.preventDefault();
         bottomMenuContents.style.height = `${resizeStart.height - (event.pageY - resizeStart.y)}px`;
     };
-    const onEnd = (event) => {
+    const onEnd = () => {
         resizeStart = null;
     };
     bottomMenuTabs.addEventListener("mousedown", onStart);
@@ -593,20 +610,30 @@ const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents");
     bottomMenuTabs.addEventListener("mouseleave", onEnd);
 }
 let tabs = new Set();
+let selectedTab = null;
 /** 下メニューの操作 */
 const menuController = {
+    /** タブを選択 */
+    selectTab(tabId) {
+        const tab = unsafeWindow.$(`#bottom-menu-tab-${tabId}`);
+        if (tab && tab[0]) {
+            tab.tab("show"); // Bootstrap 3
+            selectedTab = tabId;
+        }
+    },
     /** 下メニューにタブを追加する */
     addTab(tabId, tabLabel, paneContent, options = {}) {
         console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
         // タブを追加
         const tab = document.createElement("a");
+        tab.textContent = tabLabel;
         tab.id = `bottom-menu-tab-${tabId}`;
         tab.href = "#";
         tab.dataset.target = `#bottom-menu-pane-${tabId}`;
         tab.dataset.toggle = "tab";
         tab.addEventListener("click", event => {
             event.preventDefault();
-            tab.tab("show"); // Bootstrap 3
+            this.selectTab(tabId);
         });
         const tabLi = document.createElement("li");
         tabLi.appendChild(tab);
@@ -618,22 +645,31 @@ const menuController = {
         pane.appendChild(paneContent);
         bottomMenuContents.appendChild(pane);
         const controller = {
+            get id() {
+                return tabId;
+            },
             close() {
                 bottomMenuTabs.removeChild(tabLi);
                 bottomMenuContents.removeChild(pane);
                 tabs.delete(tab);
-                if (tabLi.classList.contains("active") && tabs.size > 0) {
-                    tabs.values().next().value.tab("show");
+                if (selectedTab == tabId) {
+                    selectedTab = null;
+                    if (tabs.size > 0) {
+                        menuController.selectTab(tabs.values().next().value.id);
+                    }
                 }
             },
             show() {
                 menuController.show();
-                tab.tab("show"); // Bootstrap 3
+                this.selectTab(tabId);
             },
             set color(color) {
                 tab.style.backgroundColor = color;
             },
         };
+        // 選択されているタブがなければ選択
+        if (!selectedTab)
+            this.selectTab(tabId);
         return controller;
     },
     /** 下メニューを表示する */
@@ -648,83 +684,137 @@ const menuController = {
 };
 console.info("AtCoder Easy Test: bottomMenu OK");
 
-const eAtCoderLang = unsafeWindow.document.querySelector("#select-lang>select");
-const root = html2element(hRoot);
-const E = (id) => root.querySelector(`#atcoder-easy-test-${id}`);
-const eLanguage = E("language");
-const eInput = E("input");
-const eAllowableErrorCheck = E("allowable-error-check");
-const eAllowableError = E("alloable-error");
-const eOutput = E("output");
-const eRun = E("run");
-E("version").textContent = "2.0.0";
-async function runTest(title, input, output = null) {
-    const content = new ResultTabContent();
-    content.input = input;
-    if (output)
-        content.expectedOutput = output;
-    const tab = menuController.addTab("easy-test-result-" + content.uid, title, content.element, { active: true, closeButton: true });
-    const options = { trim: true, split: true, };
-    if (eAllowableErrorCheck.checked) {
-        options.allowableError = parseFloat(eAllowableError.value);
-    }
-    const result = await codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
-    if (result.status == "AC") {
-        tab.color = "#dff0d8";
-        content.outputStyle.backgroundColor = "#dff0d8";
-    }
-    else if (result.status != "OK") {
-        tab.color = "#fcf8e3";
-        content.outputStyle.backgroundColor = "#fcf8e3";
-    }
-    content.exitCode = result.exitCode;
-    if ("execTime" in result)
-        content.execTime = `${result.execTime} ms`;
-    if ("memory" in result)
-        content.memory = `${result.memory} KB`;
-    if ("stdout" in result)
-        content.output = result.stdout;
-    if ("stderr" in result)
-        content.error = result.stderr;
-    return result;
-}
-async function setLanguage() {
-    const languageId = eAtCoderLang.value;
-    while (eLanguage.firstChild)
-        eLanguage.removeChild(eLanguage.firstChild);
-    try {
-        const labels = await codeRunner.getEnvironment(languageId);
-        console.log(`language: ${labels[0]} (${languageId})`);
-        labels.forEach((label, index) => {
-            const option = document.createElement("option");
-            option.value = String(index);
-            option.textContent = label;
-            eLanguage.appendChild(option);
-        });
+var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">\n  <small style=\"position: absolute; display: block; bottom: 0; right: 0; padding: 1% 4%; width: 95%; text-align: right;\">AtCoder Easy Test v<span id=\"atcoder-easy-test-version\"></span></small>\n  <div class=\"row\">\n      <div class=\"col-xs-12 col-lg-8\">\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\">Test Environment</label>\n              <div class=\"col-sm-10\">\n                  <select class=\"form-control\" id=\"atcoder-easy-test-language\"></select>\n              </div>\n          </div>\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-input\">Standard Input</label>\n              <div class=\"col-sm-10\">\n                  <textarea id=\"atcoder-easy-test-input\" name=\"input\" class=\"form-control\" rows=\"3\"></textarea>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-lg-4\">\n          <details close>\n              <summary>Expected Output</summary>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-allowable-error-check\">Allowable Error</label>\n                  <div class=\"col-sm-10\">\n                      <div class=\"input-group\">\n                          <span class=\"input-group-addon\">\n                              <input id=\"atcoder-easy-test-allowable-error-check\" type=\"checkbox\" checked=\"checked\">\n                          </span>\n                          <input id=\"atcoder-easy-test-allowable-error\" type=\"text\" class=\"form-control\" value=\"1e-6\">\n                      </div>\n                  </div>\n              </div>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-output\">Expected Output</label>\n                  <div class=\"col-sm-10\">\n                      <textarea id=\"atcoder-easy-test-output\" name=\"output\" class=\"form-control\" rows=\"3\"></textarea>\n                  </div>\n              </div>\n          </details>\n      </div>\n      <div class=\"col-xs-12\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group\">\n                  <a id=\"atcoder-easy-test-run\" class=\"btn btn-primary\">Run</a>\n              </div>\n          </div>\n      </div>\n  </div>\n  <style>\n  #atcoder-easy-test-language {\n      border: none;\n      background: transparent;\n      font: inherit;\n      color: #fff;\n  }\n  #atcoder-easy-test-language option {\n      border: none;\n      color: #333;\n      font: inherit;\n  }\n  </style>\n</form>";
+
+var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: 100;\n}\n</style>";
+
+const doc = unsafeWindow.document;
+const $ = unsafeWindow.$;
+const $select = (selector) => doc.querySelector(selector);
+// external interfaces
+unsafeWindow.bottomMenu = menuController;
+unsafeWindow.codeRunner = codeRunner;
+doc.head.appendChild(html2element(hStyle));
+// place "Easy Test" tab
+{
+    const eAtCoderLang = $select("#select-lang>select");
+    // declare const hRoot: string;
+    const root = html2element(hRoot);
+    const E = (id) => root.querySelector(`#atcoder-easy-test-${id}`);
+    const eLanguage = E("language");
+    const eInput = E("input");
+    const eAllowableErrorCheck = E("allowable-error-check");
+    const eAllowableError = E("allowable-error");
+    const eOutput = E("output");
+    const eRun = E("run");
+    E("version").textContent = "2.0.0";
+    events.on("enable", () => {
         eRun.classList.remove("disabled");
-        E("btn-test-all").classList.remove("disabled");
+    });
+    events.on("disable", () => {
+        eRun.classList.remove("enabled");
+    });
+    // 言語選択関係
+    {
+        async function setLanguage() {
+            const languageId = eAtCoderLang.value;
+            while (eLanguage.firstChild)
+                eLanguage.removeChild(eLanguage.firstChild);
+            try {
+                const labels = await codeRunner.getEnvironment(languageId);
+                console.log(`language: ${labels[0]} (${languageId})`);
+                labels.forEach((label, index) => {
+                    const option = document.createElement("option");
+                    option.value = String(index);
+                    option.textContent = label;
+                    eLanguage.appendChild(option);
+                });
+                events.trig("enable");
+            }
+            catch (error) {
+                console.log(`language: ? (${languageId})`);
+                console.error(error);
+                const option = document.createElement("option");
+                option.className = "fg-danger";
+                option.textContent = error;
+                eLanguage.appendChild(option);
+                events.trig("disable");
+            }
+        }
+        unsafeWindow.$(eAtCoderLang).change(() => setLanguage()); //NOTE: This event is only for jQuery; do not replace with Vanilla
+        eAllowableError.disabled = !eAllowableErrorCheck.checked;
+        eAllowableErrorCheck.addEventListener("change", event => {
+            eAllowableError.disabled = !eAllowableErrorCheck.checked;
+        });
+        setLanguage();
     }
-    catch (error) {
-        console.log(`language: ? (${languageId})`);
-        const option = document.createElement("option");
-        option.className = "fg-danger";
-        option.textContent = error;
-        eLanguage.appendChild(option);
-        eRun.classList.add("disabled");
-        E("btn-test-all").classList.add("disabled");
+    // テスト実行
+    async function runTest(title, input, output = null) {
+        events.trig("disable");
+        try {
+            const content = new ResultTabContent();
+            content.input = input;
+            if (output)
+                content.expectedOutput = output;
+            const tab = menuController.addTab("easy-test-result-" + content.uid, title, content.element, { active: true, closeButton: true });
+            const options = { trim: true, split: true, };
+            if (eAllowableErrorCheck.checked) {
+                options.allowableError = parseFloat(eAllowableError.value);
+            }
+            const result = await codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
+            if (result.status == "AC") {
+                tab.color = "#dff0d8";
+                content.outputStyle.backgroundColor = "#dff0d8";
+            }
+            else if (result.status != "OK") {
+                tab.color = "#fcf8e3";
+                content.outputStyle.backgroundColor = "#fcf8e3";
+            }
+            content.exitCode = result.exitCode;
+            if ("execTime" in result)
+                content.execTime = `${result.execTime} ms`;
+            if ("memory" in result)
+                content.memory = `${result.memory} KB`;
+            if ("stdout" in result)
+                content.output = result.stdout;
+            if ("stderr" in result)
+                content.error = result.stderr;
+            events.trig("enable");
+            return result;
+        }
+        catch (reason) {
+            events.trig("enable");
+            throw reason;
+        }
     }
+    eRun.addEventListener("click", _ => {
+        const title = "Run";
+        const input = eInput.value;
+        const output = eOutput.value;
+        runTest(title, input, output || null);
+    });
+    menuController.addTab("easy-test", "Easy Test", root);
 }
-eRun.addEventListener("click", _ => {
-    const title = "";
-    const input = eInput.value;
-    const output = eOutput.value;
-    runTest(title, input, output || null);
-});
-unsafeWindow.$(eAtCoderLang).change(() => setLanguage()); //NOTE: This event is only for jQuery; do not replace with Vanilla
-eAllowableError.disabled = !eAllowableErrorCheck.checked;
-eAllowableErrorCheck.addEventListener("change", event => {
-    eAllowableError.disabled = !eAllowableErrorCheck.checked;
-});
-setLanguage();
-menuController.addTab("easy-test", "Easy Test", root);
+// place "Restore Last Play" button
+try {
+    const restoreButton = doc.createElement("a");
+    restoreButton.className = "btn btn-danger btn-sm";
+    restoreButton.textContent = "Restore Last Play";
+    restoreButton.addEventListener("click", async () => {
+        try {
+            const lastCode = await codeSaver.restore();
+            if (confirm("Your current code will be replaced. Are you sure?")) {
+                $select(".plain-textarea").value = lastCode;
+                $(".editor").data("editor").doc.setValue(lastCode);
+            }
+        }
+        catch (reason) {
+            alert(reason);
+        }
+    });
+    $select(".editor-buttons").appendChild(restoreButton);
+}
+catch (e) {
+    console.error(e);
+}
 })();

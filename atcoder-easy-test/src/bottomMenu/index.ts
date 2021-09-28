@@ -1,9 +1,8 @@
 import { html2element } from "../util";
+
 import hBottomMenu from "./bottomMenu.html";
 import hStyle from "./style.html";
 
-declare const hStyle: string;
-declare const hBottomMenu: string;
 const style = html2element(hStyle) as HTMLStyleElement;
 const bottomMenu = html2element(hBottomMenu) as HTMLDivElement;
 
@@ -28,7 +27,7 @@ const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents") as 
     event.preventDefault();
     bottomMenuContents.style.height = `${ resizeStart.height - (event.pageY - resizeStart.y) }px`;
   };
-  const onEnd = (event) => {
+  const onEnd = () => {
     resizeStart = null;
   };
   bottomMenuTabs.addEventListener("mousedown", onStart);
@@ -38,28 +37,40 @@ const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents") as 
 }
 
 interface TabController {
+  get id(): string;
   close(): void;
   show(): void;
   set color(color: string);
 }
 
 let tabs = new Set();
+let selectedTab: string | null = null;
 
 /** 下メニューの操作 */
 const menuController = {
+  /** タブを選択 */
+  selectTab(tabId: string)  {
+    const tab = unsafeWindow.$(`#bottom-menu-tab-${tabId}`);
+    if (tab && tab[0]) {
+      tab.tab("show"); // Bootstrap 3
+      selectedTab = tabId;
+    }
+  },
+
   /** 下メニューにタブを追加する */
   addTab(tabId: string, tabLabel: string, paneContent: Node, options = {}): TabController {
     console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
 
     // タブを追加
     const tab = document.createElement("a");
+    tab.textContent = tabLabel;
     tab.id = `bottom-menu-tab-${tabId}`;
     tab.href = "#";
     tab.dataset.target = `#bottom-menu-pane-${tabId}`;
     tab.dataset.toggle = "tab";
     tab.addEventListener("click", event => {
       event.preventDefault();
-      (tab as any).tab("show"); // Bootstrap 3
+      this.selectTab(tabId);
     });
     const tabLi = document.createElement("li");
     tabLi.appendChild(tab);
@@ -73,22 +84,31 @@ const menuController = {
     bottomMenuContents.appendChild(pane);
 
     const controller: TabController = {
+      get id() {
+        return tabId;
+      },
       close() {
         bottomMenuTabs.removeChild(tabLi);
         bottomMenuContents.removeChild(pane);
         tabs.delete(tab);
-        if (tabLi.classList.contains("active") && tabs.size > 0) {
-          tabs.values().next().value.tab("show");
+        if (selectedTab == tabId) {
+          selectedTab = null;
+          if (tabs.size > 0) {
+            menuController.selectTab(tabs.values().next().value.id);
+          }
         }
       },
       show() {
         menuController.show();
-        (tab as any).tab("show"); // Bootstrap 3
+        this.selectTab(tabId);
       },
       set color(color: string) {
         tab.style.backgroundColor = color;
       },
     };
+
+    // 選択されているタブがなければ選択
+    if (!selectedTab) this.selectTab(tabId);
 
     return controller;
   },
