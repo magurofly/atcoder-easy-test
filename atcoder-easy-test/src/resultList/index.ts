@@ -1,6 +1,6 @@
+//TODO
 class ResultBar {
   constructor() {
-
   }
 
   remove() {

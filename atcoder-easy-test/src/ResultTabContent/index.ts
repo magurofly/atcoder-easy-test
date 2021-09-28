@@ -1,8 +1,6 @@
 import { html2element } from "../util";
+import events from "../events";
 import hTabTemplate from "./tabTemplate.html";
-
-declare const hTabTemplate: string;
-const tabTemplate = html2element(hTabTemplate) as HTMLDivElement;
 
 export default class ResultTabContent {
   private _title: string | null;
@@ -11,7 +9,7 @@ export default class ResultTabContent {
 
   constructor() {
     this._uid = Date.now().toString(16);
-    this._element = tabTemplate.cloneNode(true);
+    this._element = html2element(hTabTemplate) as HTMLDivElement;
     this._element.id = `atcoder-easy-test-result-${this._uid}`;
   }
 
@@ -50,7 +48,7 @@ export default class ResultTabContent {
   }
 
   set output(output: string) {
-    this._get<HTMLTextAreaElement>("")
+    this._get<HTMLTextAreaElement>("output").value = output;
   }
 
   get outputStyle(): CSSStyleDeclaration {
