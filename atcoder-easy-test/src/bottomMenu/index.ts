@@ -1,6 +1,6 @@
 import { html2element } from "../util";
 import BottomMenu from "./bottomMenu";
-import TabController from "./TabController";
+import BottomMenuTab from "./BottomMenuTab";
 
 import hBottomMenu from "./bottomMenu.html";
 import hStyle from "./style.html";
@@ -53,7 +53,7 @@ const menuController: BottomMenu = {
   },
 
   /** 下メニューにタブを追加する */
-  addTab(tabId: string, tabLabel: string, paneContent: Node, options: any = {}): TabController {
+  addTab(tabId: string, tabLabel: string, paneContent: Node, options: any = {}): BottomMenuTab {
     console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
 
     // タブを追加
@@ -78,7 +78,7 @@ const menuController: BottomMenu = {
     pane.appendChild(paneContent);
     bottomMenuContents.appendChild(pane);
 
-    const controller: TabController = {
+    const controller: BottomMenuTab = {
       get id() {
         return tabId;
       },
