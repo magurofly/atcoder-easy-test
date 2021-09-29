@@ -19,13 +19,17 @@ export default class ResultTabContent {
   private _title: string | null;
   private _uid: string;
   private _element: HTMLElement;
-  private _result: Result;
+  private _result: Result | null;
 
-  constructor(result: Result) {
+  constructor() {
     this._uid = Date.now().toString(16);
-    this._result = result;
+    this._result = null;
     this._element = html2element(hTabTemplate) as HTMLDivElement;
     this._element.id = `atcoder-easy-test-result-${this._uid}`;
+  }
+
+  set result(result: Result) {
+    this._result = result;
 
     if (result.status == "AC") {
       this.outputStyle.backgroundColor = "#dff0d8";
@@ -41,6 +45,10 @@ export default class ResultTabContent {
     if ("memory" in result) this.memory = `${result.memory} KB`;
     if ("output" in result) this.output = result.output;
     if (result.error) this.error = result.error;
+  }
+
+  get result(): Result | null {
+    return this._result;
   }
 
   get uid(): string {

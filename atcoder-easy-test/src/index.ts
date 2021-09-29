@@ -1,14 +1,20 @@
-import { html2element } from "./util";
 import codeSaver from "./codeSaver";
 import codeRunner from "./codeRunner";
 import events from "./events";
-import ResultTabContent from "./ResultTabContent";
 import { TestCase, getTestCases } from "./testcase";
 import bottomMenu from "./bottomMenu";
+import resultList from "./resultList";
+
+import { html2element } from "./util";
+import ResultTabContent from "./ResultTabContent";
 import Options from "./codeRunner/Options";
 import Result from "./codeRunner/Result";
+import TabController from "./bottomMenu/TabController";
+
 import hRoot from "./container.html";
 import hStyle from "./style.html";
+import hTestAndSubmit from "./testAndSubmit.html";
+import hTestAllSamples from "./testAllSamples.html";
 
 const doc = unsafeWindow.document;
 const $ = unsafeWindow.$;
@@ -23,6 +29,7 @@ doc.head.appendChild(html2element(hStyle));
 // place "Easy Test" tab
 {
   const eAtCoderLang = $select<HTMLSelectElement>("#select-lang>select");
+  const eSubmitButton = doc.getElementById("submit");
 
   // declare const hRoot: string;
   const root = html2element(hRoot) as HTMLFormElement;
@@ -83,21 +90,24 @@ doc.head.appendChild(html2element(hStyle));
   let runId = 0;
 
   // テスト実行
-  async function runTest(title: string, input: string, output: string | null = null): Promise<Result> {
+  function runTest(title: string, input: string, output: string | null = null): [Promise<Result>, TabController] {
     runId++;
 
     events.trig("disable");
-    try {
-      const options: Options = { trim: true, split: true, };
-      if (eAllowableErrorCheck.checked) {
-        options.allowableError = parseFloat(eAllowableError.value);
-      }
+    
+    const options: Options = { trim: true, split: true, };
+    if (eAllowableErrorCheck.checked) {
+      options.allowableError = parseFloat(eAllowableError.value);
+    }
 
-      const result = await codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
-      const content = new ResultTabContent(result);
+    const content = new ResultTabContent();
+    const tab = bottomMenu.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
 
-      const tab = bottomMenu.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
-       
+    const pResult = codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
+
+    pResult.then(result => {
+      content.result = result;
+      
       if (result.status == "AC") {
         tab.color = "#dff0d8";
       } else if (result.status != "OK") {
@@ -105,13 +115,18 @@ doc.head.appendChild(html2element(hStyle));
       }
 
       events.trig("enable");
+    });
 
-      return result;
-    } catch (reason) {
-      events.trig("enable");
+    return [pResult, tab];
+  }
 
-      throw reason;
-    }
+  function runAllCases(testcases: TestCase[]): Promise<Result[]> {
+    const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
+    resultList.addResult(pairs);
+    return Promise.all(pairs.map(([pResult, _]) => pResult.then(result => {
+      if (result.status == "AC") return Promise.resolve(result);
+      else return Promise.reject(result);
+    })));
   }
 
   eRun.addEventListener("click", _ => {
@@ -122,6 +137,23 @@ doc.head.appendChild(html2element(hStyle));
   });
 
   bottomMenu.addTab("easy-test", "Easy Test", root);
+
+  // place "Test & Submit" button
+  {
+    const button = html2element(hTestAndSubmit);
+    eSubmitButton.parentElement.appendChild(button);
+    button.addEventListener("click", async () => {
+      await runAllCases(getTestCases());
+      eSubmitButton.click();
+    });
+  }
+
+  // place "Test All Samples" button
+  {
+    const button = html2element(hTestAllSamples);
+    eSubmitButton.parentElement.appendChild(button);
+    button.addEventListener("click", () => runAllCases(getTestCases()));
+  }
 }
 
 // place "Restore Last Play" button
