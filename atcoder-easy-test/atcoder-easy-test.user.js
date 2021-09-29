@@ -64,16 +64,21 @@ const codeSaver = {
 };
 
 class CodeRunner {
-    constructor(label, site) {
-        this.label = `${label} [${site}]`;
+    get label() {
+        return this._label;
     }
-    async test(sourceCode, input, supposedOutput, options) {
+    constructor(label, site) {
+        this._label = `${label} [${site}]`;
+    }
+    async test(sourceCode, input, expectedOutput, options) {
         const result = await this.run(sourceCode, input);
-        if (result.status != "OK" || typeof supposedOutput != "string")
+        if (expectedOutput != null)
+            result.expectedOutput = expectedOutput;
+        if (result.status != "OK" || typeof expectedOutput != "string")
             return result;
-        let output = result.stdout || "";
+        let output = result.output || "";
         if (options.trim) {
-            supposedOutput = supposedOutput.trim();
+            expectedOutput = expectedOutput.trim();
             output = output.trim();
         }
         let equals = (x, y) => x === y;
@@ -101,7 +106,7 @@ class CodeRunner {
                 return true;
             };
         }
-        result.status = equals(output, supposedOutput) ? "AC" : "WA";
+        result.status = equals(output, expectedOutput) ? "AC" : "WA";
         return result;
     }
 }
@@ -177,8 +182,9 @@ class AtCoderRunner extends CodeRunner {
                 exitCode: result.ExitCode,
                 execTime: result.TimeConsumption,
                 memory: result.MemoryConsumption,
-                stdout: data.Stdout,
-                stderr: data.Stderr,
+                input,
+                output: data.Stdout,
+                error: data.Stderr,
             };
         }
     }
@@ -211,7 +217,8 @@ class PaizaIORunner extends CodeRunner {
         catch (error) {
             return {
                 status: "IE",
-                stderr: error,
+                input,
+                error: String(error),
             };
         }
         while (status == "running") {
@@ -235,18 +242,19 @@ class PaizaIORunner extends CodeRunner {
             exitCode: String(res.exit_code),
             execTime: +res.time * 1e3,
             memory: +res.memory * 1e-3,
+            input,
         };
         if (res.build_result == "failure") {
             result.status = "CE";
             result.exitCode = res.build_exit_code;
-            result.stdout = res.build_stdout;
-            result.stderr = res.build_stderr;
+            result.output = res.build_stdout;
+            result.error = res.build_stderr;
         }
         else {
             result.status = (res.result == "timeout") ? "TLE" : (res.result == "failure") ? "RE" : "OK";
             result.exitCode = res.exit_code;
-            result.stdout = res.stdout;
-            result.stderr = res.stderr;
+            result.output = res.stdout;
+            result.error = res.stderr;
         }
         return result;
     }
@@ -267,11 +275,11 @@ class WandboxRunner extends CodeRunner {
     }
     run(sourceCode, input) {
         const options = this.getOptions(sourceCode, input);
-        return this.request(JSON.stringify(Object.assign({
+        return this.request(Object.assign({
             compiler: this.name,
             code: sourceCode,
             stdin: input,
-        }, options)));
+        }, options));
     }
     async request(body) {
         const startTime = Date.now();
@@ -283,14 +291,15 @@ class WandboxRunner extends CodeRunner {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body,
+                body: JSON.stringify(body),
             }).then(r => r.json());
         }
         catch (error) {
             console.error(error);
             return {
                 status: "IE",
-                stderr: String(error),
+                input: body.stdin,
+                error: String(error),
             };
         }
         const endTime = Date.now();
@@ -298,16 +307,17 @@ class WandboxRunner extends CodeRunner {
             status: "OK",
             exitCode: String(res.status),
             execTime: endTime - startTime,
-            stdout: String(res.program_output),
-            stderr: String(res.program_error),
+            input: body.stdin,
+            output: String(res.program_output),
+            error: String(res.program_error),
         };
         // 正常終了以外の場合
         if (res.status != 0) {
             if (res.signal) {
                 result.exitCode += ` (${res.signal})`;
             }
-            result.stdout = String(res.compiler_output || "") + String(result.stdout || "");
-            result.stderr = String(res.compiler_error || "") + String(result.stderr || "");
+            result.output = String(res.compiler_output || "") + String(result.output || "");
+            result.error = String(res.compiler_error || "") + String(result.error || "");
             if (res.compiler_output || res.compiler_error) {
                 result.status = "CE";
             }
@@ -350,13 +360,13 @@ class WandboxCppRunner extends WandboxRunner {
             codes.push({ file, code, });
         }
         const options = this.getOptions(sourceCode, input);
-        return await this.request(JSON.stringify(Object.assign({
+        return await this.request(Object.assign({
             compiler: this.name,
             code: sourceCode,
             stdin: input,
             codes,
             "compiler-option-raw": "-I.",
-        }, options)));
+        }, options));
     }
 }
 
@@ -397,8 +407,9 @@ const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
         status: "OK",
         exitCode: "0",
         execTime: (timeEnd - timeStart),
-        stdout,
-        stderr,
+        input,
+        output: stdout,
+        error: stderr,
     };
 });
 
@@ -454,7 +465,8 @@ const runners = {
             return {
                 status: "OK",
                 exitCode: "0",
-                stdout: sourceCode,
+                input,
+                output: sourceCode,
             };
         })],
     "4058": [new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)")],
@@ -475,7 +487,7 @@ for (const e of document.querySelectorAll("#select-lang option[value]")) {
 console.info("AtCoder Easy Test: codeRunner OK");
 var codeRunner = {
     // 指定した環境でコードを実行する
-    run(languageId, index, sourceCode, input, supposedOutput, options = { trim: true, split: true }) {
+    run(languageId, index, sourceCode, input, expectedOutput, options = { trim: true, split: true }) {
         // CodeRunner が存在しない言語ID
         if (!(languageId in runners))
             return Promise.reject("Language not supported");
@@ -484,7 +496,7 @@ var codeRunner = {
         // 最後に実行したコードを保存
         codeSaver.save(sourceCode);
         // 実行
-        return runners[languageId][index].test(sourceCode, input, supposedOutput, options);
+        return runners[languageId][index].test(sourceCode, input, expectedOutput, options);
     },
     // 環境の名前の一覧を取得する
     async getEnvironment(languageId) {
@@ -508,16 +520,47 @@ const events = {
     },
 };
 
-var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
+var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\" data-if-expected-output=\"col-sm-6 col-sm-push-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\" data-if-expected-output=\"!hidden col-sm-pull-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\" data-if-error=\"col-md-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\" data-if-error=\"!hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
 
+function setClassFromData(element, name) {
+    const classes = element.dataset[name].split(/\s+/);
+    for (let className of classes) {
+        let flag = true;
+        if (className[0] == "!") {
+            className = className.slice(1);
+            flag = false;
+        }
+        element.classList.toggle(className, flag);
+    }
+}
 class ResultTabContent {
     _title;
     _uid;
     _element;
-    constructor() {
+    _result;
+    constructor(result) {
         this._uid = Date.now().toString(16);
+        this._result = result;
         this._element = html2element(hTabTemplate);
         this._element.id = `atcoder-easy-test-result-${this._uid}`;
+        if (result.status == "AC") {
+            this.outputStyle.backgroundColor = "#dff0d8";
+        }
+        else if (result.status != "OK") {
+            this.outputStyle.backgroundColor = "#fcf8e3";
+        }
+        this.input = result.input;
+        if ("output" in result)
+            this.expectedOutput = result.output;
+        this.exitCode = result.exitCode;
+        if ("execTime" in result)
+            this.execTime = `${result.execTime} ms`;
+        if ("memory" in result)
+            this.memory = `${result.memory} KB`;
+        if ("output" in result)
+            this.output = result.output;
+        if (result.error)
+            this.error = result.error;
     }
     get uid() {
         return this._uid;
@@ -539,8 +582,8 @@ class ResultTabContent {
     }
     set expectedOutput(output) {
         this._get("expected-output").value = output;
-        this._get("col-input").classList.add("col-sm-6");
-        this._get("col-expected-output").classList.remove("hidden");
+        setClassFromData(this._get("col-input"), "ifExpectedOutput");
+        setClassFromData(this._get("col-expected-output"), "ifExpectedOutput");
     }
     get expectedOutputStyle() {
         return this._get("expected-output").style;
@@ -553,8 +596,8 @@ class ResultTabContent {
     }
     set error(error) {
         this._get("error").value = error;
-        this._get("col-output").classList.add("col-md-6");
-        this._get("col-error").classList.remove("hidden");
+        setClassFromData(this._get("col-output"), "ifError");
+        setClassFromData(this._get("col-error"), "ifError");
     }
     set exitCode(code) {
         const element = this._get("exit-code");
@@ -686,7 +729,7 @@ console.info("AtCoder Easy Test: bottomMenu OK");
 
 var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">\n  <small style=\"position: absolute; display: block; bottom: 0; right: 0; padding: 1% 4%; width: 95%; text-align: right;\">AtCoder Easy Test v<span id=\"atcoder-easy-test-version\"></span></small>\n  <div class=\"row\">\n      <div class=\"col-xs-12 col-lg-8\">\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\">Test Environment</label>\n              <div class=\"col-sm-10\">\n                  <select class=\"form-control\" id=\"atcoder-easy-test-language\"></select>\n              </div>\n          </div>\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-input\">Standard Input</label>\n              <div class=\"col-sm-10\">\n                  <textarea id=\"atcoder-easy-test-input\" name=\"input\" class=\"form-control\" rows=\"3\"></textarea>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-lg-4\">\n          <details close>\n              <summary>Expected Output</summary>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-allowable-error-check\">Allowable Error</label>\n                  <div class=\"col-sm-10\">\n                      <div class=\"input-group\">\n                          <span class=\"input-group-addon\">\n                              <input id=\"atcoder-easy-test-allowable-error-check\" type=\"checkbox\" checked=\"checked\">\n                          </span>\n                          <input id=\"atcoder-easy-test-allowable-error\" type=\"text\" class=\"form-control\" value=\"1e-6\">\n                      </div>\n                  </div>\n              </div>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-output\">Expected Output</label>\n                  <div class=\"col-sm-10\">\n                      <textarea id=\"atcoder-easy-test-output\" name=\"output\" class=\"form-control\" rows=\"3\"></textarea>\n                  </div>\n              </div>\n          </details>\n      </div>\n      <div class=\"col-xs-12\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group\">\n                  <a id=\"atcoder-easy-test-run\" class=\"btn btn-primary\">Run</a>\n              </div>\n          </div>\n      </div>\n  </div>\n  <style>\n  #atcoder-easy-test-language {\n      border: none;\n      background: transparent;\n      font: inherit;\n      color: #fff;\n  }\n  #atcoder-easy-test-language option {\n      border: none;\n      color: #333;\n      font: inherit;\n  }\n  </style>\n</form>";
 
-var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: 100;\n}\n</style>";
+var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: normal;\n}\n</style>";
 
 const doc = unsafeWindow.document;
 const $ = unsafeWindow.$;
@@ -748,37 +791,25 @@ doc.head.appendChild(html2element(hStyle));
         });
         setLanguage();
     }
+    let runId = 0;
     // テスト実行
     async function runTest(title, input, output = null) {
+        runId++;
         events.trig("disable");
         try {
-            const content = new ResultTabContent();
-            content.input = input;
-            if (output)
-                content.expectedOutput = output;
-            const tab = menuController.addTab("easy-test-result-" + content.uid, title, content.element, { active: true, closeButton: true });
             const options = { trim: true, split: true, };
             if (eAllowableErrorCheck.checked) {
                 options.allowableError = parseFloat(eAllowableError.value);
             }
             const result = await codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
+            const content = new ResultTabContent(result);
+            const tab = menuController.addTab("easy-test-result-" + content.uid, title + ` #${runId}`, content.element, { active: true, closeButton: true });
             if (result.status == "AC") {
                 tab.color = "#dff0d8";
-                content.outputStyle.backgroundColor = "#dff0d8";
             }
             else if (result.status != "OK") {
                 tab.color = "#fcf8e3";
-                content.outputStyle.backgroundColor = "#fcf8e3";
             }
-            content.exitCode = result.exitCode;
-            if ("execTime" in result)
-                content.execTime = `${result.execTime} ms`;
-            if ("memory" in result)
-                content.memory = `${result.memory} KB`;
-            if ("stdout" in result)
-                content.output = result.stdout;
-            if ("stderr" in result)
-                content.error = result.stderr;
             events.trig("enable");
             return result;
         }

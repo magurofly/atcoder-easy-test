@@ -2,20 +2,22 @@ import Options from "./Options";
 import Result from "./Result";
 
 export default abstract class CodeRunner {
-  abstract get label(): string;
-  abstract get site(): string;
-  
+  get label(): string {
+    return (this as any)._label;
+  }
+
   constructor(label, site) {
-    (this as any).label = `${label} [${site}]`;
+    (this as any)._label = `${label} [${site}]`;
   }
   
-  async test(sourceCode: string, input: string, supposedOutput: string | null, options: Options): Promise<Result> {
+  async test(sourceCode: string, input: string, expectedOutput: string | null, options: Options): Promise<Result> {
     const result = await this.run(sourceCode, input);
-    if (result.status != "OK" || typeof supposedOutput != "string") return result;
-    let output = result.stdout || "";
+    if (expectedOutput != null) result.expectedOutput = expectedOutput;
+    if (result.status != "OK" || typeof expectedOutput != "string") return result;
+    let output = result.output || "";
     
     if (options.trim) {
-      supposedOutput = supposedOutput.trim();
+      expectedOutput = expectedOutput.trim();
       output = output.trim();
     }
     
@@ -44,7 +46,7 @@ export default abstract class CodeRunner {
       }
     }
 
-    result.status = equals(output, supposedOutput) ? "AC" : "WA";
+    result.status = equals(output, expectedOutput) ? "AC" : "WA";
 
     return result;
   }

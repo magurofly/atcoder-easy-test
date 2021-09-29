@@ -1,4 +1,6 @@
 import { html2element } from "../util";
+import BottomMenu from "./bottomMenu";
+import TabController from "./TabController";
 
 import hBottomMenu from "./bottomMenu.html";
 import hStyle from "./style.html";
@@ -36,20 +38,13 @@ const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents") as 
   bottomMenuTabs.addEventListener("mouseleave", onEnd);
 }
 
-interface TabController {
-  get id(): string;
-  close(): void;
-  show(): void;
-  set color(color: string);
-}
-
 let tabs = new Set();
 let selectedTab: string | null = null;
 
 /** 下メニューの操作 */
-const menuController = {
+const menuController: BottomMenu = {
   /** タブを選択 */
-  selectTab(tabId: string)  {
+  selectTab(tabId: string) {
     const tab = unsafeWindow.$(`#bottom-menu-tab-${tabId}`);
     if (tab && tab[0]) {
       tab.tab("show"); // Bootstrap 3
@@ -58,7 +53,7 @@ const menuController = {
   },
 
   /** 下メニューにタブを追加する */
-  addTab(tabId: string, tabLabel: string, paneContent: Node, options = {}): TabController {
+  addTab(tabId: string, tabLabel: string, paneContent: Node, options: any = {}): TabController {
     console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
 
     // タブを追加

@@ -40,8 +40,9 @@ const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
     status: "OK",
     exitCode: "0",
     execTime: (timeEnd - timeStart),
-    stdout,
-    stderr,
+    input,
+    output: stdout,
+    error: stderr,
   };
 });
 

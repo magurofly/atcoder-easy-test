@@ -32,12 +32,12 @@ export default class WandboxCppRunner extends WandboxRunner {
     }
     
     const options = this.getOptions(sourceCode, input);
-    return await this.request(JSON.stringify(Object.assign({
+    return await this.request(Object.assign({
         compiler: this.name,
         code: sourceCode,
         stdin: input,
         codes,
         "compiler-option-raw": "-I.",
-    }, options)));
+    }, options));
   }
 }
