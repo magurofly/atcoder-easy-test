@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        AtCoder Easy Test
+// @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
 // @version     2.0.0
 // @description Make testing sample cases easy
