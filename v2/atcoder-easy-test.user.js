@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.0.0
+// @version     2.0.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -769,8 +769,8 @@ class ResultTabContent {
             this.outputStyle.backgroundColor = "#fcf8e3";
         }
         this.input = result.input;
-        if ("output" in result)
-            this.expectedOutput = result.output;
+        if ("expectedOutput" in result)
+            this.expectedOutput = result.expectedOutput;
         this.exitCode = result.exitCode;
         if ("execTime" in result)
             this.execTime = `${result.execTime} ms`;
@@ -867,7 +867,7 @@ doc.head.appendChild(html2element(hStyle));
     const eAllowableError = E("allowable-error");
     const eOutput = E("output");
     const eRun = E("run");
-    E("version").textContent = "2.0.0";
+    E("version").textContent = "2.0.1";
     events.on("enable", () => {
         eRun.classList.remove("disabled");
     });

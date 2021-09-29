@@ -38,7 +38,7 @@ export default class ResultTabContent {
     }
 
     this.input = result.input;
-    if ("output" in result) this.expectedOutput = result.output;
+    if ("expectedOutput" in result) this.expectedOutput = result.expectedOutput;
 
     this.exitCode = result.exitCode;
     if ("execTime" in result) this.execTime = `${result.execTime} ms`;
