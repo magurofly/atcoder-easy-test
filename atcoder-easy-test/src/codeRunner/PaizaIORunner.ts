@@ -30,7 +30,8 @@ export default class PaizaIORunner extends CodeRunner {
     } catch (error) {
       return {
         status: "IE",
-        stderr: error,
+        input,
+        error: String(error),
       };
     }
     
@@ -57,18 +58,19 @@ export default class PaizaIORunner extends CodeRunner {
       exitCode: String(res.exit_code),
       execTime: +res.time * 1e3,
       memory: +res.memory * 1e-3,
+      input,
     };
 
     if (res.build_result == "failure") {
       result.status = "CE";
       result.exitCode = res.build_exit_code;
-      result.stdout = res.build_stdout;
-      result.stderr = res.build_stderr;
+      result.output = res.build_stdout;
+      result.error = res.build_stderr;
     } else {
       result.status = (res.result == "timeout") ? "TLE" : (res.result == "failure") ? "RE" : "OK";
       result.exitCode = res.exit_code;
-      result.stdout = res.stdout;
-      result.stderr = res.stderr;
+      result.output = res.stdout;
+      result.error = res.stderr;
     }
 
     return result;

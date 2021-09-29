@@ -1,3 +1,5 @@
+import Result from "../codeRunner/Result";
+
 //TODO
 class ResultBar {
   constructor() {

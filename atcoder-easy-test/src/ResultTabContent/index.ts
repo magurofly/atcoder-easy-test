@@ -1,16 +1,46 @@
 import { html2element } from "../util";
 import events from "../events";
 import hTabTemplate from "./tabTemplate.html";
+import Result from "../codeRunner/Result";
+
+function setClassFromData(element: HTMLElement, name: string) {
+  const classes = element.dataset[name].split(/\s+/);
+  for (let className of classes) {
+    let flag = true;
+    if (className[0] == "!") {
+      className = className.slice(1);
+      flag = false;
+    }
+    element.classList.toggle(className, flag);
+  }
+}
 
 export default class ResultTabContent {
   private _title: string | null;
   private _uid: string;
   private _element: HTMLElement;
+  private _result: Result;
 
-  constructor() {
+  constructor(result: Result) {
     this._uid = Date.now().toString(16);
+    this._result = result;
     this._element = html2element(hTabTemplate) as HTMLDivElement;
     this._element.id = `atcoder-easy-test-result-${this._uid}`;
+
+    if (result.status == "AC") {
+      this.outputStyle.backgroundColor = "#dff0d8";
+    } else if (result.status != "OK") {
+      this.outputStyle.backgroundColor = "#fcf8e3";
+    }
+
+    this.input = result.input;
+    if ("output" in result) this.expectedOutput = result.output;
+
+    this.exitCode = result.exitCode;
+    if ("execTime" in result) this.execTime = `${result.execTime} ms`;
+    if ("memory" in result) this.memory = `${result.memory} KB`;
+    if ("output" in result) this.output = result.output;
+    if (result.error) this.error = result.error;
   }
 
   get uid(): string {
@@ -39,8 +69,8 @@ export default class ResultTabContent {
 
   set expectedOutput(output: string) {
     this._get<HTMLTextAreaElement>("expected-output").value = output;
-    this._get("col-input").classList.add("col-sm-6");
-    this._get("col-expected-output").classList.remove("hidden");
+    setClassFromData(this._get("col-input"), "ifExpectedOutput");
+    setClassFromData(this._get("col-expected-output"), "ifExpectedOutput");
   }
 
   get expectedOutputStyle(): CSSStyleDeclaration {
@@ -57,8 +87,8 @@ export default class ResultTabContent {
 
   set error(error: string) {
     this._get<HTMLTextAreaElement>("error").value = error;
-    this._get("col-output").classList.add("col-md-6");
-    this._get("col-error").classList.remove("hidden");
+    setClassFromData(this._get("col-output"), "ifError");
+    setClassFromData(this._get("col-error"), "ifError");
   }
 
   set exitCode(code: string) {

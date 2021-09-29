@@ -1,4 +1,5 @@
 export interface TestCase {
+  title: string,
   input: string,
   output: string,
   anchor: HTMLElement,
@@ -22,9 +23,11 @@ export function getTestCases(): TestCase[] {
     });
     if (e.length == 0) continue;
     const testcases = [];
+    let sampleId = 1;
     for (let i = 0; i < e.length; i += 2) {
       const container = e[i].closest(closestSelector) || e[i].parentElement;
       testcases.push({
+        title: `Sample ${sampleId++}`,
         input: (e[i]||{}).textContent,
         output: (e[i+1]||{}).textContent,
         anchor: container.querySelector("h3"),

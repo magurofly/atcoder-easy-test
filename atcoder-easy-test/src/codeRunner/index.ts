@@ -59,11 +59,12 @@ const runners = {
   "4053": [new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)")],
   "4055": [new PaizaIORunner("swift", "Swift (5.2.5)")],
   "4056": [new CustomRunner("Text",
-      async (sourceCode, input) => {
+      async (sourceCode: string, input: string) => {
           return {
               status: "OK",
               exitCode: "0",
-              stdout: sourceCode,
+              input,
+              output: sourceCode,
           };
       }
   )],
@@ -88,7 +89,7 @@ console.info("AtCoder Easy Test: codeRunner OK");
 
 export default {
   // 指定した環境でコードを実行する
-  run(languageId: string, index: number, sourceCode: string, input: string, supposedOutput: string | null, options: Options = { trim: true, split: true }): Promise<Result> {
+  run(languageId: string, index: number, sourceCode: string, input: string, expectedOutput: string | null, options: Options = { trim: true, split: true }): Promise<Result> {
     // CodeRunner が存在しない言語ID
     if (!(languageId in runners)) return Promise.reject("Language not supported");
     if (!(index in runners[languageId])) return Promise.reject(`Runner index out of range: [0, ${runners[languageId].length})`);
@@ -97,7 +98,7 @@ export default {
     codeSaver.save(sourceCode);
 
     // 実行
-    return runners[languageId][index].test(sourceCode, input, supposedOutput, options);
+    return runners[languageId][index].test(sourceCode, input, expectedOutput, options);
   },
 
   // 環境の名前の一覧を取得する

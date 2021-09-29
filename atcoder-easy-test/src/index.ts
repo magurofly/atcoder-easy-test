@@ -15,8 +15,8 @@ const $ = unsafeWindow.$;
 const $select = <E extends HTMLElement>(selector: string): E => doc.querySelector<E>(selector);
 
 // external interfaces
-(unsafeWindow as any).bottomMenu = bottomMenu;
-(unsafeWindow as any).codeRunner = codeRunner;
+unsafeWindow.bottomMenu = bottomMenu;
+unsafeWindow.codeRunner = codeRunner;
 
 doc.head.appendChild(html2element(hStyle));
 
@@ -80,34 +80,29 @@ doc.head.appendChild(html2element(hStyle));
     setLanguage();
   }
 
+  let runId = 0;
+
   // テスト実行
   async function runTest(title: string, input: string, output: string | null = null): Promise<Result> {
+    runId++;
+
     events.trig("disable");
     try {
-      const content = new ResultTabContent();
-      content.input = input;
-      if (output) content.expectedOutput = output;
-      const tab = bottomMenu.addTab("easy-test-result-" + content.uid, title, content.element, { active: true, closeButton: true });
       const options: Options = { trim: true, split: true, };
       if (eAllowableErrorCheck.checked) {
         options.allowableError = parseFloat(eAllowableError.value);
       }
-      
+
       const result = await codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
-      
+      const content = new ResultTabContent(result);
+
+      const tab = bottomMenu.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
+       
       if (result.status == "AC") {
         tab.color = "#dff0d8";
-        content.outputStyle.backgroundColor = "#dff0d8";
       } else if (result.status != "OK") {
         tab.color = "#fcf8e3";
-        content.outputStyle.backgroundColor = "#fcf8e3";
       }
-      
-      content.exitCode = result.exitCode;
-      if ("execTime" in result) content.execTime = `${result.execTime} ms`;
-      if ("memory" in result) content.memory = `${result.memory} KB`;
-      if ("stdout" in result) content.output = result.stdout;
-      if ("stderr" in result) content.error = result.stderr;
 
       events.trig("enable");
 

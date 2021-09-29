@@ -68,8 +68,9 @@ export default class AtCoderRunner extends CodeRunner {
         exitCode: result.ExitCode,
         execTime: result.TimeConsumption,
         memory: result.MemoryConsumption,
-        stdout: data.Stdout,
-        stderr: data.Stderr,
+        input,
+        output: data.Stdout,
+        error: data.Stderr,
       };
     }
   }
