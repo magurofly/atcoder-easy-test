@@ -10,12 +10,6 @@
 // @grant       unsafeWindow
 // ==/UserScript==
 (function() {
-function html2element(html) {
-    const template = document.createElement("template");
-    template.innerHTML = html;
-    return template.content.firstChild;
-}
-
 const codeSaver = {
     LIMIT: 10,
     get() {
@@ -94,13 +88,13 @@ class CodeRunner {
         if (options.split) {
             const superEquals = equals;
             equals = (x, y) => {
-                const xs = x.trim().split(/\s+/);
-                const ys = y.trim().split(/\s+/);
+                const xs = x.split(/\s+/);
+                const ys = y.split(/\s+/);
                 if (xs.length != ys.length)
                     return false;
-                const len = x.length;
+                const len = xs.length;
                 for (let i = 0; i < len; i++) {
-                    if (!superEquals(x[i], y[i]))
+                    if (!superEquals(xs[i], ys[i]))
                         return false;
                 }
                 return true;
@@ -520,101 +514,44 @@ const events = {
     },
 };
 
-var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\" data-if-expected-output=\"col-sm-6 col-sm-push-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\" data-if-expected-output=\"!hidden col-sm-pull-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\" data-if-error=\"col-md-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\" data-if-error=\"!hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
-
-function setClassFromData(element, name) {
-    const classes = element.dataset[name].split(/\s+/);
-    for (let className of classes) {
-        let flag = true;
-        if (className[0] == "!") {
-            className = className.slice(1);
-            flag = false;
+function getTestCases() {
+    const selectors = [
+        ["#task-statement p+pre.literal-block", ".section"],
+        ["#task-statement pre.source-code-for-copy", ".part"],
+        ["#task-statement .lang>*:nth-child(1) .div-btn-copy+pre", ".part"],
+        ["#task-statement .div-btn-copy+pre", ".part"],
+        ["#task-statement>.part pre.linenums", ".part"],
+        ["#task-statement>.part:not(.io-style)>h3+section>pre", ".part"],
+        ["#task-statement pre", ".part"],
+    ];
+    for (const [selector, closestSelector] of selectors) {
+        const e = [...document.querySelectorAll(selector)].filter(e => {
+            if (e.closest(".io-style"))
+                return false; // practice2
+            return true;
+        });
+        if (e.length == 0)
+            continue;
+        const testcases = [];
+        let sampleId = 1;
+        for (let i = 0; i < e.length; i += 2) {
+            const container = e[i].closest(closestSelector) || e[i].parentElement;
+            testcases.push({
+                title: `Sample ${sampleId++}`,
+                input: (e[i] || {}).textContent,
+                output: (e[i + 1] || {}).textContent,
+                anchor: container.querySelector("h3"),
+            });
         }
-        element.classList.toggle(className, flag);
+        return testcases;
     }
+    return [];
 }
-class ResultTabContent {
-    _title;
-    _uid;
-    _element;
-    _result;
-    constructor(result) {
-        this._uid = Date.now().toString(16);
-        this._result = result;
-        this._element = html2element(hTabTemplate);
-        this._element.id = `atcoder-easy-test-result-${this._uid}`;
-        if (result.status == "AC") {
-            this.outputStyle.backgroundColor = "#dff0d8";
-        }
-        else if (result.status != "OK") {
-            this.outputStyle.backgroundColor = "#fcf8e3";
-        }
-        this.input = result.input;
-        if ("output" in result)
-            this.expectedOutput = result.output;
-        this.exitCode = result.exitCode;
-        if ("execTime" in result)
-            this.execTime = `${result.execTime} ms`;
-        if ("memory" in result)
-            this.memory = `${result.memory} KB`;
-        if ("output" in result)
-            this.output = result.output;
-        if (result.error)
-            this.error = result.error;
-    }
-    get uid() {
-        return this._uid;
-    }
-    get element() {
-        return this._element;
-    }
-    set title(title) {
-        this._title = title;
-    }
-    get title() {
-        return this._title;
-    }
-    set input(input) {
-        this._get("input").value = input;
-    }
-    get inputStyle() {
-        return this._get("input").style;
-    }
-    set expectedOutput(output) {
-        this._get("expected-output").value = output;
-        setClassFromData(this._get("col-input"), "ifExpectedOutput");
-        setClassFromData(this._get("col-expected-output"), "ifExpectedOutput");
-    }
-    get expectedOutputStyle() {
-        return this._get("expected-output").style;
-    }
-    set output(output) {
-        this._get("output").value = output;
-    }
-    get outputStyle() {
-        return this._get("output").style;
-    }
-    set error(error) {
-        this._get("error").value = error;
-        setClassFromData(this._get("col-output"), "ifError");
-        setClassFromData(this._get("col-error"), "ifError");
-    }
-    set exitCode(code) {
-        const element = this._get("exit-code");
-        element.textContent = code;
-        const isSuccess = code == "0";
-        element.classList.toggle("bg-success", isSuccess);
-        element.classList.toggle("bg-danger", !isSuccess);
-    }
-    set execTime(time) {
-        this._get("exec-time").textContent = time;
-    }
-    set memory(memory) {
-        this._get("memory").textContent = memory;
-    }
-    _get(name) {
-        return this._element.querySelector(`.atcoder-easy-test-result-${name}`);
-    }
+
+function html2element(html) {
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    return template.content.firstChild;
 }
 
 var hBottomMenu = "<div id=\"bottom-menu-wrapper\" class=\"navbar navbar-default navbar-fixed-bottom\">\n  <div class=\"container\">\n    <div class=\"navbar-header\">\n      <button id=\"bottom-menu-key\" type=\"button\" class=\"navbar-toggle collapsed glyphicon glyphicon-menu-down\" data-toggle=\"collapse\" data-target=\"#bottom-menu\"></button>\n    </div>\n    <div id=\"bottom-menu\" class=\"collapse navbar-collapse\">\n      <ul id=\"bottom-menu-tabs\" class=\"nav nav-tabs\"></ul>\n      <div id=\"bottom-menu-contents\" class=\"tab-content\"></div>\n    </div>\n  </div>\n</div>";
@@ -676,7 +613,7 @@ const menuController = {
         tab.dataset.toggle = "tab";
         tab.addEventListener("click", event => {
             event.preventDefault();
-            this.selectTab(tabId);
+            menuController.selectTab(tabId);
         });
         const tabLi = document.createElement("li");
         tabLi.appendChild(tab);
@@ -704,7 +641,7 @@ const menuController = {
             },
             show() {
                 menuController.show();
-                this.selectTab(tabId);
+                menuController.selectTab(tabId);
             },
             set color(color) {
                 tab.style.backgroundColor = color;
@@ -712,7 +649,7 @@ const menuController = {
         };
         // 選択されているタブがなければ選択
         if (!selectedTab)
-            this.selectTab(tabId);
+            menuController.selectTab(tabId);
         return controller;
     },
     /** 下メニューを表示する */
@@ -727,9 +664,189 @@ const menuController = {
 };
 console.info("AtCoder Easy Test: bottomMenu OK");
 
+var hRowTemplate = "<div class=\"atcoder-easy-test-cases-row alert alert-dismissible\">\n  <button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">\n    <span aria-hidden=\"true\">×</span>\n  </button>\n  <div class=\"progress\">\n    <div class=\"progress-bar\" style=\"width: 0%;\">0 / 0</div>\n  </div>\n  <!--div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div>\n  <div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div>\n  <div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div-->\n</div>";
+
+class ResultRow {
+    _tabs;
+    _element;
+    _promise;
+    constructor(pairs) {
+        this._tabs = pairs.map(([_, tab]) => tab);
+        this._element = html2element(hRowTemplate);
+        const numCases = pairs.length;
+        let numFinished = 0;
+        let numAccepted = 0;
+        const progressBar = this._element.querySelector(".progress-bar");
+        progressBar.textContent = `${numFinished} / ${numCases}`;
+        this._promise = Promise.all(pairs.map(([pResult, tab]) => {
+            const button = html2element(`<div class="label label-default" style="margin: 3px; cursor: pointer;">WJ</div>`);
+            button.addEventListener("click", () => {
+                tab.show();
+            });
+            this._element.appendChild(button);
+            return pResult.then(result => {
+                button.textContent = result.status;
+                if (result.status == "AC") {
+                    button.classList.add("label-success");
+                }
+                else if (result.status != "OK") {
+                    button.classList.add("label-warning");
+                }
+                numFinished++;
+                if (result.status == "AC")
+                    numAccepted++;
+                progressBar.textContent = `${numFinished} / ${numCases}`;
+                progressBar.style.width = `${100 * numFinished / numCases}%`;
+                if (numFinished == numCases) {
+                    if (numAccepted == numCases)
+                        this._element.classList.add("alert-success");
+                    else
+                        this._element.classList.add("alert-warning");
+                }
+            }).catch(reason => {
+                button.textContent = "IE";
+                button.classList.add("label-danger");
+                console.error(reason);
+            });
+        }));
+    }
+    get element() {
+        return this._element;
+    }
+    onFinish(listener) {
+        this._promise.then(listener);
+    }
+    remove() {
+        for (const tab of this._tabs)
+            tab.close();
+        const parent = this._element.parentElement;
+        if (parent)
+            parent.removeChild(this._element);
+    }
+}
+
+var hResultList = "<div class=\"row\"></div>";
+
+const eResultList = html2element(hResultList);
+unsafeWindow.document.querySelector(".form-code-submit").appendChild(eResultList);
+const resultList = {
+    addResult(pairs) {
+        const result = new ResultRow(pairs);
+        eResultList.appendChild(result.element);
+        return result;
+    },
+};
+
+var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\" data-if-expected-output=\"col-sm-6 col-sm-push-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\" data-if-expected-output=\"!hidden col-sm-pull-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\" data-if-error=\"col-md-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\" data-if-error=\"!hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
+
+function setClassFromData(element, name) {
+    const classes = element.dataset[name].split(/\s+/);
+    for (let className of classes) {
+        let flag = true;
+        if (className[0] == "!") {
+            className = className.slice(1);
+            flag = false;
+        }
+        element.classList.toggle(className, flag);
+    }
+}
+class ResultTabContent {
+    _title;
+    _uid;
+    _element;
+    _result;
+    constructor() {
+        this._uid = Date.now().toString(16);
+        this._result = null;
+        this._element = html2element(hTabTemplate);
+        this._element.id = `atcoder-easy-test-result-${this._uid}`;
+    }
+    set result(result) {
+        this._result = result;
+        if (result.status == "AC") {
+            this.outputStyle.backgroundColor = "#dff0d8";
+        }
+        else if (result.status != "OK") {
+            this.outputStyle.backgroundColor = "#fcf8e3";
+        }
+        this.input = result.input;
+        if ("output" in result)
+            this.expectedOutput = result.output;
+        this.exitCode = result.exitCode;
+        if ("execTime" in result)
+            this.execTime = `${result.execTime} ms`;
+        if ("memory" in result)
+            this.memory = `${result.memory} KB`;
+        if ("output" in result)
+            this.output = result.output;
+        if (result.error)
+            this.error = result.error;
+    }
+    get result() {
+        return this._result;
+    }
+    get uid() {
+        return this._uid;
+    }
+    get element() {
+        return this._element;
+    }
+    set title(title) {
+        this._title = title;
+    }
+    get title() {
+        return this._title;
+    }
+    set input(input) {
+        this._get("input").value = input;
+    }
+    get inputStyle() {
+        return this._get("input").style;
+    }
+    set expectedOutput(output) {
+        this._get("expected-output").value = output;
+        setClassFromData(this._get("col-input"), "ifExpectedOutput");
+        setClassFromData(this._get("col-expected-output"), "ifExpectedOutput");
+    }
+    get expectedOutputStyle() {
+        return this._get("expected-output").style;
+    }
+    set output(output) {
+        this._get("output").value = output;
+    }
+    get outputStyle() {
+        return this._get("output").style;
+    }
+    set error(error) {
+        this._get("error").value = error;
+        setClassFromData(this._get("col-output"), "ifError");
+        setClassFromData(this._get("col-error"), "ifError");
+    }
+    set exitCode(code) {
+        const element = this._get("exit-code");
+        element.textContent = code;
+        const isSuccess = code == "0";
+        element.classList.toggle("bg-success", isSuccess);
+        element.classList.toggle("bg-danger", !isSuccess);
+    }
+    set execTime(time) {
+        this._get("exec-time").textContent = time;
+    }
+    set memory(memory) {
+        this._get("memory").textContent = memory;
+    }
+    _get(name) {
+        return this._element.querySelector(`.atcoder-easy-test-result-${name}`);
+    }
+}
+
 var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">\n  <small style=\"position: absolute; display: block; bottom: 0; right: 0; padding: 1% 4%; width: 95%; text-align: right;\">AtCoder Easy Test v<span id=\"atcoder-easy-test-version\"></span></small>\n  <div class=\"row\">\n      <div class=\"col-xs-12 col-lg-8\">\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\">Test Environment</label>\n              <div class=\"col-sm-10\">\n                  <select class=\"form-control\" id=\"atcoder-easy-test-language\"></select>\n              </div>\n          </div>\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-input\">Standard Input</label>\n              <div class=\"col-sm-10\">\n                  <textarea id=\"atcoder-easy-test-input\" name=\"input\" class=\"form-control\" rows=\"3\"></textarea>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-lg-4\">\n          <details close>\n              <summary>Expected Output</summary>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-allowable-error-check\">Allowable Error</label>\n                  <div class=\"col-sm-10\">\n                      <div class=\"input-group\">\n                          <span class=\"input-group-addon\">\n                              <input id=\"atcoder-easy-test-allowable-error-check\" type=\"checkbox\" checked=\"checked\">\n                          </span>\n                          <input id=\"atcoder-easy-test-allowable-error\" type=\"text\" class=\"form-control\" value=\"1e-6\">\n                      </div>\n                  </div>\n              </div>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-output\">Expected Output</label>\n                  <div class=\"col-sm-10\">\n                      <textarea id=\"atcoder-easy-test-output\" name=\"output\" class=\"form-control\" rows=\"3\"></textarea>\n                  </div>\n              </div>\n          </details>\n      </div>\n      <div class=\"col-xs-12\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group\">\n                  <a id=\"atcoder-easy-test-run\" class=\"btn btn-primary\">Run</a>\n              </div>\n          </div>\n      </div>\n  </div>\n  <style>\n  #atcoder-easy-test-language {\n      border: none;\n      background: transparent;\n      font: inherit;\n      color: #fff;\n  }\n  #atcoder-easy-test-language option {\n      border: none;\n      color: #333;\n      font: inherit;\n  }\n  </style>\n</form>";
 
 var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: normal;\n}\n</style>";
+
+var hTestAndSubmit = "<a id=\"atcoder-easy-test-btn-test-and-submit\" class=\"btn btn-info btn\" style=\"margin-left: 1rem\" title=\"Ctrl+Enter\" data-toggle=\"tooltip\">Test &amp; Submit</a>";
+
+var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-default btn-sm\" style=\"margin-left: 1rem\" title=\"Alt+Enter\" data-toggle=\"tooltip\">Test All Samples</a>";
 
 const doc = unsafeWindow.document;
 const $ = unsafeWindow.$;
@@ -741,6 +858,7 @@ doc.head.appendChild(html2element(hStyle));
 // place "Easy Test" tab
 {
     const eAtCoderLang = $select("#select-lang>select");
+    const eSubmitButton = doc.getElementById("submit");
     // declare const hRoot: string;
     const root = html2element(hRoot);
     const E = (id) => root.querySelector(`#atcoder-easy-test-${id}`);
@@ -793,17 +911,18 @@ doc.head.appendChild(html2element(hStyle));
     }
     let runId = 0;
     // テスト実行
-    async function runTest(title, input, output = null) {
+    function runTest(title, input, output = null) {
         runId++;
         events.trig("disable");
-        try {
-            const options = { trim: true, split: true, };
-            if (eAllowableErrorCheck.checked) {
-                options.allowableError = parseFloat(eAllowableError.value);
-            }
-            const result = await codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
-            const content = new ResultTabContent(result);
-            const tab = menuController.addTab("easy-test-result-" + content.uid, title + ` #${runId}`, content.element, { active: true, closeButton: true });
+        const options = { trim: true, split: true, };
+        if (eAllowableErrorCheck.checked) {
+            options.allowableError = parseFloat(eAllowableError.value);
+        }
+        const content = new ResultTabContent();
+        const tab = menuController.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
+        const pResult = codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
+        pResult.then(result => {
+            content.result = result;
             if (result.status == "AC") {
                 tab.color = "#dff0d8";
             }
@@ -811,12 +930,18 @@ doc.head.appendChild(html2element(hStyle));
                 tab.color = "#fcf8e3";
             }
             events.trig("enable");
-            return result;
-        }
-        catch (reason) {
-            events.trig("enable");
-            throw reason;
-        }
+        });
+        return [pResult, tab];
+    }
+    function runAllCases(testcases) {
+        const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
+        resultList.addResult(pairs);
+        return Promise.all(pairs.map(([pResult, _]) => pResult.then(result => {
+            if (result.status == "AC")
+                return Promise.resolve(result);
+            else
+                return Promise.reject(result);
+        })));
     }
     eRun.addEventListener("click", _ => {
         const title = "Run";
@@ -825,6 +950,21 @@ doc.head.appendChild(html2element(hStyle));
         runTest(title, input, output || null);
     });
     menuController.addTab("easy-test", "Easy Test", root);
+    // place "Test & Submit" button
+    {
+        const button = html2element(hTestAndSubmit);
+        eSubmitButton.parentElement.appendChild(button);
+        button.addEventListener("click", async () => {
+            await runAllCases(getTestCases());
+            eSubmitButton.click();
+        });
+    }
+    // place "Test All Samples" button
+    {
+        const button = html2element(hTestAllSamples);
+        eSubmitButton.parentElement.appendChild(button);
+        button.addEventListener("click", () => runAllCases(getTestCases()));
+    }
 }
 // place "Restore Last Play" button
 try {

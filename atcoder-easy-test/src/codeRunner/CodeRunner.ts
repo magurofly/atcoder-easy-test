@@ -6,7 +6,7 @@ export default abstract class CodeRunner {
     return (this as any)._label;
   }
 
-  constructor(label, site) {
+  constructor(label: string, site: string) {
     (this as any)._label = `${label} [${site}]`;
   }
   
@@ -35,12 +35,12 @@ export default abstract class CodeRunner {
     if (options.split) {
       const superEquals = equals;
       equals = (x, y) => {
-        const xs = x.trim().split(/\s+/);
-        const ys = y.trim().split(/\s+/);
+        const xs = x.split(/\s+/);
+        const ys = y.split(/\s+/);
         if (xs.length != ys.length) return false;
-        const len = x.length;
+        const len = xs.length;
         for (let i = 0; i < len; i++) {
-          if (!superEquals(x[i], y[i])) return false;
+          if (!superEquals(xs[i], ys[i])) return false;
         }
         return true;
       }

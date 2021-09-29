@@ -65,7 +65,7 @@ const menuController: BottomMenu = {
     tab.dataset.toggle = "tab";
     tab.addEventListener("click", event => {
       event.preventDefault();
-      this.selectTab(tabId);
+      menuController.selectTab(tabId);
     });
     const tabLi = document.createElement("li");
     tabLi.appendChild(tab);
@@ -95,7 +95,7 @@ const menuController: BottomMenu = {
       },
       show() {
         menuController.show();
-        this.selectTab(tabId);
+        menuController.selectTab(tabId);
       },
       set color(color: string) {
         tab.style.backgroundColor = color;
@@ -103,7 +103,7 @@ const menuController: BottomMenu = {
     };
 
     // 選択されているタブがなければ選択
-    if (!selectedTab) this.selectTab(tabId);
+    if (!selectedTab) menuController.selectTab(tabId);
 
     return controller;
   },
