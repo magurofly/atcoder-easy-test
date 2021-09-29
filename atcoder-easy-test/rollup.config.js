@@ -9,7 +9,7 @@ export default [
         output: {
             banner: `
 // ==UserScript==
-// @name        AtCoder Easy Test
+// @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
 // @version     ${packageJson.version}
 // @description ${packageJson.description}
