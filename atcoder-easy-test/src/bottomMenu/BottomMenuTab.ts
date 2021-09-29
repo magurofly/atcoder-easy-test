@@ -1,4 +1,4 @@
-export default interface TabController {
+export default interface BottomMenuTab {
   get id(): string;
   close(): void;
   show(): void;

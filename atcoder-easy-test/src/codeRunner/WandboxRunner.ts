@@ -61,8 +61,8 @@ export default class WandboxRunner extends CodeRunner {
       exitCode: String(res.status),
       execTime: endTime - startTime,
       input: body.stdin,
-      output: String(res.program_output),
-      error: String(res.program_error),
+      output: String(res.program_output || ""),
+      error: String(res.program_error || ""),
     };
 
     // 正常終了以外の場合

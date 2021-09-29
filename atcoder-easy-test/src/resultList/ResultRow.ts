@@ -1,15 +1,15 @@
 import Result from "../codeRunner/Result";
-import TabController from "../bottomMenu/TabController";
+import BottomMenuTab from "../bottomMenu/BottomMenuTab";
 import hRowTemplate from "./rowTemplate.html";
 import { html2element } from "../util";
 import resultList from ".";
 
 export default class ResultRow {
-  private _tabs: TabController[];
+  private _tabs: BottomMenuTab[];
   private _element: HTMLDivElement;
   private _promise: Promise<void[]>;
 
-  constructor(pairs: [Promise<Result>, TabController][]) {
+  constructor(pairs: [Promise<Result>, BottomMenuTab][]) {
     this._tabs = pairs.map(([_, tab]) => tab);
     this._element = html2element(hRowTemplate) as HTMLDivElement;
 

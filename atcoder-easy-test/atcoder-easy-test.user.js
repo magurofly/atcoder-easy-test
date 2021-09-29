@@ -302,8 +302,8 @@ class WandboxRunner extends CodeRunner {
             exitCode: String(res.status),
             execTime: endTime - startTime,
             input: body.stdin,
-            output: String(res.program_output),
-            error: String(res.program_error),
+            output: String(res.program_output || ""),
+            error: String(res.program_error || ""),
         };
         // 正常終了以外の場合
         if (res.status != 0) {
@@ -500,20 +500,6 @@ var codeRunner = {
     },
 };
 
-const eventListeners = {};
-const events = {
-    on(name, listener) {
-        const listeners = (name in eventListeners ? eventListeners[name] : eventListeners[name] = []);
-        listeners.push(listener);
-    },
-    trig(name) {
-        if (name in eventListeners) {
-            for (const listener of eventListeners[name])
-                listener();
-        }
-    },
-};
-
 function getTestCases() {
     const selectors = [
         ["#task-statement p+pre.literal-block", ".section"],
@@ -553,6 +539,19 @@ function html2element(html) {
     template.innerHTML = html;
     return template.content.firstChild;
 }
+const eventListeners = {};
+const events = {
+    on(name, listener) {
+        const listeners = (name in eventListeners ? eventListeners[name] : eventListeners[name] = []);
+        listeners.push(listener);
+    },
+    trig(name) {
+        if (name in eventListeners) {
+            for (const listener of eventListeners[name])
+                listener();
+        }
+    },
+};
 
 var hBottomMenu = "<div id=\"bottom-menu-wrapper\" class=\"navbar navbar-default navbar-fixed-bottom\">\n  <div class=\"container\">\n    <div class=\"navbar-header\">\n      <button id=\"bottom-menu-key\" type=\"button\" class=\"navbar-toggle collapsed glyphicon glyphicon-menu-down\" data-toggle=\"collapse\" data-target=\"#bottom-menu\"></button>\n    </div>\n    <div id=\"bottom-menu\" class=\"collapse navbar-collapse\">\n      <ul id=\"bottom-menu-tabs\" class=\"nav nav-tabs\"></ul>\n      <div id=\"bottom-menu-contents\" class=\"tab-content\"></div>\n    </div>\n  </div>\n</div>";
 

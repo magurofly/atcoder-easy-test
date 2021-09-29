@@ -1,15 +1,14 @@
 import codeSaver from "./codeSaver";
 import codeRunner from "./codeRunner";
-import events from "./events";
 import { TestCase, getTestCases } from "./testcase";
 import bottomMenu from "./bottomMenu";
 import resultList from "./resultList";
 
-import { html2element } from "./util";
+import { events, html2element } from "./util";
 import ResultTabContent from "./ResultTabContent";
 import Options from "./codeRunner/Options";
 import Result from "./codeRunner/Result";
-import TabController from "./bottomMenu/TabController";
+import BottomMenuTab from "./bottomMenu/BottomMenuTab";
 
 import hRoot from "./container.html";
 import hStyle from "./style.html";
@@ -90,7 +89,7 @@ doc.head.appendChild(html2element(hStyle));
   let runId = 0;
 
   // テスト実行
-  function runTest(title: string, input: string, output: string | null = null): [Promise<Result>, TabController] {
+  function runTest(title: string, input: string, output: string | null = null): [Promise<Result>, BottomMenuTab] {
     runId++;
 
     events.trig("disable");
