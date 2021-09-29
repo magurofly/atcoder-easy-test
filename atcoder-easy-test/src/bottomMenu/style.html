@@ -1,0 +1,101 @@
+<style>
+#bottom-menu-wrapper {
+  background: transparent;
+  border: none;
+  pointer-events: none;
+  padding: 0;
+}
+
+#bottom-menu-wrapper>.container {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 0;
+}
+
+#bottom-menu-wrapper>.container>.navbar-header {
+  float: none;
+}
+
+#bottom-menu-key {
+  display: block;
+  float: none;
+  margin: 0 auto;
+  padding: 10px 3em;
+  border-radius: 5px 5px 0 0;
+  background: #000;
+  opacity: 0.5;
+  color: #FFF;
+  cursor: pointer;
+  pointer-events: auto;
+  text-align: center;
+}
+
+@media screen and (max-width: 767px) {
+  #bottom-menu-key {
+    opacity: 0.25;
+  }
+}
+
+#bottom-menu-key.collapsed:before {
+  content: "\e260";
+}
+
+#bottom-menu-tabs {
+  padding: 3px 0 0 10px;
+  cursor: n-resize;
+}
+
+#bottom-menu-tabs a {
+  pointer-events: auto;
+}
+
+#bottom-menu {
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  max-height: unset;
+}
+
+#bottom-menu.collapse:not(.in) {
+  display: none !important;
+}
+
+#bottom-menu-tabs>li>a {
+  background: rgba(150, 150, 150, 0.5);
+  color: #000;
+  border: solid 1px #ccc;
+  filter: brightness(0.75);
+}
+
+#bottom-menu-tabs>li>a:hover {
+  background: rgba(150, 150, 150, 0.5);
+  border: solid 1px #ccc;
+  color: #111;
+  filter: brightness(0.9);
+}
+
+#bottom-menu-tabs>li.active>a {
+  background: #eee;
+  border: solid 1px #ccc;
+  color: #333;
+  filter: none;
+}
+
+.bottom-menu-btn-close {
+  font-size: 8pt;
+  vertical-align: baseline;
+  padding: 0 0 0 6px;
+  margin-right: -6px;
+}
+
+#bottom-menu-contents {
+  padding: 5px 15px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+#bottom-menu-contents .panel {
+  color: #333;
+}
+</style>

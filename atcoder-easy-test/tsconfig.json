@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "esnext",
+    "typeRoots": [
+      "./types",
+      "./node_modules/@types",
+    ]
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
