@@ -109,7 +109,7 @@ function init() {
           title: `Sample ${sampleId++}`,
           input: (e[i]||{}).textContent,
           output: (e[i+1]||{}).textContent,
-          anchor: container.querySelector("h3"),
+          anchor: container.querySelector(".btn-copy"),
         });
       }
       return testcases;

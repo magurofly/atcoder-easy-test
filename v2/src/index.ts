@@ -14,6 +14,7 @@ import BottomMenuTab from "./bottomMenu/BottomMenuTab";
 
 import hRoot from "./container.html";
 import hStyle from "./style.html";
+import hRunButton from "./runButton.html";
 import hTestAndSubmit from "./testAndSubmit.html";
 import hTestAllSamples from "./testAllSamples.html";
 
@@ -149,6 +150,23 @@ doc.head.appendChild(html2element(hStyle));
 
   bottomMenu.addTab("easy-test", "Easy Test", root);
 
+  // place "Run" button on each sample
+  for (const testCase of site.testCases) {
+    const eRunButton = html2element(hRunButton) as HTMLAnchorElement;
+    eRunButton.addEventListener("click", async () => {
+      const [pResult, tab] = runTest(testCase.title, testCase.input, testCase.output);
+      await pResult;
+      tab.show();
+    });
+    testCase.anchor.insertAdjacentElement("afterend", eRunButton);
+    events.on("disable", () => {
+      eRunButton.classList.add("disabled");
+    });
+    events.on("enable", () => {
+      eRunButton.classList.remove("disabled");
+    });
+  }
+
   // place "Test & Submit" button
   {
     const button = html2element(hTestAndSubmit);
@@ -175,7 +193,7 @@ try {
   restoreButton.addEventListener("click", async () => {
     try {
       const lastCode = await codeSaver.restore();
-      if (confirm("Your current code will be replaced. Are you sure?")) {
+      if (site.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
         site.sourceCode = lastCode;
       }
     } catch (reason) {

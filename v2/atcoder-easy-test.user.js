@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.1.0
+// @version     2.2.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -585,7 +585,7 @@ function init$1() {
                     title: `Sample ${sampleId++}`,
                     input: (e[i] || {}).textContent,
                     output: (e[i + 1] || {}).textContent,
-                    anchor: container.querySelector("h3"),
+                    anchor: container.querySelector(".btn-copy"),
                 });
             }
             return testcases;
@@ -808,7 +808,8 @@ var codeRunner = {
         if (!(languageId in runners))
             return Promise.reject("Language not supported");
         // 最後に実行したコードを保存
-        codeSaver.save(sourceCode);
+        if (sourceCode.length > 0)
+            codeSaver.save(sourceCode);
         // 実行
         return runners[languageId].test(sourceCode, input, expectedOutput, options);
     },
@@ -1150,6 +1151,8 @@ var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">
 
 var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: normal;\n}\n</style>";
 
+var hRunButton = "<a class=\"btn btn-primary btn-sm\" style=\"vertical-align: top; margin-left: 0.5em\">Run</a>";
+
 var hTestAndSubmit = "<a id=\"atcoder-easy-test-btn-test-and-submit\" class=\"btn btn-info btn\" style=\"margin-left: 1rem\" title=\"Ctrl+Enter\" data-toggle=\"tooltip\">Test &amp; Submit</a>";
 
 var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-default btn-sm\" style=\"margin-left: 1rem\" title=\"Alt+Enter\" data-toggle=\"tooltip\">Test All Samples</a>";
@@ -1170,7 +1173,7 @@ doc.head.appendChild(html2element(hStyle));
     const eAllowableError = E("allowable-error");
     const eOutput = E("output");
     const eRun = E("run");
-    E("version").textContent = "2.1.0";
+    E("version").textContent = "2.2.0";
     events.on("enable", () => {
         eRun.classList.remove("disabled");
     });
@@ -1265,6 +1268,22 @@ doc.head.appendChild(html2element(hStyle));
         runTest(title, input, output || null);
     });
     menuController.addTab("easy-test", "Easy Test", root);
+    // place "Run" button on each sample
+    for (const testCase of site.testCases) {
+        const eRunButton = html2element(hRunButton);
+        eRunButton.addEventListener("click", async () => {
+            const [pResult, tab] = runTest(testCase.title, testCase.input, testCase.output);
+            await pResult;
+            tab.show();
+        });
+        testCase.anchor.insertAdjacentElement("afterend", eRunButton);
+        events.on("disable", () => {
+            eRunButton.classList.add("disabled");
+        });
+        events.on("enable", () => {
+            eRunButton.classList.remove("disabled");
+        });
+    }
     // place "Test & Submit" button
     {
         const button = html2element(hTestAndSubmit);
@@ -1289,7 +1308,7 @@ try {
     restoreButton.addEventListener("click", async () => {
         try {
             const lastCode = await codeSaver.restore();
-            if (confirm("Your current code will be replaced. Are you sure?")) {
+            if (site.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
                 site.sourceCode = lastCode;
             }
         }
