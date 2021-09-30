@@ -1,8 +1,10 @@
 import codeSaver from "./codeSaver";
 import codeRunner from "./codeRunner";
-import { TestCase, getTestCases } from "./testcase";
+import TestCase from "./TestCase";
 import bottomMenu from "./bottomMenu";
 import resultList from "./resultList";
+import site from "./site";
+import config from "./config";
 
 import { events, html2element } from "./util";
 import ResultTabContent from "./ResultTabContent";
@@ -16,8 +18,6 @@ import hTestAndSubmit from "./testAndSubmit.html";
 import hTestAllSamples from "./testAllSamples.html";
 
 const doc = unsafeWindow.document;
-const $ = unsafeWindow.$;
-const $select = <E extends HTMLElement>(selector: string): E => doc.querySelector<E>(selector);
 
 // external interfaces
 unsafeWindow.bottomMenu = bottomMenu;
@@ -27,9 +27,6 @@ doc.head.appendChild(html2element(hStyle));
 
 // place "Easy Test" tab
 {
-  const eAtCoderLang = $select<HTMLSelectElement>("#select-lang>select");
-  const eSubmitButton = doc.getElementById("submit");
-
   // declare const hRoot: string;
   const root = html2element(hRoot) as HTMLFormElement;
 
@@ -53,18 +50,35 @@ doc.head.appendChild(html2element(hStyle));
 
   // 言語選択関係
   {
+    eLanguage.addEventListener("change", () => {
+      const langSelection = config.getAsJSON("langSelection", {});
+      langSelection[site.language.value] = eLanguage.value;
+      config.setAsJSON("langSelection", langSelection);
+    });
+
     async function setLanguage() {
-      const languageId = eAtCoderLang.value;
+      const languageId = site.language.value;
       while (eLanguage.firstChild) eLanguage.removeChild(eLanguage.firstChild);
       try {
-        const labels = await codeRunner.getEnvironment(languageId);
-        console.log(`language: ${labels[0]} (${languageId})`);
-        labels.forEach((label, index) => {
+        const langs = await codeRunner.getEnvironment(languageId);
+        console.log(`language: ${langs[1]} (${langs[0]})`);
+
+        // add <option>
+        for (const [languageId, label] of langs) {
           const option = document.createElement("option");
-          option.value = String(index);
+          option.value = languageId;
           option.textContent = label;
           eLanguage.appendChild(option);
-        });
+        }
+
+        // load
+        const langSelection = config.getAsJSON("langSelection", {});
+        if (languageId in langSelection) {
+          const prev = langSelection[languageId];
+          const [lang, _] = langs.find(([lang, label]) => lang == prev);
+          if (lang) eLanguage.value = lang;
+        }
+
         events.trig("enable");
       } catch (error) {
         console.log(`language: ? (${languageId})`);
@@ -77,13 +91,11 @@ doc.head.appendChild(html2element(hStyle));
       }
     }
 
-    unsafeWindow.$(eAtCoderLang).change(() => setLanguage()); //NOTE: This event is only for jQuery; do not replace with Vanilla
+    site.language.addListener(() => setLanguage());
     eAllowableError.disabled = !eAllowableErrorCheck.checked;
     eAllowableErrorCheck.addEventListener("change", event => {
       eAllowableError.disabled = !eAllowableErrorCheck.checked;
     });
-
-    setLanguage();
   }
 
   let runId = 0;
@@ -102,7 +114,7 @@ doc.head.appendChild(html2element(hStyle));
     const content = new ResultTabContent();
     const tab = bottomMenu.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
 
-    const pResult = codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
+    const pResult = codeRunner.run(eLanguage.value, site.sourceCode, input, output, options);
 
     pResult.then(result => {
       content.result = result;
@@ -140,18 +152,18 @@ doc.head.appendChild(html2element(hStyle));
   // place "Test & Submit" button
   {
     const button = html2element(hTestAndSubmit);
-    eSubmitButton.parentElement.appendChild(button);
+    site.testButtonContainer.appendChild(button);
     button.addEventListener("click", async () => {
-      await runAllCases(getTestCases());
-      eSubmitButton.click();
+      await runAllCases(site.testCases);
+      site.submit();
     });
   }
 
   // place "Test All Samples" button
   {
     const button = html2element(hTestAllSamples);
-    eSubmitButton.parentElement.appendChild(button);
-    button.addEventListener("click", () => runAllCases(getTestCases()));
+    site.testButtonContainer.appendChild(button);
+    button.addEventListener("click", () => runAllCases(site.testCases));
   }
 }
 
@@ -164,14 +176,13 @@ try {
     try {
       const lastCode = await codeSaver.restore();
       if (confirm("Your current code will be replaced. Are you sure?")) {
-        $select<HTMLTextAreaElement>(".plain-textarea").value = lastCode;
-        $(".editor").data("editor").doc.setValue(lastCode);
+        site.sourceCode = lastCode;
       }
     } catch (reason) {
       alert(reason);
     }
   });
-  $select(".editor-buttons").appendChild(restoreButton);
+  site.sideButtonContainer.appendChild(restoreButton);
 } catch(e) {
   console.error(e);
 }

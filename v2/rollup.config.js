@@ -17,6 +17,7 @@ export default [
 // @license     ${packageJson.license}
 // @supportURL  ${packageJson.bugs.url}
 // @match       https://atcoder.jp/contests/*/tasks/*
+// @match       https://yukicoder.me/problems/no/*
 // @grant       unsafeWindow
 // ==/UserScript==
 (function() {

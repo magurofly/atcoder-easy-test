@@ -1,3 +1,11 @@
+export function buildParams(data: { [key: string]: string }): string {
+  return Object.entries(data).map(([key, value]) => encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise(done => setTimeout(done, ms));
+}
+
 export function html2element(html: string): Node {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -18,3 +26,39 @@ export const events = {
     }
   },
 };
+
+export class ObservableValue<T> {
+  private _value: T;
+  private _listeners: Set<(value: T) => void>;
+
+  constructor(value: T) {
+    this._value = value;
+    this._listeners = new Set();
+  }
+
+  get value(): T {
+    return this._value;
+  }
+
+  set value(value: T) {
+    this._value = value;
+    for (const listener of this._listeners) listener(value);
+  }
+
+  addListener(listener: (value: T) => void) {
+    this._listeners.add(listener);
+    listener(this._value);
+  }
+
+  removeListener(listener: (value: T) => void) {
+    this._listeners.delete(listener);
+  }
+
+  map<U>(f: (value: T) => U): ObservableValue<U> {
+    const y = new ObservableValue(f(this.value));
+    this.addListener(x => {
+      y.value = f(x);
+    });
+    return y;
+  }
+}

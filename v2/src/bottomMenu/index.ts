@@ -4,12 +4,13 @@ import BottomMenuTab from "./BottomMenuTab";
 
 import hBottomMenu from "./bottomMenu.html";
 import hStyle from "./style.html";
+import site from "../site";
 
 const style = html2element(hStyle) as HTMLStyleElement;
 const bottomMenu = html2element(hBottomMenu) as HTMLDivElement;
 
 unsafeWindow.document.head.appendChild(style);
-unsafeWindow.document.getElementById("main-div").appendChild(bottomMenu);
+site.bottomMenuContainer.appendChild(bottomMenu);
 
 const bottomMenuKey = bottomMenu.querySelector("#bottom-menu-key") as HTMLButtonElement;
 const bottomMenuTabs = bottomMenu.querySelector("#bottom-menu-tabs") as HTMLUListElement;
