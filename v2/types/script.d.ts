@@ -9,8 +9,8 @@ declare interface AtCoderWindow extends Window {
     toggle(): void;
   };
   codeRunner: {
-    run(languageId: string, index: number, sourceCode: string, input: string, expectedOutput: string | null, options: any): Promise<any>;
-    getEnvironment(languageId: string): Promise<string[]>;
+    run(languageId: string, sourceCode: string, input: string, expectedOutput: string | null, options: any): Promise<any>;
+    getEnvironment(languageId: string): Promise<[string, string][]>;
   };
 }
 

@@ -1,8 +1,7 @@
 import Result from "../codeRunner/Result";
 import BottomMenuTab from "../bottomMenu/BottomMenuTab";
-import hRowTemplate from "./rowTemplate.html";
 import { html2element } from "../util";
-import resultList from ".";
+import hRowTemplate from "./rowTemplate.html";
 
 export default class ResultRow {
   private _tabs: BottomMenuTab[];

@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.0.1
+// @version     2.1.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
 // @supportURL  https://github.com/magurofly/atcoder-easy-test/
 // @match       https://atcoder.jp/contests/*/tasks/*
+// @match       https://yukicoder.me/problems/no/*
 // @grant       unsafeWindow
 // ==/UserScript==
 (function() {
@@ -56,6 +57,31 @@ const codeSaver = {
         return Promise.resolve(data[idx].code);
     }
 };
+
+function similarLangs(targetLang, candidateLangs) {
+    const [targetName, targetDetail] = targetLang.split(" ", 2);
+    const selectedLangs = candidateLangs.filter(candidateLang => {
+        const [name, _] = candidateLang.split(" ", 2);
+        return name == targetName;
+    }).map(candidateLang => {
+        const [_, detail] = candidateLang.split(" ", 2);
+        return [candidateLang, similarity(detail, targetDetail)];
+    });
+    return selectedLangs.sort((a, b) => a[1] - b[1]).map(([lang, _]) => lang);
+}
+function similarity(s, t) {
+    const n = s.length, m = t.length;
+    let dp = new Array(m + 1).fill(0);
+    for (let i = 0; i < n; i++) {
+        const dp2 = new Array(m + 1).fill(0);
+        for (let j = 0; j < m; j++) {
+            const cost = (s.charCodeAt(i) - t.charCodeAt(j)) ** 2;
+            dp2[j + 1] = Math.min(dp[j] + cost, dp[j + 1] + cost * 0.25, dp2[j] + cost * 0.25);
+        }
+        dp = dp2;
+    }
+    return dp[m];
+}
 
 class CodeRunner {
     get label() {
@@ -118,6 +144,54 @@ function buildParams(data) {
 }
 function sleep(ms) {
     return new Promise(done => setTimeout(done, ms));
+}
+function html2element(html) {
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    return template.content.firstChild;
+}
+const eventListeners = {};
+const events = {
+    on(name, listener) {
+        const listeners = (name in eventListeners ? eventListeners[name] : eventListeners[name] = []);
+        listeners.push(listener);
+    },
+    trig(name) {
+        if (name in eventListeners) {
+            for (const listener of eventListeners[name])
+                listener();
+        }
+    },
+};
+class ObservableValue {
+    _value;
+    _listeners;
+    constructor(value) {
+        this._value = value;
+        this._listeners = new Set();
+    }
+    get value() {
+        return this._value;
+    }
+    set value(value) {
+        this._value = value;
+        for (const listener of this._listeners)
+            listener(value);
+    }
+    addListener(listener) {
+        this._listeners.add(listener);
+        listener(this._value);
+    }
+    removeListener(listener) {
+        this._listeners.delete(listener);
+    }
+    map(f) {
+        const y = new ObservableValue(f(this.value));
+        this.addListener(x => {
+            y.value = f(x);
+        });
+        return y;
+    }
 }
 
 let waitAtCoderCustomTest = Promise.resolve();
@@ -407,149 +481,343 @@ const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
     };
 });
 
+let atcoder = null;
+function init$1() {
+    const doc = unsafeWindow.document;
+    const eLanguage = unsafeWindow.$("#select-lang>select");
+    const langMap = {
+        4001: "C GCC 9.2.1",
+        4002: "C Clang 10.0.0",
+        4003: "C++ GCC 9.2.1",
+        4004: "C++ Clang 10.0.0",
+        4005: "Java OpenJDK 11.0.6",
+        4006: "Python3 CPython 3.8.2",
+        4007: "Bash 5.0.11",
+        4008: "bc 1.07.1",
+        4009: "Awk GNU Awk 4.1.4",
+        4010: "C# .NET Core 3.1.201",
+        4011: "C# Mono-mcs 6.8.0.105",
+        4012: "C# Mono-csc 3.5.0",
+        4013: "Clojure 1.10.1.536",
+        4014: "Crystal 0.33.0",
+        4015: "D DMD 2.091.0",
+        4016: "D GDC 9.2.1",
+        4017: "D LDC 1.20.1",
+        4018: "Dart 2.7.2",
+        4019: "dc 1.4.1",
+        4020: "Erlang 22.3",
+        4021: "Elixir 1.10.2",
+        4022: "F# .NET Core 3.1.201",
+        4023: "F# Mono 10.2.3",
+        4024: "Forth gforth 0.7.3",
+        4025: "Fortran GNU Fortran 9.2.1",
+        4026: "Go 1.14.1",
+        4027: "Haskell GHC 8.8.3",
+        4028: "Haxe 4.0.3",
+        4029: "Haxe 4.0.3",
+        4030: "JavaScript Node.js 12.16.1",
+        4031: "Julia 1.4.0",
+        4032: "Kotlin 1.3.71",
+        4033: "Lua Lua 5.3.5",
+        4034: "Lua LuaJIT 2.1.0",
+        4035: "Dash 0.5.8",
+        4036: "Nim 1.0.6",
+        4037: "Objective-C Clang 10.0.0",
+        4038: "Lisp SBCL 2.0.3",
+        4039: "OCaml 4.10.0",
+        4040: "Octave 5.2.0",
+        4041: "Pascal FPC 3.0.4",
+        4042: "Perl 5.26.1",
+        4043: "Raku Rakudo 2020.02.1",
+        4044: "PHP 7.4.4",
+        4045: "Prolog SWI-Prolog 8.0.3",
+        4046: "Python PyPy2 7.3.0",
+        4047: "Python3 PyPy3 7.3.0",
+        4048: "Racket 7.6",
+        4049: "Ruby 2.7.1",
+        4050: "Rust 1.42.0",
+        4051: "Scala 2.13.1",
+        4052: "Java OpenJDK 1.8.0",
+        4053: "Scheme Gauche 0.9.9",
+        4054: "ML MLton 20130715",
+        4055: "Swift 5.2.1",
+        4056: "Text cat 8.28",
+        4057: "TypeScript 3.8",
+        4058: "Basic .NET Core 3.1.101",
+        4059: "Zsh 5.4.2",
+        4060: "COBOL Fixed OpenCOBOL 1.1.0",
+        4061: "COBOL Free OpenCOBOL 1.1.0",
+        4062: "Brainfuck bf 20041219",
+        4063: "Ada Ada2012 GNAT 9.2.1",
+        4064: "Unlambda 2.0.0",
+        4065: "Cython 0.29.16",
+        4066: "Sed 4.4",
+        4067: "Vim 8.2.0460",
+    };
+    const languageId = new ObservableValue(eLanguage.val());
+    eLanguage.change(() => {
+        languageId.value = eLanguage.val();
+    });
+    const language = languageId.map(lang => langMap[lang]);
+    function getTestCases() {
+        const selectors = [
+            ["#task-statement p+pre.literal-block", ".section"],
+            ["#task-statement pre.source-code-for-copy", ".part"],
+            ["#task-statement .lang>*:nth-child(1) .div-btn-copy+pre", ".part"],
+            ["#task-statement .div-btn-copy+pre", ".part"],
+            ["#task-statement>.part pre.linenums", ".part"],
+            ["#task-statement>.part:not(.io-style)>h3+section>pre", ".part"],
+            ["#task-statement pre", ".part"],
+        ];
+        for (const [selector, closestSelector] of selectors) {
+            const e = [...document.querySelectorAll(selector)].filter(e => {
+                if (e.closest(".io-style"))
+                    return false; // practice2
+                return true;
+            });
+            if (e.length == 0)
+                continue;
+            const testcases = [];
+            let sampleId = 1;
+            for (let i = 0; i < e.length; i += 2) {
+                const container = e[i].closest(closestSelector) || e[i].parentElement;
+                testcases.push({
+                    title: `Sample ${sampleId++}`,
+                    input: (e[i] || {}).textContent,
+                    output: (e[i + 1] || {}).textContent,
+                    anchor: container.querySelector("h3"),
+                });
+            }
+            return testcases;
+        }
+        return [];
+    }
+    atcoder = {
+        name: "AtCoder",
+        language,
+        get sourceCode() {
+            return unsafeWindow.getSourceCode();
+        },
+        set sourceCode(sourceCode) {
+            doc.querySelector(".plain-textarea").value = sourceCode;
+            unsafeWindow.$(".editor").data("editor").doc.setValue(sourceCode);
+        },
+        submit() {
+            doc.querySelector("#submit").click();
+        },
+        get testButtonContainer() {
+            return doc.querySelector("#submit").parentElement;
+        },
+        get sideButtonContainer() {
+            return doc.querySelector(".editor-buttons");
+        },
+        get bottomMenuContainer() {
+            return doc.getElementById("main-div");
+        },
+        get resultListContainer() {
+            return doc.querySelector(".form-code-submit");
+        },
+        get testCases() {
+            return getTestCases();
+        }
+    };
+}
+if (location.host == "atcoder.jp")
+    init$1();
+var atcoder$1 = atcoder;
+
+let yukicoder = null;
+function init() {
+    const $ = unsafeWindow.$;
+    const doc = unsafeWindow.document;
+    const editor = unsafeWindow.ace.edit("rich_source");
+    const eSourceObject = $("#source");
+    const eLang = $("#lang");
+    const eSamples = $(".sample");
+    const langMap = {
+        "cpp14": "C++ C++14 GCC 11.1.0 + Boost 1.77.0",
+        "cpp17": "C++ C++17 GCC 11.1.0 + Boost 1.77.0",
+        "cpp-clang": "C++ C++17 Clang 10.0.0 + Boost 1.76.0",
+        "cpp23": "C++ C++11 GCC 8.4.1",
+        "c11": "C++ C++11 GCC 11.1.0",
+        "c": "C C90 GCC 8.4.1",
+        "java8": "Java Java16 OpenJDK 16.0.1",
+        "csharp": "C# CSC 3.9.0",
+        "csharp_mono": "C# Mono 6.12.0.147",
+        "csharp_dotnet": "C# .NET 5.0",
+        "perl": "Perl 5.26.3",
+        "raku": "Raku Rakudo v2021-07-2-g74d7ff771",
+        "php": "PHP 7.2.24",
+        "php7": "PHP 8.0.8",
+        "python3": "Python3 3.9.6 + numpy 1.14.5 + scipy 1.1.0",
+        "pypy2": "Python PyPy2 7.3.5",
+        "pypy3": "Python3 PyPy3 7.3.5",
+        "ruby": "Ruby 3.0.2p107",
+        "d": "D DMD 2.097.1",
+        "go": "Go 1.16.6",
+        "haskell": "Haskell 8.10.5",
+        "scala": "Scala 2.13.6",
+        "nim": "Nim 1.4.8",
+        "rust": "Rust 1.53.0",
+        "kotlin": "Kotlin 1.5.21",
+        "scheme": "Scheme Gauche 0.9.10",
+        "crystal": "Crystal 1.1.1",
+        "swift": "Swift 5.4.2",
+        "ocaml": "OCaml 4.12.0",
+        "clojure": "Clojure 1.10.2.790",
+        "fsharp": "F# 5.0",
+        "elixir": "Elixir 1.7.4",
+        "lua": "Lua LuaJIT 2.0.5",
+        "fortran": "Fortran gFortran 8.4.1",
+        "node": "JavaScript Node.js 15.5.0",
+        "typescript": "TypeScript 4.3.5",
+        "lisp": "Lisp Common Lisp sbcl 2.1.6",
+        "sml": "ML Standard ML MLton 20180207-6",
+        "kuin": "Kuin KuinC++ v.2021.7.17",
+        "vim": "Vim v8.2",
+        "sh": "Bash 4.4.19",
+        "nasm": "Assembler nasm 2.13.03",
+        "clay": "cLay 20210917-1",
+        "bf": "Brainfuck BFI 1.1",
+        "Whitespace": "Whitespace 0.3",
+        "text": "Text cat 8.3",
+    };
+    const language = new ObservableValue(langMap[eLang.val()]);
+    eLang.on("change", () => {
+        language.value = langMap[eLang.val()];
+    });
+    yukicoder = {
+        name: "yukicoder",
+        language,
+        get sourceCode() {
+            if (eSourceObject.is(":visible"))
+                return eSourceObject.val();
+            return editor.getSession().getValue();
+        },
+        set sourceCode(sourceCode) {
+            eSourceObject.val(sourceCode);
+            editor.getSession().setValue(sourceCode);
+        },
+        submit() {
+            doc.querySelector(`#submit_form input[type="submit"]`).click();
+        },
+        get testButtonContainer() {
+            return doc.querySelector("#submit_form");
+        },
+        get sideButtonContainer() {
+            return doc.querySelector("#toggle_source_editor").parentElement;
+        },
+        get bottomMenuContainer() {
+            return doc.body;
+        },
+        get resultListContainer() {
+            return doc.querySelector("#content");
+        },
+        get testCases() {
+            const testCases = [];
+            let sampleId = 1;
+            for (let i = 0; i < eSamples.length; i++) {
+                const eSample = eSamples.eq(i);
+                const [eInput, eOutput] = eSample.find("pre");
+                testCases.push({
+                    title: `Sample ${sampleId++}`,
+                    input: eInput.textContent,
+                    output: eOutput.textContent,
+                    anchor: eSample.find("button")[0],
+                });
+            }
+            return testCases;
+        },
+    };
+}
+if (location.host == "yukicoder.me")
+    init();
+var yukicoder$1 = yukicoder;
+
+const site = atcoder$1 || yukicoder$1;
+
 const runners = {
-    "4001": [new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)")],
-    "4002": [new PaizaIORunner("c", "C (C17 / Clang 10.0.0)")],
-    "4003": [new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 10.1.0)", { options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17" })],
-    "4004": [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)", { options: "warning,boost-nothing-clang-10.0.0,c++17" })],
-    "4006": [
-        new PaizaIORunner("python3", "Python (3.8.2)"),
-        brythonRunner,
-    ],
-    "4007": [new PaizaIORunner("bash", "Bash (5.0.17)")],
-    "4010": [new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)")],
-    "4011": [new WandboxRunner("mono-head", "C# (Mono-mcs 5.19.0.0)")],
-    "4013": [new PaizaIORunner("clojure", "Clojure (1.10.1-1)")],
-    "4017": [new PaizaIORunner("d", "D (LDC 1.23.0)")],
-    "4020": [new PaizaIORunner("erlang", "Erlang (10.6.4)")],
-    "4021": [new PaizaIORunner("elixir", "Elixir (1.10.4)")],
-    "4022": [new PaizaIORunner("fsharp", "F# (Interactive 4.0)")],
-    "4023": [new PaizaIORunner("fsharp", "F# (Interactive 4.0)")],
-    "4026": [new WandboxRunner("go-1.14.1", "Go (1.14.1)")],
-    "4027": [new WandboxRunner("ghc-head", "Haskell (GHC 8.7.20181121)")],
-    "4030": [new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)")],
-    "4032": [new PaizaIORunner("kotlin", "Kotlin (1.4.0)")],
-    "4033": [new WandboxRunner("lua-5.3.4", "Lua (Lua 5.3.4)")],
-    "4034": [new WandboxRunner("luajit-head", "Lua (LuaJIT 2.1.0-beta3)")],
-    "4036": [new WandboxRunner("nim-1.0.6", "Nim (1.0.6)")],
-    "4037": [new PaizaIORunner("objective-c", "Objective-C (Clang 10.0.0)")],
-    "4039": [new WandboxRunner("ocaml-head", "OCaml (4.13.0+dev0-2020-10-19)")],
-    "4041": [new WandboxRunner("fpc-3.0.2", "Pascal (FPC 3.0.2)")],
-    "4042": [new PaizaIORunner("perl", "Perl (5.30.0)")],
-    "4044": [
-        new PaizaIORunner("php", "PHP (7.4.10)"),
-        new WandboxRunner("php-7.3.3", "PHP (7.3.3)"),
-    ],
-    "4046": [new WandboxRunner("pypy-head", "PyPy2 (7.3.4-alpha0)")],
-    "4047": [new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)")],
-    "4049": [
-        new PaizaIORunner("ruby", "Ruby (2.7.1)"),
-        new WandboxRunner("ruby-head", "Ruby (HEAD 3.0.0dev)"),
-        new WandboxRunner("ruby-2.7.0-preview1", "Ruby (2.7.0-preview1)"),
-    ],
-    "4050": [
-        new AtCoderRunner("4050", "Rust (1.42.0)"),
-        new WandboxRunner("rust-head", "Rust (1.37.0-dev)"),
-        new PaizaIORunner("rust", "Rust (1.43.0)"),
-    ],
-    "4051": [new PaizaIORunner("scala", "Scala (2.13.3)")],
-    "4053": [new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)")],
-    "4055": [new PaizaIORunner("swift", "Swift (5.2.5)")],
-    "4056": [new CustomRunner("Text", async (sourceCode, input) => {
-            return {
-                status: "OK",
-                exitCode: "0",
-                input,
-                output: sourceCode,
-            };
-        })],
-    "4058": [new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)")],
-    "4061": [new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)")],
-    "4101": [new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0)")],
-    "4102": [new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0)")],
+    "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),
+    "C C17 Clang 10.0.0 paiza.io": new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
+    "C++ GCC 10.1.0 + Boost 1.73.0 + ACL Wandbox": new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 10.1.0) + ACL", { options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17" }),
+    "C++ Clang 10.0.0 + ACL Wandbox": new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0) + ACL", { options: "warning,boost-nothing-clang-10.0.0,c++17" }),
+    "Python3 CPython 3.8.2 paiza.io": new PaizaIORunner("python3", "Python (3.8.2)"),
+    "Python3 Brython": brythonRunner,
+    "Bash 5.0.17 paiza.io": new PaizaIORunner("bash", "Bash (5.0.17)"),
+    "C# .NET Core 6.0.100-alpha.1.20562.2 Wandbox": new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)"),
+    "C# Mono-mcs HEAD Wandbox": new WandboxRunner("mono-head", "C# (Mono-mcs HEAD)"),
+    "Clojure 1.10.1-1 paiza.io": new PaizaIORunner("clojure", "Clojure (1.10.1-1)"),
+    "D LDC 1.23.0 paiza.io": new PaizaIORunner("d", "D (LDC 1.23.0)"),
+    "Erlang 10.6.4 paiza.io": new PaizaIORunner("erlang", "Erlang (10.6.4)"),
+    "Elixir 1.10.4 paiza.io": new PaizaIORunner("elixir", "Elixir (1.10.4)"),
+    "F# Interactive 4.0 paiza.io": new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
+    "Go 1.14.1 Wandbox": new WandboxRunner("go-1.14.1", "Go (1.14.1)"),
+    "Haskell GHC HEAD Wandbox": new WandboxRunner("ghc-head", "Haskell (GHC HEAD)"),
+    "JavaScript Node.js paiza.io": new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)"),
+    "Kotlin 1.4.0 paiza.io": new PaizaIORunner("kotlin", "Kotlin (1.4.0)"),
+    "Lua 5.3.4 Wandbox": new WandboxRunner("lua-5.3.4", "Lua (Lua 5.3.4)"),
+    "Lua LuaJIT HEAD Wandbox": new WandboxRunner("luajit-head", "Lua (LuaJIT HEAD)"),
+    "Nim 1.0.6 Wandbox": new WandboxRunner("nim-1.0.6", "Nim (1.0.6)"),
+    "Objective-C Clang 10.0.0 paiza.io": new PaizaIORunner("objective-c", "Objective-C (Clang 10.0.0)"),
+    "Ocaml HEAD Wandbox": new WandboxRunner("ocaml-head", "OCaml (HEAD)"),
+    "Pascal FPC 3.0.2 Wandbox": new WandboxRunner("fpc-3.0.2", "Pascal (FPC 3.0.2)"),
+    "Perl 5.30.0 paiza.io": new PaizaIORunner("perl", "Perl (5.30.0)"),
+    "PHP 7.4.10 paiza.io": new PaizaIORunner("php", "PHP (7.4.10)"),
+    "PHP 7.3.3 Wandbox": new WandboxRunner("php-7.3.3", "PHP (7.3.3)"),
+    "Python PyPy HEAD Wandbox": new WandboxRunner("pypy-head", "PyPy2 (HEAD)"),
+    "Python3 PyPy3 7.2.0 Wandbox": new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)"),
+    "Ruby 2.7.1 paiza.io": new PaizaIORunner("ruby", "Ruby (2.7.1)"),
+    "Ruby HEAD Wandbox": new WandboxRunner("ruby-head", "Ruby (HEAD)"),
+    "Ruby 2.7.1 Wandbox": new WandboxRunner("ruby-2.7.1", "Ruby (2.7.1)"),
+    "Rust 1.42.0 AtCoder": new AtCoderRunner("4050", "Rust (1.42.0)"),
+    "Rust HEAD Wandbox": new WandboxRunner("rust-head", "Rust (HEAD)"),
+    "Rust 1.43.0 paiza.io": new PaizaIORunner("rust", "Rust (1.43.0)"),
+    "Scala 2.13.3 paiza": new PaizaIORunner("scala", "Scala (2.13.3)"),
+    "Scheme Gauche 0.9.6 paiza.io": new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)"),
+    "Swift 5.2.5 paiza.io": new PaizaIORunner("swift", "Swift (5.2.5)"),
+    "Text local": new CustomRunner("Text", async (sourceCode, input) => {
+        return {
+            status: "OK",
+            exitCode: "0",
+            input,
+            output: sourceCode,
+        };
+    }),
+    "Basic Visual Basic .NET Core 4.0.1 paiza.io": new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
+    "COBOL Free OpenCOBOL 2.2.0 paiza.io": new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
+    "COBOL Fixed OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4060", "COBOL - Fixed (OpenCOBOL 1.1.0)"),
+    "COBOL Free OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4061", "COBOL - Free (OpenCOBOL 1.1.0)"),
+    "C++ GCC 9.2.0 + ACL Wandbox": new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0) + ACL"),
 };
-for (const e of document.querySelectorAll("#select-lang option[value]")) {
-    const languageId = e.value;
-    // 特別な CodeRunner が定義されていない言語ID
-    if (!(languageId in runners))
-        runners[languageId] = [];
+if (site.name == "AtCoder") {
     // AtCoderRunner がない場合は、追加する
-    if (runners[languageId].some((runner) => runner instanceof AtCoderRunner))
-        continue;
-    runners[languageId].push(new AtCoderRunner(languageId, e.textContent));
+    for (const e of document.querySelectorAll("#select-lang option[value]")) {
+        const m = e.textContent.match(/([^ ]+) \(([^)]+)\)/);
+        if (m) {
+            const name = `${m[1]} ${m[2]} AtCoder`;
+            const languageId = e.value;
+            runners[name] = new AtCoderRunner(languageId, e.textContent);
+        }
+    }
 }
 console.info("AtCoder Easy Test: codeRunner OK");
 var codeRunner = {
     // 指定した環境でコードを実行する
-    run(languageId, index, sourceCode, input, expectedOutput, options = { trim: true, split: true }) {
+    run(languageId, sourceCode, input, expectedOutput, options = { trim: true, split: true }) {
         // CodeRunner が存在しない言語ID
         if (!(languageId in runners))
             return Promise.reject("Language not supported");
-        if (!(index in runners[languageId]))
-            return Promise.reject(`Runner index out of range: [0, ${runners[languageId].length})`);
         // 最後に実行したコードを保存
         codeSaver.save(sourceCode);
         // 実行
-        return runners[languageId][index].test(sourceCode, input, expectedOutput, options);
+        return runners[languageId].test(sourceCode, input, expectedOutput, options);
     },
     // 環境の名前の一覧を取得する
     async getEnvironment(languageId) {
-        if (!(languageId in runners))
-            throw "language not supported";
-        return runners[languageId].map((runner) => runner.label);
-    },
-};
-
-function getTestCases() {
-    const selectors = [
-        ["#task-statement p+pre.literal-block", ".section"],
-        ["#task-statement pre.source-code-for-copy", ".part"],
-        ["#task-statement .lang>*:nth-child(1) .div-btn-copy+pre", ".part"],
-        ["#task-statement .div-btn-copy+pre", ".part"],
-        ["#task-statement>.part pre.linenums", ".part"],
-        ["#task-statement>.part:not(.io-style)>h3+section>pre", ".part"],
-        ["#task-statement pre", ".part"],
-    ];
-    for (const [selector, closestSelector] of selectors) {
-        const e = [...document.querySelectorAll(selector)].filter(e => {
-            if (e.closest(".io-style"))
-                return false; // practice2
-            return true;
-        });
-        if (e.length == 0)
-            continue;
-        const testcases = [];
-        let sampleId = 1;
-        for (let i = 0; i < e.length; i += 2) {
-            const container = e[i].closest(closestSelector) || e[i].parentElement;
-            testcases.push({
-                title: `Sample ${sampleId++}`,
-                input: (e[i] || {}).textContent,
-                output: (e[i + 1] || {}).textContent,
-                anchor: container.querySelector("h3"),
-            });
-        }
-        return testcases;
-    }
-    return [];
-}
-
-function html2element(html) {
-    const template = document.createElement("template");
-    template.innerHTML = html;
-    return template.content.firstChild;
-}
-const eventListeners = {};
-const events = {
-    on(name, listener) {
-        const listeners = (name in eventListeners ? eventListeners[name] : eventListeners[name] = []);
-        listeners.push(listener);
-    },
-    trig(name) {
-        if (name in eventListeners) {
-            for (const listener of eventListeners[name])
-                listener();
-        }
+        const langs = similarLangs(languageId, Object.keys(runners));
+        if (langs.length == 0)
+            throw `Undefined language: ${languageId}`;
+        return langs.map(lang => [lang, runners[lang].label]);
     },
 };
 
@@ -560,7 +828,7 @@ var hStyle$1 = "<style>\n#bottom-menu-wrapper {\n  background: transparent;\n  b
 const style = html2element(hStyle$1);
 const bottomMenu = html2element(hBottomMenu);
 unsafeWindow.document.head.appendChild(style);
-unsafeWindow.document.getElementById("main-div").appendChild(bottomMenu);
+site.bottomMenuContainer.appendChild(bottomMenu);
 const bottomMenuKey = bottomMenu.querySelector("#bottom-menu-key");
 const bottomMenuTabs = bottomMenu.querySelector("#bottom-menu-tabs");
 const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents");
@@ -727,13 +995,52 @@ class ResultRow {
 var hResultList = "<div class=\"row\"></div>";
 
 const eResultList = html2element(hResultList);
-unsafeWindow.document.querySelector(".form-code-submit").appendChild(eResultList);
+site.resultListContainer.appendChild(eResultList);
 const resultList = {
     addResult(pairs) {
         const result = new ResultRow(pairs);
-        eResultList.appendChild(result.element);
+        eResultList.insertBefore(result.element, eResultList.firstChild);
         return result;
     },
+};
+
+let data = {};
+function toString() {
+    return JSON.stringify(data);
+}
+function save() {
+    localStorage.setItem("AtCoderEasyTest", toString());
+}
+function load() {
+    if ("AtCoderEasyTest" in localStorage) {
+        data = JSON.parse(localStorage.getItem("AtCoderEasyTest"));
+    }
+}
+load();
+const config = {
+    get(key, defaultValue = "") {
+        if (!(key in data))
+            config.set(key, defaultValue);
+        return data[key];
+    },
+    set(key, value) {
+        data[key] = value;
+        save();
+    },
+    has(key) {
+        return key in data;
+    },
+    getAsJSON(key, defaultValue = null) {
+        if (!(key in data))
+            config.setAsJSON(key, defaultValue);
+        return JSON.parse(data[key]);
+    },
+    setAsJSON(key, value) {
+        config.set(key, JSON.stringify(value));
+    },
+    save,
+    load,
+    toString,
 };
 
 var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\" data-if-expected-output=\"col-sm-6 col-sm-push-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\" data-if-expected-output=\"!hidden col-sm-pull-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\" data-if-error=\"col-md-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\" data-if-error=\"!hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
@@ -848,16 +1155,12 @@ var hTestAndSubmit = "<a id=\"atcoder-easy-test-btn-test-and-submit\" class=\"bt
 var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-default btn-sm\" style=\"margin-left: 1rem\" title=\"Alt+Enter\" data-toggle=\"tooltip\">Test All Samples</a>";
 
 const doc = unsafeWindow.document;
-const $ = unsafeWindow.$;
-const $select = (selector) => doc.querySelector(selector);
 // external interfaces
 unsafeWindow.bottomMenu = menuController;
 unsafeWindow.codeRunner = codeRunner;
 doc.head.appendChild(html2element(hStyle));
 // place "Easy Test" tab
 {
-    const eAtCoderLang = $select("#select-lang>select");
-    const eSubmitButton = doc.getElementById("submit");
     // declare const hRoot: string;
     const root = html2element(hRoot);
     const E = (id) => root.querySelector(`#atcoder-easy-test-${id}`);
@@ -867,7 +1170,7 @@ doc.head.appendChild(html2element(hStyle));
     const eAllowableError = E("allowable-error");
     const eOutput = E("output");
     const eRun = E("run");
-    E("version").textContent = "2.0.1";
+    E("version").textContent = "2.1.0";
     events.on("enable", () => {
         eRun.classList.remove("disabled");
     });
@@ -876,19 +1179,33 @@ doc.head.appendChild(html2element(hStyle));
     });
     // 言語選択関係
     {
+        eLanguage.addEventListener("change", () => {
+            const langSelection = config.getAsJSON("langSelection", {});
+            langSelection[site.language.value] = eLanguage.value;
+            config.setAsJSON("langSelection", langSelection);
+        });
         async function setLanguage() {
-            const languageId = eAtCoderLang.value;
+            const languageId = site.language.value;
             while (eLanguage.firstChild)
                 eLanguage.removeChild(eLanguage.firstChild);
             try {
-                const labels = await codeRunner.getEnvironment(languageId);
-                console.log(`language: ${labels[0]} (${languageId})`);
-                labels.forEach((label, index) => {
+                const langs = await codeRunner.getEnvironment(languageId);
+                console.log(`language: ${langs[1]} (${langs[0]})`);
+                // add <option>
+                for (const [languageId, label] of langs) {
                     const option = document.createElement("option");
-                    option.value = String(index);
+                    option.value = languageId;
                     option.textContent = label;
                     eLanguage.appendChild(option);
-                });
+                }
+                // load
+                const langSelection = config.getAsJSON("langSelection", {});
+                if (languageId in langSelection) {
+                    const prev = langSelection[languageId];
+                    const [lang, _] = langs.find(([lang, label]) => lang == prev);
+                    if (lang)
+                        eLanguage.value = lang;
+                }
                 events.trig("enable");
             }
             catch (error) {
@@ -901,12 +1218,11 @@ doc.head.appendChild(html2element(hStyle));
                 events.trig("disable");
             }
         }
-        unsafeWindow.$(eAtCoderLang).change(() => setLanguage()); //NOTE: This event is only for jQuery; do not replace with Vanilla
+        site.language.addListener(() => setLanguage());
         eAllowableError.disabled = !eAllowableErrorCheck.checked;
         eAllowableErrorCheck.addEventListener("change", event => {
             eAllowableError.disabled = !eAllowableErrorCheck.checked;
         });
-        setLanguage();
     }
     let runId = 0;
     // テスト実行
@@ -919,7 +1235,7 @@ doc.head.appendChild(html2element(hStyle));
         }
         const content = new ResultTabContent();
         const tab = menuController.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
-        const pResult = codeRunner.run(eAtCoderLang.value, +eLanguage.value, unsafeWindow.getSourceCode(), input, output, options);
+        const pResult = codeRunner.run(eLanguage.value, site.sourceCode, input, output, options);
         pResult.then(result => {
             content.result = result;
             if (result.status == "AC") {
@@ -952,17 +1268,17 @@ doc.head.appendChild(html2element(hStyle));
     // place "Test & Submit" button
     {
         const button = html2element(hTestAndSubmit);
-        eSubmitButton.parentElement.appendChild(button);
+        site.testButtonContainer.appendChild(button);
         button.addEventListener("click", async () => {
-            await runAllCases(getTestCases());
-            eSubmitButton.click();
+            await runAllCases(site.testCases);
+            site.submit();
         });
     }
     // place "Test All Samples" button
     {
         const button = html2element(hTestAllSamples);
-        eSubmitButton.parentElement.appendChild(button);
-        button.addEventListener("click", () => runAllCases(getTestCases()));
+        site.testButtonContainer.appendChild(button);
+        button.addEventListener("click", () => runAllCases(site.testCases));
     }
 }
 // place "Restore Last Play" button
@@ -974,15 +1290,14 @@ try {
         try {
             const lastCode = await codeSaver.restore();
             if (confirm("Your current code will be replaced. Are you sure?")) {
-                $select(".plain-textarea").value = lastCode;
-                $(".editor").data("editor").doc.setValue(lastCode);
+                site.sourceCode = lastCode;
             }
         }
         catch (reason) {
             alert(reason);
         }
     });
-    $select(".editor-buttons").appendChild(restoreButton);
+    site.sideButtonContainer.appendChild(restoreButton);
 }
 catch (e) {
     console.error(e);

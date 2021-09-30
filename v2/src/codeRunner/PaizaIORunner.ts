@@ -1,4 +1,4 @@
-import {buildParams} from "./util";
+import {buildParams} from "../util";
 import Result from "./Result";
 import CodeRunner from "./CodeRunner";
 

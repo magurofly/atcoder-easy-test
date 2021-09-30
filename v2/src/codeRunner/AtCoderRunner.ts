@@ -1,4 +1,4 @@
-import { buildParams, sleep } from "./util";
+import { buildParams, sleep } from "../util";
 import Result from "./Result";
 import CodeRunner from "./CodeRunner";
 
