@@ -89,7 +89,7 @@ export default {
     if (!(languageId in runners)) return Promise.reject("Language not supported");
 
     // 最後に実行したコードを保存
-    codeSaver.save(sourceCode);
+    if (sourceCode.length > 0) codeSaver.save(sourceCode);
 
     // 実行
     return runners[languageId].test(sourceCode, input, expectedOutput, options);
