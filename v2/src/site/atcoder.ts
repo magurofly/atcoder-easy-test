@@ -3,6 +3,13 @@ import { events, ObservableValue } from "../util";
 
 let atcoder = null;
 
+function pairs<T>(list: T[]): [T, T][] {
+  const pairs = [];
+  const len = list.length >> 1;
+  for (let i = 0; i < len; i++) pairs.push([list[i * 2], list[i * 2 + 1]]);
+  return pairs;
+}
+
 function init() {
   const doc = unsafeWindow.document;
   const eLanguage = unsafeWindow.$("#select-lang>select");
@@ -96,23 +103,28 @@ function init() {
     ];
     
     for (const [selector, closestSelector] of selectors) {
-      const e = [... document.querySelectorAll(selector)].filter(e => {
-        if (e.closest(".io-style")) return false; // practice2
-        return true;
-      });
+      let e = [... doc.querySelectorAll(selector)];
+      e = e.filter(e => !e.closest(".io-style")); // practice2
       if (e.length == 0) continue;
-      const testcases = [];
-      let sampleId = 1;
-      for (let i = 0; i < e.length; i += 2) {
-        const container = e[i].closest(closestSelector) || e[i].parentElement;
-        testcases.push({
-          title: `Sample ${sampleId++}`,
-          input: (e[i]||{}).textContent,
-          output: (e[i+1]||{}).textContent,
-          anchor: container.querySelector(".btn-copy"),
-        });
+      return pairs(e).map(([input, output], index) => ({
+        title: `Sample ${index + 1}`,
+        input: input.textContent,
+        output: output.textContent,
+        anchor: (input.closest(closestSelector) || input.parentElement).querySelector(".btn-copy"),
+      }));
+    }
+
+    { // maximum_cup_2018_d
+      let e = [... doc.querySelectorAll("#task-statement .div-btn-copy+pre")];
+      e = e.filter(f => !f.childElementCount);
+      if (e.length) {
+        return pairs(e).map(([input, output], index) => ({
+          title: `Sample ${index + 1}`,
+          input: input.textContent,
+          output: output.textContent,
+          anchor: (input.closest(".part") || input.parentElement).querySelector(".btn-copy"),
+        }));
       }
-      return testcases;
     }
     
     return [];

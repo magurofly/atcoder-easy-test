@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.3.0
+// @version     2.3.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -482,6 +482,13 @@ const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
 });
 
 let atcoder = null;
+function pairs(list) {
+    const pairs = [];
+    const len = list.length >> 1;
+    for (let i = 0; i < len; i++)
+        pairs.push([list[i * 2], list[i * 2 + 1]]);
+    return pairs;
+}
 function init$1() {
     const doc = unsafeWindow.document;
     const eLanguage = unsafeWindow.$("#select-lang>select");
@@ -570,25 +577,28 @@ function init$1() {
             ["#task-statement pre", ".part"],
         ];
         for (const [selector, closestSelector] of selectors) {
-            const e = [...document.querySelectorAll(selector)].filter(e => {
-                if (e.closest(".io-style"))
-                    return false; // practice2
-                return true;
-            });
+            let e = [...doc.querySelectorAll(selector)];
+            e = e.filter(e => !e.closest(".io-style")); // practice2
             if (e.length == 0)
                 continue;
-            const testcases = [];
-            let sampleId = 1;
-            for (let i = 0; i < e.length; i += 2) {
-                const container = e[i].closest(closestSelector) || e[i].parentElement;
-                testcases.push({
-                    title: `Sample ${sampleId++}`,
-                    input: (e[i] || {}).textContent,
-                    output: (e[i + 1] || {}).textContent,
-                    anchor: container.querySelector(".btn-copy"),
-                });
+            return pairs(e).map(([input, output], index) => ({
+                title: `Sample ${index + 1}`,
+                input: input.textContent,
+                output: output.textContent,
+                anchor: (input.closest(closestSelector) || input.parentElement).querySelector(".btn-copy"),
+            }));
+        }
+        { // maximum_cup_2018_d
+            let e = [...doc.querySelectorAll("#task-statement .div-btn-copy+pre")];
+            e = e.filter(f => !f.childElementCount);
+            if (e.length) {
+                return pairs(e).map(([input, output], index) => ({
+                    title: `Sample ${index + 1}`,
+                    input: input.textContent,
+                    output: output.textContent,
+                    anchor: (input.closest(".part") || input.parentElement).querySelector(".btn-copy"),
+                }));
             }
-            return testcases;
         }
         return [];
     }
@@ -1228,7 +1238,7 @@ unsafeWindow.atCoderEasyTest = atCoderEasyTest;
     const eOutput = E("output");
     const eRun = E("run");
     const eSetting = E("setting");
-    E("version").textContent = "2.3.0";
+    E("version").textContent = "2.3.1";
     events.on("enable", () => {
         eRun.classList.remove("disabled");
     });
