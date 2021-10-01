@@ -18,24 +18,25 @@ function load() {
 
 load();
 
+/** プロパティ名は camelCase にすること */
 const config = {
-  get(key: string, defaultValue: string = ""): string {
-    if (!(key in data)) config.set(key, defaultValue);
+  getString(key: string, defaultValue: string = ""): string {
+    if (!(key in data)) config.setString(key, defaultValue);
     return data[key];
   },
-  set(key: string, value: string): void {
+  setString(key: string, value: string): void {
     data[key] = value;
     save();
   },
   has(key: string): boolean {
     return key in data;
   },
-  getAsJSON<T = null>(key: string, defaultValue: T = null): T {
-    if (!(key in data)) config.setAsJSON(key, defaultValue);
+  get<T = null>(key: string, defaultValue: T = null): T {
+    if (!(key in data)) config.set(key, defaultValue);
     return JSON.parse(data[key]);
   },
-  setAsJSON<T>(key: string, value: T): void {
-    config.set(key, JSON.stringify(value));
+  set<T>(key: string, value: T): void {
+    config.setString(key, JSON.stringify(value));
   },
   save,
   load,

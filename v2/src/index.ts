@@ -5,6 +5,7 @@ import bottomMenu from "./bottomMenu";
 import resultList from "./resultList";
 import site from "./site";
 import config from "./config";
+import settings from "./settings";
 
 import { events, html2element } from "./util";
 import ResultTabContent from "./ResultTabContent";
@@ -17,6 +18,7 @@ import hStyle from "./style.html";
 import hRunButton from "./runButton.html";
 import hTestAndSubmit from "./testAndSubmit.html";
 import hTestAllSamples from "./testAllSamples.html";
+import atcoder from "./site/atcoder";
 
 const doc = unsafeWindow.document;
 
@@ -26,8 +28,45 @@ unsafeWindow.codeRunner = codeRunner;
 
 doc.head.appendChild(html2element(hStyle));
 
+// interface
+const atCoderEasyTest = {
+  config,
+  codeSaver,
+  enableButtons() {
+    events.trig("enable");
+  },
+  disableButtons() {
+    events.trig("disable");
+  },
+  runCount: 0,
+  runTest(title: string, language: string, sourceCode: string, input: string, output: string | null = null, options: Options = { trim: true, split: true, }): [Promise<Result>, BottomMenuTab] {
+    this.disableButtons();
+
+    const content = new ResultTabContent();
+    const tab = bottomMenu.addTab("easy-test-result-" + content.uid, `#${++this.runCount} ${title}`, content.element, { active: true, closeButton: true });
+
+    const pResult = codeRunner.run(language, sourceCode, input, output, options);
+
+    pResult.then(result => {
+      content.result = result;
+      
+      if (result.status == "AC") {
+        tab.color = "#dff0d8";
+      } else if (result.status != "OK") {
+        tab.color = "#fcf8e3";
+      }
+    }).finally(() => {
+      this.enableButtons();
+    })
+
+    return [pResult, tab];
+  }
+};
+(unsafeWindow as any).atCoderEasyTest = atCoderEasyTest;
+
 // place "Easy Test" tab
 {
+
   // declare const hRoot: string;
   const root = html2element(hRoot) as HTMLFormElement;
 
@@ -39,6 +78,7 @@ doc.head.appendChild(html2element(hStyle));
   const eAllowableError = E<HTMLInputElement>("allowable-error");
   const eOutput = E<HTMLTextAreaElement>("output");
   const eRun = E<HTMLAnchorElement>("run");
+  const eSetting = E<HTMLAnchorElement>("setting");
 
   E("version").textContent = "$_ATCODER_EASY_TEST_VERSION";
 
@@ -49,12 +89,16 @@ doc.head.appendChild(html2element(hStyle));
     eRun.classList.remove("enabled");
   });
 
+  eSetting.addEventListener("click", () => {
+    settings.open();
+  });
+
   // 言語選択関係
   {
     eLanguage.addEventListener("change", () => {
-      const langSelection = config.getAsJSON("langSelection", {});
+      const langSelection = config.get("langSelection", {});
       langSelection[site.language.value] = eLanguage.value;
-      config.setAsJSON("langSelection", langSelection);
+      config.set("langSelection", langSelection);
     });
 
     async function setLanguage() {
@@ -73,7 +117,7 @@ doc.head.appendChild(html2element(hStyle));
         }
 
         // load
-        const langSelection = config.getAsJSON("langSelection", {});
+        const langSelection = config.get("langSelection", {});
         if (languageId in langSelection) {
           const prev = langSelection[languageId];
           const [lang, _] = langs.find(([lang, label]) => lang == prev);
@@ -99,37 +143,14 @@ doc.head.appendChild(html2element(hStyle));
     });
   }
 
-  let runId = 0;
-
   // テスト実行
   function runTest(title: string, input: string, output: string | null = null): [Promise<Result>, BottomMenuTab] {
-    runId++;
-
-    events.trig("disable");
-    
     const options: Options = { trim: true, split: true, };
     if (eAllowableErrorCheck.checked) {
       options.allowableError = parseFloat(eAllowableError.value);
     }
 
-    const content = new ResultTabContent();
-    const tab = bottomMenu.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
-
-    const pResult = codeRunner.run(eLanguage.value, site.sourceCode, input, output, options);
-
-    pResult.then(result => {
-      content.result = result;
-      
-      if (result.status == "AC") {
-        tab.color = "#dff0d8";
-      } else if (result.status != "OK") {
-        tab.color = "#fcf8e3";
-      }
-
-      events.trig("enable");
-    });
-
-    return [pResult, tab];
+    return atCoderEasyTest.runTest(title, eLanguage.value, site.sourceCode, input, output, options);
   }
 
   function runAllCases(testcases: TestCase[]): Promise<Result[]> {
@@ -171,17 +192,21 @@ doc.head.appendChild(html2element(hStyle));
   {
     const button = html2element(hTestAndSubmit);
     site.testButtonContainer.appendChild(button);
-    button.addEventListener("click", async () => {
+    const testAndSubmit = async () => {
       await runAllCases(site.testCases);
       site.submit();
-    });
+    };
+    button.addEventListener("click", testAndSubmit);
+    events.on("testAndSubmit", testAndSubmit);
   }
 
   // place "Test All Samples" button
   {
     const button = html2element(hTestAllSamples);
     site.testButtonContainer.appendChild(button);
-    button.addEventListener("click", () => runAllCases(site.testCases));
+    const testAllSamples = () => runAllCases(site.testCases);
+    button.addEventListener("click", testAllSamples);
+    events.on("testAllSamples", testAllSamples);
   }
 }
 
@@ -206,3 +231,16 @@ try {
 }
 
 codeRunner;
+
+// キーボードショートカット
+unsafeWindow.addEventListener("keydown", (event: KeyboardEvent) => {
+  if (config.get("useKeyboardShortcut", true)) {
+    if (event.key == "Enter" && event.ctrlKey) {
+      events.trig("testAndSubmit");
+    } else if (event.key == "Enter" && event.altKey) {
+      events.trig("testAllSamples");
+    } else if (event.key == "Escape" && event.altKey) {
+      bottomMenu.toggle();
+    }
+  }
+});

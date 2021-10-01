@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.2.0
+// @version     2.3.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1018,30 +1018,53 @@ function load() {
     }
 }
 load();
+/** プロパティ名は camelCase にすること */
 const config = {
-    get(key, defaultValue = "") {
+    getString(key, defaultValue = "") {
         if (!(key in data))
-            config.set(key, defaultValue);
+            config.setString(key, defaultValue);
         return data[key];
     },
-    set(key, value) {
+    setString(key, value) {
         data[key] = value;
         save();
     },
     has(key) {
         return key in data;
     },
-    getAsJSON(key, defaultValue = null) {
+    get(key, defaultValue = null) {
         if (!(key in data))
-            config.setAsJSON(key, defaultValue);
+            config.set(key, defaultValue);
         return JSON.parse(data[key]);
     },
-    setAsJSON(key, value) {
-        config.set(key, JSON.stringify(value));
+    set(key, value) {
+        config.setString(key, JSON.stringify(value));
     },
     save,
     load,
     toString,
+};
+
+var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">Settings</div>\n        <div class=\"panel-body\">\n          <form>\n            <div class=\"checkbox\">\n              <label><input id=\"use-keyboard-shortcut\" type=\"checkbox\">Use Keyboard Shortcuts</label>\n            </div>\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
+
+function bindCheckbox(key, defaultValue, element) {
+    element.checked = config.get(key, defaultValue);
+    element.addEventListener("change", () => {
+        config.set(key, element.checked);
+    });
+}
+const settings = {
+    /** 設定ページを開く
+     * クリックなどのイベント時にしか正しく実行できない
+     */
+    open() {
+        const win = window.open("about:blank");
+        const doc = win.document;
+        doc.open();
+        doc.write(hPage);
+        doc.close();
+        bindCheckbox("useKeyboardShortcut", true, doc.getElementById("use-keyboard-shortcut"));
+    }
 };
 
 var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\" data-if-expected-output=\"col-sm-6 col-sm-push-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\" data-if-expected-output=\"!hidden col-sm-pull-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\" data-if-error=\"col-md-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\" data-if-error=\"!hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
@@ -1147,7 +1170,7 @@ class ResultTabContent {
     }
 }
 
-var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">\n  <small style=\"position: absolute; display: block; bottom: 0; right: 0; padding: 1% 4%; width: 95%; text-align: right;\">AtCoder Easy Test v<span id=\"atcoder-easy-test-version\"></span></small>\n  <div class=\"row\">\n      <div class=\"col-xs-12 col-lg-8\">\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\">Test Environment</label>\n              <div class=\"col-sm-10\">\n                  <select class=\"form-control\" id=\"atcoder-easy-test-language\"></select>\n              </div>\n          </div>\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-input\">Standard Input</label>\n              <div class=\"col-sm-10\">\n                  <textarea id=\"atcoder-easy-test-input\" name=\"input\" class=\"form-control\" rows=\"3\"></textarea>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-lg-4\">\n          <details close>\n              <summary>Expected Output</summary>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-allowable-error-check\">Allowable Error</label>\n                  <div class=\"col-sm-10\">\n                      <div class=\"input-group\">\n                          <span class=\"input-group-addon\">\n                              <input id=\"atcoder-easy-test-allowable-error-check\" type=\"checkbox\" checked=\"checked\">\n                          </span>\n                          <input id=\"atcoder-easy-test-allowable-error\" type=\"text\" class=\"form-control\" value=\"1e-6\">\n                      </div>\n                  </div>\n              </div>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-output\">Expected Output</label>\n                  <div class=\"col-sm-10\">\n                      <textarea id=\"atcoder-easy-test-output\" name=\"output\" class=\"form-control\" rows=\"3\"></textarea>\n                  </div>\n              </div>\n          </details>\n      </div>\n      <div class=\"col-xs-12\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group\">\n                  <a id=\"atcoder-easy-test-run\" class=\"btn btn-primary\">Run</a>\n              </div>\n          </div>\n      </div>\n  </div>\n  <style>\n  #atcoder-easy-test-language {\n      border: none;\n      background: transparent;\n      font: inherit;\n      color: #fff;\n  }\n  #atcoder-easy-test-language option {\n      border: none;\n      color: #333;\n      font: inherit;\n  }\n  </style>\n</form>";
+var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">\n  <div class=\"row\">\n      <div class=\"col-xs-12 col-lg-8\">\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\">Test Environment</label>\n              <div class=\"col-sm-10\">\n                  <select class=\"form-control\" id=\"atcoder-easy-test-language\"></select>\n              </div>\n          </div>\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-input\">Standard Input</label>\n              <div class=\"col-sm-10\">\n                  <textarea id=\"atcoder-easy-test-input\" name=\"input\" class=\"form-control\" rows=\"3\"></textarea>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-lg-4\">\n          <details close>\n              <summary>Expected Output</summary>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-allowable-error-check\">Allowable Error</label>\n                  <div class=\"col-sm-10\">\n                      <div class=\"input-group\">\n                          <span class=\"input-group-addon\">\n                              <input id=\"atcoder-easy-test-allowable-error-check\" type=\"checkbox\" checked=\"checked\">\n                          </span>\n                          <input id=\"atcoder-easy-test-allowable-error\" type=\"text\" class=\"form-control\" value=\"1e-6\">\n                      </div>\n                  </div>\n              </div>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-output\">Expected Output</label>\n                  <div class=\"col-sm-10\">\n                      <textarea id=\"atcoder-easy-test-output\" name=\"output\" class=\"form-control\" rows=\"3\"></textarea>\n                  </div>\n              </div>\n          </details>\n      </div>\n      <div class=\"col-xs-12 col-md-6\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group\">\n                  <a id=\"atcoder-easy-test-run\" class=\"btn btn-primary\">Run</a>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-md-6\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group text-right\">\n                  <small>AtCoder Easy Test v<span id=\"atcoder-easy-test-version\"></span></small>\n                  <a id=\"atcoder-easy-test-setting\" class=\"btn btn-xs btn-default\">Setting</a>\n              </div>\n          </div>\n      </div>\n  </div>\n  <style>\n  #atcoder-easy-test-language {\n      border: none;\n      background: transparent;\n      font: inherit;\n      color: #fff;\n  }\n  #atcoder-easy-test-language option {\n      border: none;\n      color: #333;\n      font: inherit;\n  }\n  </style>\n</form>";
 
 var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: normal;\n}\n</style>";
 
@@ -1162,6 +1185,37 @@ const doc = unsafeWindow.document;
 unsafeWindow.bottomMenu = menuController;
 unsafeWindow.codeRunner = codeRunner;
 doc.head.appendChild(html2element(hStyle));
+// interface
+const atCoderEasyTest = {
+    config,
+    codeSaver,
+    enableButtons() {
+        events.trig("enable");
+    },
+    disableButtons() {
+        events.trig("disable");
+    },
+    runCount: 0,
+    runTest(title, language, sourceCode, input, output = null, options = { trim: true, split: true, }) {
+        this.disableButtons();
+        const content = new ResultTabContent();
+        const tab = menuController.addTab("easy-test-result-" + content.uid, `#${++this.runCount} ${title}`, content.element, { active: true, closeButton: true });
+        const pResult = codeRunner.run(language, sourceCode, input, output, options);
+        pResult.then(result => {
+            content.result = result;
+            if (result.status == "AC") {
+                tab.color = "#dff0d8";
+            }
+            else if (result.status != "OK") {
+                tab.color = "#fcf8e3";
+            }
+        }).finally(() => {
+            this.enableButtons();
+        });
+        return [pResult, tab];
+    }
+};
+unsafeWindow.atCoderEasyTest = atCoderEasyTest;
 // place "Easy Test" tab
 {
     // declare const hRoot: string;
@@ -1173,19 +1227,23 @@ doc.head.appendChild(html2element(hStyle));
     const eAllowableError = E("allowable-error");
     const eOutput = E("output");
     const eRun = E("run");
-    E("version").textContent = "2.2.0";
+    const eSetting = E("setting");
+    E("version").textContent = "2.3.0";
     events.on("enable", () => {
         eRun.classList.remove("disabled");
     });
     events.on("disable", () => {
         eRun.classList.remove("enabled");
     });
+    eSetting.addEventListener("click", () => {
+        settings.open();
+    });
     // 言語選択関係
     {
         eLanguage.addEventListener("change", () => {
-            const langSelection = config.getAsJSON("langSelection", {});
+            const langSelection = config.get("langSelection", {});
             langSelection[site.language.value] = eLanguage.value;
-            config.setAsJSON("langSelection", langSelection);
+            config.set("langSelection", langSelection);
         });
         async function setLanguage() {
             const languageId = site.language.value;
@@ -1202,7 +1260,7 @@ doc.head.appendChild(html2element(hStyle));
                     eLanguage.appendChild(option);
                 }
                 // load
-                const langSelection = config.getAsJSON("langSelection", {});
+                const langSelection = config.get("langSelection", {});
                 if (languageId in langSelection) {
                     const prev = langSelection[languageId];
                     const [lang, _] = langs.find(([lang, label]) => lang == prev);
@@ -1227,29 +1285,13 @@ doc.head.appendChild(html2element(hStyle));
             eAllowableError.disabled = !eAllowableErrorCheck.checked;
         });
     }
-    let runId = 0;
     // テスト実行
     function runTest(title, input, output = null) {
-        runId++;
-        events.trig("disable");
         const options = { trim: true, split: true, };
         if (eAllowableErrorCheck.checked) {
             options.allowableError = parseFloat(eAllowableError.value);
         }
-        const content = new ResultTabContent();
-        const tab = menuController.addTab("easy-test-result-" + content.uid, `#${runId} ${title}`, content.element, { active: true, closeButton: true });
-        const pResult = codeRunner.run(eLanguage.value, site.sourceCode, input, output, options);
-        pResult.then(result => {
-            content.result = result;
-            if (result.status == "AC") {
-                tab.color = "#dff0d8";
-            }
-            else if (result.status != "OK") {
-                tab.color = "#fcf8e3";
-            }
-            events.trig("enable");
-        });
-        return [pResult, tab];
+        return atCoderEasyTest.runTest(title, eLanguage.value, site.sourceCode, input, output, options);
     }
     function runAllCases(testcases) {
         const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
@@ -1288,16 +1330,20 @@ doc.head.appendChild(html2element(hStyle));
     {
         const button = html2element(hTestAndSubmit);
         site.testButtonContainer.appendChild(button);
-        button.addEventListener("click", async () => {
+        const testAndSubmit = async () => {
             await runAllCases(site.testCases);
             site.submit();
-        });
+        };
+        button.addEventListener("click", testAndSubmit);
+        events.on("testAndSubmit", testAndSubmit);
     }
     // place "Test All Samples" button
     {
         const button = html2element(hTestAllSamples);
         site.testButtonContainer.appendChild(button);
-        button.addEventListener("click", () => runAllCases(site.testCases));
+        const testAllSamples = () => runAllCases(site.testCases);
+        button.addEventListener("click", testAllSamples);
+        events.on("testAllSamples", testAllSamples);
     }
 }
 // place "Restore Last Play" button
@@ -1321,4 +1367,18 @@ try {
 catch (e) {
     console.error(e);
 }
+// キーボードショートカット
+unsafeWindow.addEventListener("keydown", (event) => {
+    if (config.get("useKeyboardShortcut", true)) {
+        if (event.key == "Enter" && event.ctrlKey) {
+            events.trig("testAndSubmit");
+        }
+        else if (event.key == "Enter" && event.altKey) {
+            events.trig("testAllSamples");
+        }
+        else if (event.key == "Escape" && event.altKey) {
+            menuController.toggle();
+        }
+    }
+});
 })();
