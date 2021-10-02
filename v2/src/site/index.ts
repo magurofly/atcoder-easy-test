@@ -1,8 +1,6 @@
 import Site from "./Site";
 
-import atcoder from "./atcoder";
-import yukicoder from "./yukicoder";
+import init_AtCoder from "./atcoder";
+import init_yukicoder from "./yukicoder";
 
-const site: Site | null = atcoder || yukicoder;
-
-export default site;
+export default Promise.any([init_AtCoder(), init_yukicoder()]);

@@ -4,11 +4,11 @@ import { html2element } from "../util";
 import hRowTemplate from "./rowTemplate.html";
 
 export default class ResultRow {
-  private _tabs: BottomMenuTab[];
+  private _tabs: Promise<BottomMenuTab>[];
   private _element: HTMLDivElement;
   private _promise: Promise<void[]>;
 
-  constructor(pairs: [Promise<Result>, BottomMenuTab][]) {
+  constructor(pairs: [Promise<Result>, Promise<BottomMenuTab>][]) {
     this._tabs = pairs.map(([_, tab]) => tab);
     this._element = html2element(hRowTemplate) as HTMLDivElement;
 
@@ -20,8 +20,8 @@ export default class ResultRow {
     
     this._promise = Promise.all(pairs.map(([pResult, tab]) => {
       const button = html2element(`<div class="label label-default" style="margin: 3px; cursor: pointer;">WJ</div>`) as HTMLDivElement;
-      button.addEventListener("click", () => {
-        tab.show();
+      button.addEventListener("click", async () => {
+        (await tab).show();
       });
       this._element.appendChild(button);
 
@@ -59,7 +59,7 @@ export default class ResultRow {
   }
 
   remove(): void {
-    for (const tab of this._tabs) tab.close();
+    for (const pTab of this._tabs) pTab.then(tab => tab.close());
     const parent = this._element.parentElement;
     if (parent) parent.removeChild(this._element);
   }
