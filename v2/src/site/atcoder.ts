@@ -1,8 +1,6 @@
 import TestCase from "../TestCase";
 import { events, ObservableValue } from "../util";
 
-let atcoder = null;
-
 function pairs<T>(list: T[]): [T, T][] {
   const pairs = [];
   const len = list.length >> 1;
@@ -10,7 +8,9 @@ function pairs<T>(list: T[]): [T, T][] {
   return pairs;
 }
 
-function init() {
+async function init() {
+  if (location.host != "atcoder.jp") throw "Not AtCoder";
+
   const doc = unsafeWindow.document;
   const eLanguage = unsafeWindow.$("#select-lang>select");
 
@@ -130,7 +130,7 @@ function init() {
     return [];
   };
 
-  atcoder = {
+  return {
     name: "AtCoder",
     language,
     get sourceCode(): string {
@@ -161,6 +161,4 @@ function init() {
   };
 }
 
-if (location.host == "atcoder.jp") init();
-
-export default atcoder;
+export default init;

@@ -4,7 +4,10 @@ import BottomMenuTab from "./BottomMenuTab";
 
 import hBottomMenu from "./bottomMenu.html";
 import hStyle from "./style.html";
-import site from "../site";
+import pSite from "../site";
+
+async function init(): Promise<BottomMenu> {
+const site = await pSite;
 
 const style = html2element(hStyle) as HTMLStyleElement;
 const bottomMenu = html2element(hBottomMenu) as HTMLDivElement;
@@ -122,4 +125,8 @@ const menuController: BottomMenu = {
 
 console.info("AtCoder Easy Test: bottomMenu OK");
 
-export default menuController;
+return menuController;
+
+};
+
+export default init;

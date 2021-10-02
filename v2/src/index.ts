@@ -1,13 +1,13 @@
 import codeSaver from "./codeSaver";
 import codeRunner from "./codeRunner";
 import TestCase from "./TestCase";
-import bottomMenu from "./bottomMenu";
+import initBottomMenu from "./bottomMenu";
 import resultList from "./resultList";
-import site from "./site";
+import pSite from "./site";
 import config from "./config";
 import settings from "./settings";
 
-import { events, html2element } from "./util";
+import { doneOrFail, events, html2element } from "./util";
 import ResultTabContent from "./ResultTabContent";
 import Options from "./codeRunner/Options";
 import Result from "./codeRunner/Result";
@@ -20,10 +20,20 @@ import hTestAndSubmit from "./testAndSubmit.html";
 import hTestAllSamples from "./testAllSamples.html";
 import atcoder from "./site/atcoder";
 
+(async () => {
+
+const site = await pSite;
+
 const doc = unsafeWindow.document;
 
+// init bottomMenu
+const pBottomMenu = initBottomMenu();
+pBottomMenu.then(bottomMenu => {
+  unsafeWindow.bottomMenu = bottomMenu;
+});
+await doneOrFail(pBottomMenu);
+
 // external interfaces
-unsafeWindow.bottomMenu = bottomMenu;
 unsafeWindow.codeRunner = codeRunner;
 
 doc.head.appendChild(html2element(hStyle));
@@ -39,11 +49,11 @@ const atCoderEasyTest = {
     events.trig("disable");
   },
   runCount: 0,
-  runTest(title: string, language: string, sourceCode: string, input: string, output: string | null = null, options: Options = { trim: true, split: true, }): [Promise<Result>, BottomMenuTab] {
+  runTest(title: string, language: string, sourceCode: string, input: string, output: string | null = null, options: Options = { trim: true, split: true, }): [Promise<Result>, Promise<BottomMenuTab>] {
     this.disableButtons();
 
     const content = new ResultTabContent();
-    const tab = bottomMenu.addTab("easy-test-result-" + content.uid, `#${++this.runCount} ${title}`, content.element, { active: true, closeButton: true });
+    const pTab = pBottomMenu.then(bottomMenu => bottomMenu.addTab("easy-test-result-" + content.uid, `#${++this.runCount} ${title}`, content.element, { active: true, closeButton: true }));
 
     const pResult = codeRunner.run(language, sourceCode, input, output, options);
 
@@ -51,15 +61,15 @@ const atCoderEasyTest = {
       content.result = result;
       
       if (result.status == "AC") {
-        tab.color = "#dff0d8";
+        pTab.then(tab => tab.color = "#dff0d8");
       } else if (result.status != "OK") {
-        tab.color = "#fcf8e3";
+        pTab.then(tab => tab.color = "#fcf8e3");
       }
     }).finally(() => {
       this.enableButtons();
     })
 
-    return [pResult, tab];
+    return [pResult, pTab];
   }
 };
 (unsafeWindow as any).atCoderEasyTest = atCoderEasyTest;
@@ -95,7 +105,7 @@ const atCoderEasyTest = {
 
   // 言語選択関係
   {
-    eLanguage.addEventListener("change", () => {
+    eLanguage.addEventListener("change", async () => {
       const langSelection = config.get("langSelection", {});
       langSelection[site.language.value] = eLanguage.value;
       config.set("langSelection", langSelection);
@@ -144,7 +154,7 @@ const atCoderEasyTest = {
   }
 
   // テスト実行
-  function runTest(title: string, input: string, output: string | null = null): [Promise<Result>, BottomMenuTab] {
+  function runTest(title: string, input: string, output: string | null = null): [Promise<Result>, Promise<BottomMenuTab>] {
     const options: Options = { trim: true, split: true, };
     if (eAllowableErrorCheck.checked) {
       options.allowableError = parseFloat(eAllowableError.value);
@@ -169,15 +179,15 @@ const atCoderEasyTest = {
     runTest(title, input, output || null);
   });
 
-  bottomMenu.addTab("easy-test", "Easy Test", root);
+  await doneOrFail(pBottomMenu.then(bottomMenu => bottomMenu.addTab("easy-test", "Easy Test", root)));
 
   // place "Run" button on each sample
   for (const testCase of site.testCases) {
     const eRunButton = html2element(hRunButton) as HTMLAnchorElement;
     eRunButton.addEventListener("click", async () => {
-      const [pResult, tab] = runTest(testCase.title, testCase.input, testCase.output);
+      const [pResult, pTab] = runTest(testCase.title, testCase.input, testCase.output);
       await pResult;
-      tab.show();
+      (await pTab).show();
     });
     testCase.anchor.insertAdjacentElement("afterend", eRunButton);
     events.on("disable", () => {
@@ -240,7 +250,9 @@ unsafeWindow.addEventListener("keydown", (event: KeyboardEvent) => {
     } else if (event.key == "Enter" && event.altKey) {
       events.trig("testAllSamples");
     } else if (event.key == "Escape" && event.altKey) {
-      bottomMenu.toggle();
+      pBottomMenu.then(bottomMenu => bottomMenu.toggle());
     }
   }
 });
+
+})();

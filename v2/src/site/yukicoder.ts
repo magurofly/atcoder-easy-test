@@ -1,9 +1,9 @@
 import TestCase from "../TestCase";
 import { ObservableValue } from "../util";
 
-let yukicoder = null;
+async function init() {
+  if (location.host != "yukicoder.me") throw "Not yukicoder";
 
-function init() {
   const $ = unsafeWindow.$;
   const doc = unsafeWindow.document;
   const editor = (unsafeWindow as any).ace.edit("rich_source");
@@ -65,7 +65,7 @@ function init() {
     language.value = langMap[eLang.val()];
   });
 
-  yukicoder = {
+  return {
     name: "yukicoder",
     language,
     get sourceCode(): string {
@@ -109,6 +109,4 @@ function init() {
   };
 }
 
-if (location.host == "yukicoder.me") init();
-
-export default yukicoder;
+export default init;

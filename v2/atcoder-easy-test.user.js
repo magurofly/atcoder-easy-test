@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.3.1
+// @version     2.3.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -144,6 +144,9 @@ function buildParams(data) {
 }
 function sleep(ms) {
     return new Promise(done => setTimeout(done, ms));
+}
+function doneOrFail(p) {
+    return p.then(() => Promise.resolve(), () => Promise.resolve());
 }
 function html2element(html) {
     const template = document.createElement("template");
@@ -481,7 +484,6 @@ const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
     };
 });
 
-let atcoder = null;
 function pairs(list) {
     const pairs = [];
     const len = list.length >> 1;
@@ -489,7 +491,9 @@ function pairs(list) {
         pairs.push([list[i * 2], list[i * 2 + 1]]);
     return pairs;
 }
-function init$1() {
+async function init$2() {
+    if (location.host != "atcoder.jp")
+        throw "Not AtCoder";
     const doc = unsafeWindow.document;
     const eLanguage = unsafeWindow.$("#select-lang>select");
     const langMap = {
@@ -602,7 +606,7 @@ function init$1() {
         }
         return [];
     }
-    atcoder = {
+    return {
         name: "AtCoder",
         language,
         get sourceCode() {
@@ -632,12 +636,10 @@ function init$1() {
         }
     };
 }
-if (location.host == "atcoder.jp")
-    init$1();
-var atcoder$1 = atcoder;
 
-let yukicoder = null;
-function init() {
+async function init$1() {
+    if (location.host != "yukicoder.me")
+        throw "Not yukicoder";
     const $ = unsafeWindow.$;
     const doc = unsafeWindow.document;
     const editor = unsafeWindow.ace.edit("rich_source");
@@ -696,7 +698,7 @@ function init() {
     eLang.on("change", () => {
         language.value = langMap[eLang.val()];
     });
-    yukicoder = {
+    return {
         name: "yukicoder",
         language,
         get sourceCode() {
@@ -740,11 +742,8 @@ function init() {
         },
     };
 }
-if (location.host == "yukicoder.me")
-    init();
-var yukicoder$1 = yukicoder;
 
-const site = atcoder$1 || yukicoder$1;
+var pSite = Promise.any([init$2(), init$1()]);
 
 const runners = {
     "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),
@@ -799,7 +798,7 @@ const runners = {
     "COBOL Free OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4061", "COBOL - Free (OpenCOBOL 1.1.0)"),
     "C++ GCC 9.2.0 + ACL Wandbox": new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0) + ACL"),
 };
-if (site.name == "AtCoder") {
+if (pSite.name == "AtCoder") {
     // AtCoderRunner がない場合は、追加する
     for (const e of document.querySelectorAll("#select-lang option[value]")) {
         const m = e.textContent.match(/([^ ]+) \(([^)]+)\)/);
@@ -836,111 +835,115 @@ var hBottomMenu = "<div id=\"bottom-menu-wrapper\" class=\"navbar navbar-default
 
 var hStyle$1 = "<style>\n#bottom-menu-wrapper {\n  background: transparent;\n  border: none;\n  pointer-events: none;\n  padding: 0;\n}\n\n#bottom-menu-wrapper>.container {\n  position: absolute;\n  bottom: 0;\n  width: 100%;\n  padding: 0;\n}\n\n#bottom-menu-wrapper>.container>.navbar-header {\n  float: none;\n}\n\n#bottom-menu-key {\n  display: block;\n  float: none;\n  margin: 0 auto;\n  padding: 10px 3em;\n  border-radius: 5px 5px 0 0;\n  background: #000;\n  opacity: 0.5;\n  color: #FFF;\n  cursor: pointer;\n  pointer-events: auto;\n  text-align: center;\n}\n\n@media screen and (max-width: 767px) {\n  #bottom-menu-key {\n    opacity: 0.25;\n  }\n}\n\n#bottom-menu-key.collapsed:before {\n  content: \"\\e260\";\n}\n\n#bottom-menu-tabs {\n  padding: 3px 0 0 10px;\n  cursor: n-resize;\n}\n\n#bottom-menu-tabs a {\n  pointer-events: auto;\n}\n\n#bottom-menu {\n  pointer-events: auto;\n  background: rgba(0, 0, 0, 0.8);\n  color: #fff;\n  max-height: unset;\n}\n\n#bottom-menu.collapse:not(.in) {\n  display: none !important;\n}\n\n#bottom-menu-tabs>li>a {\n  background: rgba(150, 150, 150, 0.5);\n  color: #000;\n  border: solid 1px #ccc;\n  filter: brightness(0.75);\n}\n\n#bottom-menu-tabs>li>a:hover {\n  background: rgba(150, 150, 150, 0.5);\n  border: solid 1px #ccc;\n  color: #111;\n  filter: brightness(0.9);\n}\n\n#bottom-menu-tabs>li.active>a {\n  background: #eee;\n  border: solid 1px #ccc;\n  color: #333;\n  filter: none;\n}\n\n.bottom-menu-btn-close {\n  font-size: 8pt;\n  vertical-align: baseline;\n  padding: 0 0 0 6px;\n  margin-right: -6px;\n}\n\n#bottom-menu-contents {\n  padding: 5px 15px;\n  max-height: 50vh;\n  overflow-y: auto;\n}\n\n#bottom-menu-contents .panel {\n  color: #333;\n}\n</style>";
 
-const style = html2element(hStyle$1);
-const bottomMenu = html2element(hBottomMenu);
-unsafeWindow.document.head.appendChild(style);
-site.bottomMenuContainer.appendChild(bottomMenu);
-const bottomMenuKey = bottomMenu.querySelector("#bottom-menu-key");
-const bottomMenuTabs = bottomMenu.querySelector("#bottom-menu-tabs");
-const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents");
-// メニューのリサイズ
-{
-    let resizeStart = null;
-    const onStart = (event) => {
-        const target = event.target;
-        const pageY = event.pageY;
-        if (target.id != "bottom-menu-tabs")
-            return;
-        resizeStart = { y: pageY, height: bottomMenuContents.getBoundingClientRect().height };
-    };
-    const onMove = (event) => {
-        if (!resizeStart)
-            return;
-        event.preventDefault();
-        bottomMenuContents.style.height = `${resizeStart.height - (event.pageY - resizeStart.y)}px`;
-    };
-    const onEnd = () => {
-        resizeStart = null;
-    };
-    bottomMenuTabs.addEventListener("mousedown", onStart);
-    bottomMenuTabs.addEventListener("mousemove", onMove);
-    bottomMenuTabs.addEventListener("mouseup", onEnd);
-    bottomMenuTabs.addEventListener("mouseleave", onEnd);
-}
-let tabs = new Set();
-let selectedTab = null;
-/** 下メニューの操作 */
-const menuController = {
-    /** タブを選択 */
-    selectTab(tabId) {
-        const tab = unsafeWindow.$(`#bottom-menu-tab-${tabId}`);
-        if (tab && tab[0]) {
-            tab.tab("show"); // Bootstrap 3
-            selectedTab = tabId;
-        }
-    },
-    /** 下メニューにタブを追加する */
-    addTab(tabId, tabLabel, paneContent, options = {}) {
-        console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
-        // タブを追加
-        const tab = document.createElement("a");
-        tab.textContent = tabLabel;
-        tab.id = `bottom-menu-tab-${tabId}`;
-        tab.href = "#";
-        tab.dataset.target = `#bottom-menu-pane-${tabId}`;
-        tab.dataset.toggle = "tab";
-        tab.addEventListener("click", event => {
-            event.preventDefault();
-            menuController.selectTab(tabId);
-        });
-        const tabLi = document.createElement("li");
-        tabLi.appendChild(tab);
-        bottomMenuTabs.appendChild(tabLi);
-        // 内容を追加
-        const pane = document.createElement("div");
-        pane.className = "tab-pane";
-        pane.id = `bottom-menu-pane-${tabId}`;
-        pane.appendChild(paneContent);
-        bottomMenuContents.appendChild(pane);
-        const controller = {
-            get id() {
-                return tabId;
-            },
-            close() {
-                bottomMenuTabs.removeChild(tabLi);
-                bottomMenuContents.removeChild(pane);
-                tabs.delete(tab);
-                if (selectedTab == tabId) {
-                    selectedTab = null;
-                    if (tabs.size > 0) {
-                        menuController.selectTab(tabs.values().next().value.id);
-                    }
-                }
-            },
-            show() {
-                menuController.show();
-                menuController.selectTab(tabId);
-            },
-            set color(color) {
-                tab.style.backgroundColor = color;
-            },
+async function init() {
+    const site = await pSite;
+    const style = html2element(hStyle$1);
+    const bottomMenu = html2element(hBottomMenu);
+    unsafeWindow.document.head.appendChild(style);
+    site.bottomMenuContainer.appendChild(bottomMenu);
+    const bottomMenuKey = bottomMenu.querySelector("#bottom-menu-key");
+    const bottomMenuTabs = bottomMenu.querySelector("#bottom-menu-tabs");
+    const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents");
+    // メニューのリサイズ
+    {
+        let resizeStart = null;
+        const onStart = (event) => {
+            const target = event.target;
+            const pageY = event.pageY;
+            if (target.id != "bottom-menu-tabs")
+                return;
+            resizeStart = { y: pageY, height: bottomMenuContents.getBoundingClientRect().height };
         };
-        // 選択されているタブがなければ選択
-        if (!selectedTab)
-            menuController.selectTab(tabId);
-        return controller;
-    },
-    /** 下メニューを表示する */
-    show() {
-        if (bottomMenuKey.classList.contains("collapsed"))
+        const onMove = (event) => {
+            if (!resizeStart)
+                return;
+            event.preventDefault();
+            bottomMenuContents.style.height = `${resizeStart.height - (event.pageY - resizeStart.y)}px`;
+        };
+        const onEnd = () => {
+            resizeStart = null;
+        };
+        bottomMenuTabs.addEventListener("mousedown", onStart);
+        bottomMenuTabs.addEventListener("mousemove", onMove);
+        bottomMenuTabs.addEventListener("mouseup", onEnd);
+        bottomMenuTabs.addEventListener("mouseleave", onEnd);
+    }
+    let tabs = new Set();
+    let selectedTab = null;
+    /** 下メニューの操作 */
+    const menuController = {
+        /** タブを選択 */
+        selectTab(tabId) {
+            const tab = unsafeWindow.$(`#bottom-menu-tab-${tabId}`);
+            if (tab && tab[0]) {
+                tab.tab("show"); // Bootstrap 3
+                selectedTab = tabId;
+            }
+        },
+        /** 下メニューにタブを追加する */
+        addTab(tabId, tabLabel, paneContent, options = {}) {
+            console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
+            // タブを追加
+            const tab = document.createElement("a");
+            tab.textContent = tabLabel;
+            tab.id = `bottom-menu-tab-${tabId}`;
+            tab.href = "#";
+            tab.dataset.target = `#bottom-menu-pane-${tabId}`;
+            tab.dataset.toggle = "tab";
+            tab.addEventListener("click", event => {
+                event.preventDefault();
+                menuController.selectTab(tabId);
+            });
+            const tabLi = document.createElement("li");
+            tabLi.appendChild(tab);
+            bottomMenuTabs.appendChild(tabLi);
+            // 内容を追加
+            const pane = document.createElement("div");
+            pane.className = "tab-pane";
+            pane.id = `bottom-menu-pane-${tabId}`;
+            pane.appendChild(paneContent);
+            bottomMenuContents.appendChild(pane);
+            const controller = {
+                get id() {
+                    return tabId;
+                },
+                close() {
+                    bottomMenuTabs.removeChild(tabLi);
+                    bottomMenuContents.removeChild(pane);
+                    tabs.delete(tab);
+                    if (selectedTab == tabId) {
+                        selectedTab = null;
+                        if (tabs.size > 0) {
+                            menuController.selectTab(tabs.values().next().value.id);
+                        }
+                    }
+                },
+                show() {
+                    menuController.show();
+                    menuController.selectTab(tabId);
+                },
+                set color(color) {
+                    tab.style.backgroundColor = color;
+                },
+            };
+            // 選択されているタブがなければ選択
+            if (!selectedTab)
+                menuController.selectTab(tabId);
+            return controller;
+        },
+        /** 下メニューを表示する */
+        show() {
+            if (bottomMenuKey.classList.contains("collapsed"))
+                bottomMenuKey.click();
+        },
+        /** 下メニューの表示/非表示を切り替える */
+        toggle() {
             bottomMenuKey.click();
-    },
-    /** 下メニューの表示/非表示を切り替える */
-    toggle() {
-        bottomMenuKey.click();
-    },
-};
-console.info("AtCoder Easy Test: bottomMenu OK");
+        },
+    };
+    console.info("AtCoder Easy Test: bottomMenu OK");
+    return menuController;
+}
 
 var hRowTemplate = "<div class=\"atcoder-easy-test-cases-row alert alert-dismissible\">\n  <button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">\n    <span aria-hidden=\"true\">×</span>\n  </button>\n  <div class=\"progress\">\n    <div class=\"progress-bar\" style=\"width: 0%;\">0 / 0</div>\n  </div>\n  <!--div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div>\n  <div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div>\n  <div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div-->\n</div>";
 
@@ -958,8 +961,8 @@ class ResultRow {
         progressBar.textContent = `${numFinished} / ${numCases}`;
         this._promise = Promise.all(pairs.map(([pResult, tab]) => {
             const button = html2element(`<div class="label label-default" style="margin: 3px; cursor: pointer;">WJ</div>`);
-            button.addEventListener("click", () => {
-                tab.show();
+            button.addEventListener("click", async () => {
+                (await tab).show();
             });
             this._element.appendChild(button);
             return pResult.then(result => {
@@ -995,8 +998,8 @@ class ResultRow {
         this._promise.then(listener);
     }
     remove() {
-        for (const tab of this._tabs)
-            tab.close();
+        for (const pTab of this._tabs)
+            pTab.then(tab => tab.close());
         const parent = this._element.parentElement;
         if (parent)
             parent.removeChild(this._element);
@@ -1006,7 +1009,7 @@ class ResultRow {
 var hResultList = "<div class=\"row\"></div>";
 
 const eResultList = html2element(hResultList);
-site.resultListContainer.appendChild(eResultList);
+pSite.then(site => site.resultListContainer.appendChild(eResultList));
 const resultList = {
     addResult(pairs) {
         const result = new ResultRow(pairs);
@@ -1190,205 +1193,213 @@ var hTestAndSubmit = "<a id=\"atcoder-easy-test-btn-test-and-submit\" class=\"bt
 
 var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-default btn-sm\" style=\"margin-left: 1rem\" title=\"Alt+Enter\" data-toggle=\"tooltip\">Test All Samples</a>";
 
-const doc = unsafeWindow.document;
-// external interfaces
-unsafeWindow.bottomMenu = menuController;
-unsafeWindow.codeRunner = codeRunner;
-doc.head.appendChild(html2element(hStyle));
-// interface
-const atCoderEasyTest = {
-    config,
-    codeSaver,
-    enableButtons() {
-        events.trig("enable");
-    },
-    disableButtons() {
-        events.trig("disable");
-    },
-    runCount: 0,
-    runTest(title, language, sourceCode, input, output = null, options = { trim: true, split: true, }) {
-        this.disableButtons();
-        const content = new ResultTabContent();
-        const tab = menuController.addTab("easy-test-result-" + content.uid, `#${++this.runCount} ${title}`, content.element, { active: true, closeButton: true });
-        const pResult = codeRunner.run(language, sourceCode, input, output, options);
-        pResult.then(result => {
-            content.result = result;
-            if (result.status == "AC") {
-                tab.color = "#dff0d8";
-            }
-            else if (result.status != "OK") {
-                tab.color = "#fcf8e3";
-            }
-        }).finally(() => {
-            this.enableButtons();
-        });
-        return [pResult, tab];
-    }
-};
-unsafeWindow.atCoderEasyTest = atCoderEasyTest;
-// place "Easy Test" tab
-{
-    // declare const hRoot: string;
-    const root = html2element(hRoot);
-    const E = (id) => root.querySelector(`#atcoder-easy-test-${id}`);
-    const eLanguage = E("language");
-    const eInput = E("input");
-    const eAllowableErrorCheck = E("allowable-error-check");
-    const eAllowableError = E("allowable-error");
-    const eOutput = E("output");
-    const eRun = E("run");
-    const eSetting = E("setting");
-    E("version").textContent = "2.3.1";
-    events.on("enable", () => {
-        eRun.classList.remove("disabled");
+(async () => {
+    const site = await pSite;
+    const doc = unsafeWindow.document;
+    // init bottomMenu
+    const pBottomMenu = init();
+    pBottomMenu.then(bottomMenu => {
+        unsafeWindow.bottomMenu = bottomMenu;
     });
-    events.on("disable", () => {
-        eRun.classList.remove("enabled");
-    });
-    eSetting.addEventListener("click", () => {
-        settings.open();
-    });
-    // 言語選択関係
+    await doneOrFail(pBottomMenu);
+    // external interfaces
+    unsafeWindow.codeRunner = codeRunner;
+    doc.head.appendChild(html2element(hStyle));
+    // interface
+    const atCoderEasyTest = {
+        config,
+        codeSaver,
+        enableButtons() {
+            events.trig("enable");
+        },
+        disableButtons() {
+            events.trig("disable");
+        },
+        runCount: 0,
+        runTest(title, language, sourceCode, input, output = null, options = { trim: true, split: true, }) {
+            this.disableButtons();
+            const content = new ResultTabContent();
+            const pTab = pBottomMenu.then(bottomMenu => bottomMenu.addTab("easy-test-result-" + content.uid, `#${++this.runCount} ${title}`, content.element, { active: true, closeButton: true }));
+            const pResult = codeRunner.run(language, sourceCode, input, output, options);
+            pResult.then(result => {
+                content.result = result;
+                if (result.status == "AC") {
+                    pTab.then(tab => tab.color = "#dff0d8");
+                }
+                else if (result.status != "OK") {
+                    pTab.then(tab => tab.color = "#fcf8e3");
+                }
+            }).finally(() => {
+                this.enableButtons();
+            });
+            return [pResult, pTab];
+        }
+    };
+    unsafeWindow.atCoderEasyTest = atCoderEasyTest;
+    // place "Easy Test" tab
     {
-        eLanguage.addEventListener("change", () => {
-            const langSelection = config.get("langSelection", {});
-            langSelection[site.language.value] = eLanguage.value;
-            config.set("langSelection", langSelection);
-        });
-        async function setLanguage() {
-            const languageId = site.language.value;
-            while (eLanguage.firstChild)
-                eLanguage.removeChild(eLanguage.firstChild);
-            try {
-                const langs = await codeRunner.getEnvironment(languageId);
-                console.log(`language: ${langs[1]} (${langs[0]})`);
-                // add <option>
-                for (const [languageId, label] of langs) {
-                    const option = document.createElement("option");
-                    option.value = languageId;
-                    option.textContent = label;
-                    eLanguage.appendChild(option);
-                }
-                // load
-                const langSelection = config.get("langSelection", {});
-                if (languageId in langSelection) {
-                    const prev = langSelection[languageId];
-                    const [lang, _] = langs.find(([lang, label]) => lang == prev);
-                    if (lang)
-                        eLanguage.value = lang;
-                }
-                events.trig("enable");
-            }
-            catch (error) {
-                console.log(`language: ? (${languageId})`);
-                console.error(error);
-                const option = document.createElement("option");
-                option.className = "fg-danger";
-                option.textContent = error;
-                eLanguage.appendChild(option);
-                events.trig("disable");
-            }
-        }
-        site.language.addListener(() => setLanguage());
-        eAllowableError.disabled = !eAllowableErrorCheck.checked;
-        eAllowableErrorCheck.addEventListener("change", event => {
-            eAllowableError.disabled = !eAllowableErrorCheck.checked;
-        });
-    }
-    // テスト実行
-    function runTest(title, input, output = null) {
-        const options = { trim: true, split: true, };
-        if (eAllowableErrorCheck.checked) {
-            options.allowableError = parseFloat(eAllowableError.value);
-        }
-        return atCoderEasyTest.runTest(title, eLanguage.value, site.sourceCode, input, output, options);
-    }
-    function runAllCases(testcases) {
-        const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
-        resultList.addResult(pairs);
-        return Promise.all(pairs.map(([pResult, _]) => pResult.then(result => {
-            if (result.status == "AC")
-                return Promise.resolve(result);
-            else
-                return Promise.reject(result);
-        })));
-    }
-    eRun.addEventListener("click", _ => {
-        const title = "Run";
-        const input = eInput.value;
-        const output = eOutput.value;
-        runTest(title, input, output || null);
-    });
-    menuController.addTab("easy-test", "Easy Test", root);
-    // place "Run" button on each sample
-    for (const testCase of site.testCases) {
-        const eRunButton = html2element(hRunButton);
-        eRunButton.addEventListener("click", async () => {
-            const [pResult, tab] = runTest(testCase.title, testCase.input, testCase.output);
-            await pResult;
-            tab.show();
-        });
-        testCase.anchor.insertAdjacentElement("afterend", eRunButton);
-        events.on("disable", () => {
-            eRunButton.classList.add("disabled");
-        });
+        // declare const hRoot: string;
+        const root = html2element(hRoot);
+        const E = (id) => root.querySelector(`#atcoder-easy-test-${id}`);
+        const eLanguage = E("language");
+        const eInput = E("input");
+        const eAllowableErrorCheck = E("allowable-error-check");
+        const eAllowableError = E("allowable-error");
+        const eOutput = E("output");
+        const eRun = E("run");
+        const eSetting = E("setting");
+        E("version").textContent = "2.3.2";
         events.on("enable", () => {
-            eRunButton.classList.remove("disabled");
+            eRun.classList.remove("disabled");
         });
+        events.on("disable", () => {
+            eRun.classList.remove("enabled");
+        });
+        eSetting.addEventListener("click", () => {
+            settings.open();
+        });
+        // 言語選択関係
+        {
+            eLanguage.addEventListener("change", async () => {
+                const langSelection = config.get("langSelection", {});
+                langSelection[site.language.value] = eLanguage.value;
+                config.set("langSelection", langSelection);
+            });
+            async function setLanguage() {
+                const languageId = site.language.value;
+                while (eLanguage.firstChild)
+                    eLanguage.removeChild(eLanguage.firstChild);
+                try {
+                    const langs = await codeRunner.getEnvironment(languageId);
+                    console.log(`language: ${langs[1]} (${langs[0]})`);
+                    // add <option>
+                    for (const [languageId, label] of langs) {
+                        const option = document.createElement("option");
+                        option.value = languageId;
+                        option.textContent = label;
+                        eLanguage.appendChild(option);
+                    }
+                    // load
+                    const langSelection = config.get("langSelection", {});
+                    if (languageId in langSelection) {
+                        const prev = langSelection[languageId];
+                        const [lang, _] = langs.find(([lang, label]) => lang == prev);
+                        if (lang)
+                            eLanguage.value = lang;
+                    }
+                    events.trig("enable");
+                }
+                catch (error) {
+                    console.log(`language: ? (${languageId})`);
+                    console.error(error);
+                    const option = document.createElement("option");
+                    option.className = "fg-danger";
+                    option.textContent = error;
+                    eLanguage.appendChild(option);
+                    events.trig("disable");
+                }
+            }
+            site.language.addListener(() => setLanguage());
+            eAllowableError.disabled = !eAllowableErrorCheck.checked;
+            eAllowableErrorCheck.addEventListener("change", event => {
+                eAllowableError.disabled = !eAllowableErrorCheck.checked;
+            });
+        }
+        // テスト実行
+        function runTest(title, input, output = null) {
+            const options = { trim: true, split: true, };
+            if (eAllowableErrorCheck.checked) {
+                options.allowableError = parseFloat(eAllowableError.value);
+            }
+            return atCoderEasyTest.runTest(title, eLanguage.value, site.sourceCode, input, output, options);
+        }
+        function runAllCases(testcases) {
+            const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
+            resultList.addResult(pairs);
+            return Promise.all(pairs.map(([pResult, _]) => pResult.then(result => {
+                if (result.status == "AC")
+                    return Promise.resolve(result);
+                else
+                    return Promise.reject(result);
+            })));
+        }
+        eRun.addEventListener("click", _ => {
+            const title = "Run";
+            const input = eInput.value;
+            const output = eOutput.value;
+            runTest(title, input, output || null);
+        });
+        await doneOrFail(pBottomMenu.then(bottomMenu => bottomMenu.addTab("easy-test", "Easy Test", root)));
+        // place "Run" button on each sample
+        for (const testCase of site.testCases) {
+            const eRunButton = html2element(hRunButton);
+            eRunButton.addEventListener("click", async () => {
+                const [pResult, pTab] = runTest(testCase.title, testCase.input, testCase.output);
+                await pResult;
+                (await pTab).show();
+            });
+            testCase.anchor.insertAdjacentElement("afterend", eRunButton);
+            events.on("disable", () => {
+                eRunButton.classList.add("disabled");
+            });
+            events.on("enable", () => {
+                eRunButton.classList.remove("disabled");
+            });
+        }
+        // place "Test & Submit" button
+        {
+            const button = html2element(hTestAndSubmit);
+            site.testButtonContainer.appendChild(button);
+            const testAndSubmit = async () => {
+                await runAllCases(site.testCases);
+                site.submit();
+            };
+            button.addEventListener("click", testAndSubmit);
+            events.on("testAndSubmit", testAndSubmit);
+        }
+        // place "Test All Samples" button
+        {
+            const button = html2element(hTestAllSamples);
+            site.testButtonContainer.appendChild(button);
+            const testAllSamples = () => runAllCases(site.testCases);
+            button.addEventListener("click", testAllSamples);
+            events.on("testAllSamples", testAllSamples);
+        }
     }
-    // place "Test & Submit" button
-    {
-        const button = html2element(hTestAndSubmit);
-        site.testButtonContainer.appendChild(button);
-        const testAndSubmit = async () => {
-            await runAllCases(site.testCases);
-            site.submit();
-        };
-        button.addEventListener("click", testAndSubmit);
-        events.on("testAndSubmit", testAndSubmit);
+    // place "Restore Last Play" button
+    try {
+        const restoreButton = doc.createElement("a");
+        restoreButton.className = "btn btn-danger btn-sm";
+        restoreButton.textContent = "Restore Last Play";
+        restoreButton.addEventListener("click", async () => {
+            try {
+                const lastCode = await codeSaver.restore();
+                if (site.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
+                    site.sourceCode = lastCode;
+                }
+            }
+            catch (reason) {
+                alert(reason);
+            }
+        });
+        site.sideButtonContainer.appendChild(restoreButton);
     }
-    // place "Test All Samples" button
-    {
-        const button = html2element(hTestAllSamples);
-        site.testButtonContainer.appendChild(button);
-        const testAllSamples = () => runAllCases(site.testCases);
-        button.addEventListener("click", testAllSamples);
-        events.on("testAllSamples", testAllSamples);
+    catch (e) {
+        console.error(e);
     }
-}
-// place "Restore Last Play" button
-try {
-    const restoreButton = doc.createElement("a");
-    restoreButton.className = "btn btn-danger btn-sm";
-    restoreButton.textContent = "Restore Last Play";
-    restoreButton.addEventListener("click", async () => {
-        try {
-            const lastCode = await codeSaver.restore();
-            if (site.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
-                site.sourceCode = lastCode;
+    // キーボードショートカット
+    unsafeWindow.addEventListener("keydown", (event) => {
+        if (config.get("useKeyboardShortcut", true)) {
+            if (event.key == "Enter" && event.ctrlKey) {
+                events.trig("testAndSubmit");
+            }
+            else if (event.key == "Enter" && event.altKey) {
+                events.trig("testAllSamples");
+            }
+            else if (event.key == "Escape" && event.altKey) {
+                pBottomMenu.then(bottomMenu => bottomMenu.toggle());
             }
         }
-        catch (reason) {
-            alert(reason);
-        }
     });
-    site.sideButtonContainer.appendChild(restoreButton);
-}
-catch (e) {
-    console.error(e);
-}
-// キーボードショートカット
-unsafeWindow.addEventListener("keydown", (event) => {
-    if (config.get("useKeyboardShortcut", true)) {
-        if (event.key == "Enter" && event.ctrlKey) {
-            events.trig("testAndSubmit");
-        }
-        else if (event.key == "Enter" && event.altKey) {
-            events.trig("testAllSamples");
-        }
-        else if (event.key == "Escape" && event.altKey) {
-            menuController.toggle();
-        }
-    }
-});
+})();
 })();

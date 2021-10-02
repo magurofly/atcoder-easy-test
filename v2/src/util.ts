@@ -6,6 +6,10 @@ export function sleep(ms: number): Promise<void> {
   return new Promise(done => setTimeout(done, ms));
 }
 
+export function doneOrFail<T>(p: Promise<T>): Promise<void> {
+  return p.then(() => Promise.resolve(), () => Promise.resolve());
+}
+
 export function html2element(html: string): Node {
   const template = document.createElement("template");
   template.innerHTML = html;
