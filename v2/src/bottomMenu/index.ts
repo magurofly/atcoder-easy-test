@@ -106,6 +106,16 @@ const menuController: BottomMenu = {
       },
     };
 
+    // 閉じるボタン
+    if (options.closeButton) {
+      const btn = document.createElement("a");
+      btn.className = "bottom-menu-btn-close btn btn-link glyphicon glyphicon-remove";
+      btn.addEventListener("click", () => {
+        controller.close();
+      });
+      tab.appendChild(btn);
+    }
+
     // 選択されているタブがなければ選択
     if (!selectedTab) menuController.selectTab(tabId);
 
