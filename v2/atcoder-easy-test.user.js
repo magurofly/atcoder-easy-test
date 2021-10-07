@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.3.2
+// @version     2.3.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1257,7 +1257,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.3.2";
+        E("version").textContent = "2.3.3";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
