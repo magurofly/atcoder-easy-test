@@ -1,6 +1,6 @@
 {
   "name": "atcoder-easy-test",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "Make testing sample cases easy",
   "main": "index.js",
   "repository": "https://github.com/magurofly/atcoder-easy-test.git",

@@ -97,11 +97,16 @@ async function init() {
       for (let i = 0; i < eSamples.length; i++) {
         const eSample = eSamples.eq(i);
         const [eInput, eOutput] = eSample.find("pre");
+        const anchorContainer = $(`<span>`);
+        const anchor = $(`<span>`);
+        anchorContainer.append(anchor);
+        eSample.find("h6").eq(0).appendTo(anchorContainer);
+        anchorContainer.insertAfter(eSample.find("button").eq(0));
         testCases.push({
           title: `Sample ${sampleId++}`,
           input: eInput.textContent,
           output: eOutput.textContent,
-          anchor: eSample.find("button")[0],
+          anchor: anchor[0],
         });
       }
       return testCases;
