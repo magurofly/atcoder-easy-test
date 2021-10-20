@@ -1,3 +1,5 @@
+import config from "../config";
+import Editor from "../editor";
 import TestCase from "../TestCase";
 import { ObservableValue } from "../util";
 
@@ -19,7 +21,7 @@ async function init() {
     bootstrapJQuery.onload = async () => {
       const bootstrapJS = await fetch("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js").then(r => r.text());
       Function("$, jQuery", bootstrapJS)(unsafeWindow.$, unsafeWindow.$);
-      done(unsafeWindow.$.noConflict());
+      done(unsafeWindow.$);
     };
     doc.body.appendChild(bootstrapJQuery);
   });
@@ -69,6 +71,12 @@ async function init() {
     }
   });
 
+  let editor = null;
+  if (config.get("codeforcesEditor", true)) {
+    editor = new Editor(langMap[eLang.value].split(" ")[0]);
+    doc.getElementById("pageContent").appendChild(editor.element);
+  }
+
   return {
     name: "Codeforces",
     language,
@@ -84,6 +92,7 @@ async function init() {
       //TODO: 追加した提出欄に設定
     },
     submit(): void {
+      this.sourceCode = _sourceCode;
       doc.querySelector<HTMLElement>(`#submit_form input[type="submit"]`).click();
     },
     get testButtonContainer(): HTMLElement {

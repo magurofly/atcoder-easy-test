@@ -758,6 +758,118 @@ async function init$2() {
     };
 }
 
+let data = {};
+function toString() {
+    return JSON.stringify(data);
+}
+function save() {
+    localStorage.setItem("AtCoderEasyTest", toString());
+}
+function load() {
+    if ("AtCoderEasyTest" in localStorage) {
+        data = JSON.parse(localStorage.getItem("AtCoderEasyTest"));
+    }
+}
+load();
+/** プロパティ名は camelCase にすること */
+const config = {
+    getString(key, defaultValue = "") {
+        if (!(key in data))
+            config.setString(key, defaultValue);
+        return data[key];
+    },
+    setString(key, value) {
+        data[key] = value;
+        save();
+    },
+    has(key) {
+        return key in data;
+    },
+    get(key, defaultValue = null) {
+        if (!(key in data))
+            config.set(key, defaultValue);
+        return JSON.parse(data[key]);
+    },
+    set(key, value) {
+        config.setString(key, JSON.stringify(value));
+    },
+    save,
+    load,
+    toString,
+};
+
+function getEditor() {
+    if (unsafeWindow["monaco"])
+        return Promise.resolve(unsafeWindow["monaco"]);
+    return new Promise(done => {
+        const doc = unsafeWindow.document;
+        const loader = doc.createElement("script");
+        loader.src = "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/loader.min.js";
+        loader.onload = () => {
+            unsafeWindow["require"].config({
+                paths: {
+                    vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs",
+                },
+            });
+            unsafeWindow["MonacoEnvironment"] = {
+                getWorkerUrl: (workerId, label) => `data:text/javascript;charset=UTF-8,${encodeURIComponent(`
+          self.MonacoEnvironment = {
+            baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/'
+          };
+          importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/base/worker/workerMain.js');
+        `)}`,
+            };
+            unsafeWindow["require"](["vs/editor/editor.main"], monaco => {
+                done(unsafeWindow["monaco"]);
+            });
+        };
+        doc.head.appendChild(loader);
+    });
+}
+const langMap = {
+    "C": "c",
+    "C++": "cpp",
+    "C#": "csharp",
+    // sorry no D
+    // sorry no haskell
+    "Java": "java",
+    "Kotlin": "kotlin",
+    // sorry no OCaml
+    // sorry no Delphi
+    "Pascal": "pascal",
+    "Perl": "perl",
+    "PHP": "php",
+    "Python": "python",
+    "Python3": "python",
+    "Ruby": "ruby",
+    "Rust": "rust",
+    "Scala": "scala",
+    "JavaScript": "javascript",
+};
+class Editor {
+    _element;
+    _editor;
+    constructor(lang) {
+        this._element = document.createElement("div");
+        this._editor = getEditor().then(editor => editor.create(this._element, {
+            value: "",
+            language: langMap[lang] || "text",
+        }));
+    }
+    get element() {
+        return this._element;
+    }
+    async getSourceCode() {
+        return (await this._editor).getValue();
+    }
+    async setSourceCode(sourceCode) {
+        (await this._editor).setValue(sourceCode);
+    }
+    async setLanguage(lang) {
+        (await getEditor()).editor.setModelLanguage((await this._editor).getModel(), langMap[lang]);
+    }
+}
+
 async function init$1() {
     if (location.host != "codeforces.com")
         throw "not Codeforces";
@@ -774,7 +886,7 @@ async function init$1() {
         bootstrapJQuery.onload = async () => {
             const bootstrapJS = await fetch("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js").then(r => r.text());
             Function("$, jQuery", bootstrapJS)(unsafeWindow.$, unsafeWindow.$);
-            done(unsafeWindow.$.noConflict());
+            done(unsafeWindow.$);
         };
         doc.body.appendChild(bootstrapJQuery);
     });
@@ -820,6 +932,11 @@ async function init$1() {
             _sourceCode = await eFile.files[0].text();
         }
     });
+    let editor = null;
+    if (config.get("codeforcesEditor", true)) {
+        editor = new Editor(langMap[eLang.value].split(" ")[0]);
+        doc.getElementById("pageContent").appendChild(editor.element);
+    }
     return {
         name: "Codeforces",
         language,
@@ -835,6 +952,7 @@ async function init$1() {
             //TODO: 追加した提出欄に設定
         },
         submit() {
+            this.sourceCode = _sourceCode;
             doc.querySelector(`#submit_form input[type="submit"]`).click();
         },
         get testButtonContainer() {
@@ -1142,46 +1260,6 @@ const resultList = {
         eResultList.insertBefore(result.element, eResultList.firstChild);
         return result;
     },
-};
-
-let data = {};
-function toString() {
-    return JSON.stringify(data);
-}
-function save() {
-    localStorage.setItem("AtCoderEasyTest", toString());
-}
-function load() {
-    if ("AtCoderEasyTest" in localStorage) {
-        data = JSON.parse(localStorage.getItem("AtCoderEasyTest"));
-    }
-}
-load();
-/** プロパティ名は camelCase にすること */
-const config = {
-    getString(key, defaultValue = "") {
-        if (!(key in data))
-            config.setString(key, defaultValue);
-        return data[key];
-    },
-    setString(key, value) {
-        data[key] = value;
-        save();
-    },
-    has(key) {
-        return key in data;
-    },
-    get(key, defaultValue = null) {
-        if (!(key in data))
-            config.set(key, defaultValue);
-        return JSON.parse(data[key]);
-    },
-    set(key, value) {
-        config.setString(key, JSON.stringify(value));
-    },
-    save,
-    load,
-    toString,
 };
 
 var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">Settings</div>\n        <div class=\"panel-body\">\n          <form>\n            <div class=\"checkbox\">\n              <label><input id=\"useKeyboardShortcut\" type=\"checkbox\">Use Keyboard Shortcuts</label>\n            </div>\n            <div class=\"checkbox\">\n              <label><input id=\"codeforcesShowEditor\" type=\"checkbox\">Show Editor in Codeforces Problem Page</label>\n            </div>\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
