@@ -130,6 +130,7 @@ async function init() {
     return [];
   };
 
+
   return {
     name: "AtCoder",
     language,
