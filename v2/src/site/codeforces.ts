@@ -1,25 +1,68 @@
 import TestCase from "../TestCase";
 import { ObservableValue } from "../util";
 
-let codeforces = null;
+async function init() {
+  if (location.host != "codeforces.com") throw "not Codeforces";
+  //TODO: m1.codeforces.com, m2.codeforces.com, m3.codeforces.com に対応する
 
-function init() {
-  const $ = unsafeWindow.$;
   const doc = unsafeWindow.document;
-  const editor = (unsafeWindow as any).ace.edit("rich_source");
-  const eSourceObject = $("#source");
-  const eLang = $("#lang");
-  const eSamples = $(".sample");
+  const eLang = doc.querySelector<HTMLSelectElement>("select[name='programTypeId']");
 
-  const langMap = {
-  };
+  const bootstrapCSS = doc.createElement("link");
+  bootstrapCSS.rel = "stylesheet";
+  bootstrapCSS.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css";
+  doc.head.appendChild(bootstrapCSS);
 
-  const language = new ObservableValue(langMap[eLang.val()]);
-  eLang.on("change", () => {
-    language.value = langMap[eLang.val()];
+  await new Promise(done => {
+    const bootstrapJQuery = doc.createElement("script");
+    bootstrapJQuery.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js";
+    bootstrapJQuery.onload = () => {
+      const bootstrapJS = doc.createElement("script");
+      bootstrapJS.src = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js";
+      bootstrapJS.onload = () => done(unsafeWindow.$.noConflict());
+      doc.body.appendChild(bootstrapJS);
+    };
+    doc.body.appendChild(bootstrapJQuery);
   });
 
-  codeforces = {
+  const langMap = {
+    43: "C C11 GCC 5.1.0",
+    52: "C++ C++17 Clang++",
+    50: "C++ C++14 G++ 6.4.0",
+    54: "C++ C++17 G++ 7.3.0",
+    59: "C++ Microsoft Visual C++ 2017",
+    61: "C++ C++17 9.2.0 (64 bit, msys 2)",
+    65: "C# 8, .NET Core 3.1",
+    9: "C# Mono 6.8",
+    28: "D DMD32 v2.091.0",
+    32: "Go 1.15.6",
+    12: "Haskell GHC 8.10.1",
+    60: "Java 11.0.6",
+    36: "Java 1.8.0_241",
+    48: "Kotlin 1.5.31",
+    19: "OCaml 4.02.1",
+    3: "Delphi 7",
+    4: "Pascal Free Pascal 3.0.2",
+    51: "Pascal PascalABC.NET 3.4.1",
+    13: "Perl 5.20.1",
+    6: "PHP 7.2.13",
+    7: "Python 2.7.18",
+    31: "Python3 3.8.10",
+    40: "Python PyPy2 2.7 (7.3.0)",
+    41: "Python3 PyPy3 3.7 (7.3.0)",
+    67: "Ruby 3.0.0",
+    49: "Rust 1.49.0",
+    20: "Scala 2.12.8",
+    34: "JavaScript V8 4.8.0",
+    55: "JavaScript Node.js 12.6.3",
+  };
+
+  const language = new ObservableValue(langMap[eLang.value]);
+  eLang.addEventListener("change", () => {
+    language.value = langMap[eLang.value];
+  });
+
+  return {
     name: "Codeforces",
     language,
     get sourceCode(): string {
@@ -41,36 +84,26 @@ function init() {
       doc.querySelector<HTMLElement>(`#submit_form input[type="submit"]`).click();
     },
     get testButtonContainer(): HTMLElement {
-      return doc.querySelector("#submit_form");
+      return doc.querySelector(".submitForm");
     },
     get sideButtonContainer(): HTMLElement {
-      return doc.querySelector("#toggle_source_editor").parentElement;
+      return doc.querySelector(".submitForm");
     },
     get bottomMenuContainer(): HTMLElement {
       return doc.body;
     },
     get resultListContainer(): HTMLElement {
-      return doc.querySelector("#content");
+      return doc.querySelector("#pageContent");
     },
     get testCases(): TestCase[] {
-      const testCases = [];
-      let sampleId = 1;
-      for (let i = 0; i < eSamples.length; i++) {
-        const eSample = eSamples.eq(i);
-        const [eInput, eOutput] = eSample.find("pre");
-        testCases.push({
-          title: `Sample ${sampleId++}`,
-          input: eInput.textContent,
-          output: eOutput.textContent,
-          anchor: eSample.find("button")[0],
-        });
-      }
-      return testCases;
+      return [... doc.querySelectorAll(".sample-test")].map((e, i) => ({
+        title: `Sample ${i + 1}`,
+        input: e.querySelector(".input pre").textContent,
+        output: e.querySelector(".output pre").textContent,
+        anchor: e.querySelector(".input .title"),
+      }));
     },
   };
 }
 
-if (location.host == "codeforces.com") init();
-//TODO: m1.codeforces.com, m2.codeforces.com, m3.codeforces.com に対応する
-
-export default codeforces;
+export default init;
