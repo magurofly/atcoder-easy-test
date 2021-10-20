@@ -16,11 +16,10 @@ async function init() {
   await new Promise(done => {
     const bootstrapJQuery = doc.createElement("script");
     bootstrapJQuery.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js";
-    bootstrapJQuery.onload = () => {
-      const bootstrapJS = doc.createElement("script");
-      bootstrapJS.src = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js";
-      bootstrapJS.onload = () => done(unsafeWindow.$.noConflict());
-      doc.body.appendChild(bootstrapJS);
+    bootstrapJQuery.onload = async () => {
+      const bootstrapJS = await fetch("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js").then(r => r.text());
+      Function("$, jQuery", bootstrapJS)(unsafeWindow.$, unsafeWindow.$);
+      done(unsafeWindow.$.noConflict());
     };
     doc.body.appendChild(bootstrapJQuery);
   });
@@ -62,22 +61,26 @@ async function init() {
     language.value = langMap[eLang.value];
   });
 
+  let _sourceCode = "";
+  const eFile = doc.querySelector<HTMLFormElement>(".submitForm").elements["sourceFile"];
+  eFile.addEventListener("change", async () => {
+    if (eFile.files[0]) {
+      _sourceCode = await eFile.files[0].text();
+    }
+  });
+
   return {
     name: "Codeforces",
     language,
     get sourceCode(): string {
-      const eFile = doc.querySelector<HTMLFormElement>(".submitForm").elements["sourceFile"];
-      if (eFile.files[0]) {
-        return new TextDecoder().decode(eFile.files[0].arrayBuffer);
-      }
-      //TODO: 提出欄を追加したりする
-      throw "No source code";
+      return _sourceCode;
     },
     set sourceCode(sourceCode: string) {
       const container = new DataTransfer();
       container.items.add(new File([sourceCode], "prog.txt", { type: "text/plain" }))
       const eFile = doc.querySelector<HTMLFormElement>(".submitForm").elements["sourceFile"];
       eFile.files = container.files;
+      _sourceCode = sourceCode;
       //TODO: 追加した提出欄に設定
     },
     submit(): void {
