@@ -3,6 +3,11 @@ import Editor from "../editor";
 import TestCase from "../TestCase";
 import { ObservableValue } from "../util";
 
+async function loadScript(src: string): Promise<void> {
+  const js = await fetch(src).then(res => res.text());
+  unsafeWindow["Function"](js)();
+}
+
 async function init() {
   if (location.host != "codeforces.com") throw "not Codeforces";
   //TODO: m1.codeforces.com, m2.codeforces.com, m3.codeforces.com に対応する
@@ -15,16 +20,25 @@ async function init() {
   bootstrapCSS.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css";
   doc.head.appendChild(bootstrapCSS);
 
-  await new Promise(done => {
-    const bootstrapJQuery = doc.createElement("script");
-    bootstrapJQuery.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js";
-    bootstrapJQuery.onload = async () => {
-      const bootstrapJS = await fetch("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js").then(r => r.text());
-      Function("$, jQuery", bootstrapJS)(unsafeWindow.$, unsafeWindow.$);
-      done(unsafeWindow.$);
-    };
-    doc.body.appendChild(bootstrapJQuery);
-  });
+  await loadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js");
+  await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js");
+
+//   const frame = doc.createElement("iframe");
+//   frame.src = "data:text/html;charset=UTF-8," + encodeURIComponent(`
+// <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+// <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+// <script>function onDone(done) {done()}</script>
+//   `);
+//   frame.style.display = "none";
+//   doc.body.appendChild(frame);
+//   console.log("added!");
+//   await new Promise(done => {
+//     console.log("loaded!");
+//     frame.contentWindow["onDone"](done);
+//   });
+//   console.log("jquery?");
+
+  console.dir(`${unsafeWindow['jQuery'].fn.jquery}`);
 
   const langMap = {
     43: "C C11 GCC 5.1.0",
@@ -68,6 +82,7 @@ async function init() {
   eFile.addEventListener("change", async () => {
     if (eFile.files[0]) {
       _sourceCode = await eFile.files[0].text();
+      if (editor) editor.sourceCode = _sourceCode;
     }
   });
 
@@ -75,12 +90,16 @@ async function init() {
   if (config.get("codeforcesEditor", true)) {
     editor = new Editor(langMap[eLang.value].split(" ")[0]);
     doc.getElementById("pageContent").appendChild(editor.element);
+    language.addListener(lang => {
+      editor.setLanguage(lang);
+    });
   }
 
   return {
     name: "Codeforces",
     language,
     get sourceCode(): string {
+      if (editor) return editor.sourceCode;
       return _sourceCode;
     },
     set sourceCode(sourceCode: string) {
@@ -89,11 +108,12 @@ async function init() {
       const eFile = doc.querySelector<HTMLFormElement>(".submitForm").elements["sourceFile"];
       eFile.files = container.files;
       _sourceCode = sourceCode;
-      //TODO: 追加した提出欄に設定
+      if (editor) editor.sourceCode = sourceCode;
     },
     submit(): void {
+      if (editor) _sourceCode = editor.sourceCode;
       this.sourceCode = _sourceCode;
-      doc.querySelector<HTMLElement>(`#submit_form input[type="submit"]`).click();
+      doc.querySelector<HTMLElement>(`.submitForm .submit`).click();
     },
     get testButtonContainer(): HTMLElement {
       return doc.querySelector(".submitForm");
