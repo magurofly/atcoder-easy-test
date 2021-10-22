@@ -1,31 +1,3 @@
-function getEditor(): Promise<any> {
-  if (unsafeWindow["monaco"]) return Promise.resolve(unsafeWindow["monaco"]);
-  return new Promise(done => {
-    const doc = unsafeWindow.document;
-    const loader = doc.createElement("script");
-    loader.src = "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/loader.min.js";
-    loader.onload = () => {
-      unsafeWindow["require"].config({
-        paths: {
-          vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs",
-        },
-      });
-      unsafeWindow["MonacoEnvironment"] = {
-        getWorkerUrl: (workerId, label) => `data:text/javascript;charset=UTF-8,${encodeURIComponent(`
-          self.MonacoEnvironment = {
-            baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/'
-          };
-          importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/base/worker/workerMain.js');
-        `)}`,
-      };
-      unsafeWindow["require"](["vs/editor/editor.main"], () => {
-        done(unsafeWindow["monaco"]);
-      });
-    };
-    doc.head.appendChild(loader);
-  });
-}
-
 const langMap = {
   "C": "c",
   "C++": "cpp",
@@ -48,30 +20,27 @@ const langMap = {
 };
 
 export default class Editor {
-  private _element: HTMLElement;
-  private _editor: Promise<any>;
+  private _element: HTMLTextAreaElement;
 
-  constructor(lang) {
-    this._element = document.createElement("div");
-    this._editor = getEditor().then(editor => editor.create(this._element, {
-      value: "",
-      language: langMap[lang] || "text",
-    }));
+  constructor(lang: string) {
+    this._element = document.createElement("textarea");
+    this._element.style.fontFamily = "monospace";
+    this._element.style.width = "100%";
+    this._element.style.minHeight = "5em";
   }
 
   get element(): HTMLElement {
     return this._element;
   }
 
-  async getSourceCode(): Promise<string> {
-    return (await this._editor).getValue();
+  get sourceCode(): string {
+    return this._element.value;
   }
   
-  async setSourceCode(sourceCode: string) {
-    (await this._editor).setValue(sourceCode);
+  set sourceCode(sourceCode: string) {
+    this._element.value = sourceCode;
   }
 
-  async setLanguage(lang: string) {
-    (await getEditor()).editor.setModelLanguage((await this._editor).getModel(), langMap[lang]);
+  setLanguage(lang: string) {
   }
 };

@@ -798,78 +798,31 @@ const config = {
     toString,
 };
 
-function getEditor() {
-    if (unsafeWindow["monaco"])
-        return Promise.resolve(unsafeWindow["monaco"]);
-    return new Promise(done => {
-        const doc = unsafeWindow.document;
-        const loader = doc.createElement("script");
-        loader.src = "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/loader.min.js";
-        loader.onload = () => {
-            unsafeWindow["require"].config({
-                paths: {
-                    vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs",
-                },
-            });
-            unsafeWindow["MonacoEnvironment"] = {
-                getWorkerUrl: (workerId, label) => `data:text/javascript;charset=UTF-8,${encodeURIComponent(`
-          self.MonacoEnvironment = {
-            baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/'
-          };
-          importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/base/worker/workerMain.js');
-        `)}`,
-            };
-            unsafeWindow["require"](["vs/editor/editor.main"], monaco => {
-                done(unsafeWindow["monaco"]);
-            });
-        };
-        doc.head.appendChild(loader);
-    });
-}
-const langMap = {
-    "C": "c",
-    "C++": "cpp",
-    "C#": "csharp",
-    // sorry no D
-    // sorry no haskell
-    "Java": "java",
-    "Kotlin": "kotlin",
-    // sorry no OCaml
-    // sorry no Delphi
-    "Pascal": "pascal",
-    "Perl": "perl",
-    "PHP": "php",
-    "Python": "python",
-    "Python3": "python",
-    "Ruby": "ruby",
-    "Rust": "rust",
-    "Scala": "scala",
-    "JavaScript": "javascript",
-};
 class Editor {
     _element;
-    _editor;
     constructor(lang) {
-        this._element = document.createElement("div");
-        this._editor = getEditor().then(editor => editor.create(this._element, {
-            value: "",
-            language: langMap[lang] || "text",
-        }));
+        this._element = document.createElement("textarea");
+        this._element.style.fontFamily = "monospace";
+        this._element.style.width = "100%";
+        this._element.style.minHeight = "5em";
     }
     get element() {
         return this._element;
     }
-    async getSourceCode() {
-        return (await this._editor).getValue();
+    get sourceCode() {
+        return this._element.value;
     }
-    async setSourceCode(sourceCode) {
-        (await this._editor).setValue(sourceCode);
+    set sourceCode(sourceCode) {
+        this._element.value = sourceCode;
     }
-    async setLanguage(lang) {
-        (await getEditor()).editor.setModelLanguage((await this._editor).getModel(), langMap[lang]);
+    setLanguage(lang) {
     }
 }
 
+async function loadScript(src) {
+    const js = await fetch(src).then(res => res.text());
+    unsafeWindow["Function"](js)();
+}
 async function init$1() {
     if (location.host != "codeforces.com")
         throw "not Codeforces";
@@ -880,16 +833,23 @@ async function init$1() {
     bootstrapCSS.rel = "stylesheet";
     bootstrapCSS.href = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css";
     doc.head.appendChild(bootstrapCSS);
-    await new Promise(done => {
-        const bootstrapJQuery = doc.createElement("script");
-        bootstrapJQuery.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js";
-        bootstrapJQuery.onload = async () => {
-            const bootstrapJS = await fetch("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js").then(r => r.text());
-            Function("$, jQuery", bootstrapJS)(unsafeWindow.$, unsafeWindow.$);
-            done(unsafeWindow.$);
-        };
-        doc.body.appendChild(bootstrapJQuery);
-    });
+    await loadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js");
+    await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js");
+    //   const frame = doc.createElement("iframe");
+    //   frame.src = "data:text/html;charset=UTF-8," + encodeURIComponent(`
+    // <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    // <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    // <script>function onDone(done) {done()}</script>
+    //   `);
+    //   frame.style.display = "none";
+    //   doc.body.appendChild(frame);
+    //   console.log("added!");
+    //   await new Promise(done => {
+    //     console.log("loaded!");
+    //     frame.contentWindow["onDone"](done);
+    //   });
+    //   console.log("jquery?");
+    console.dir(`${unsafeWindow['jQuery'].fn.jquery}`);
     const langMap = {
         43: "C C11 GCC 5.1.0",
         52: "C++ C++17 Clang++",
@@ -930,17 +890,24 @@ async function init$1() {
     eFile.addEventListener("change", async () => {
         if (eFile.files[0]) {
             _sourceCode = await eFile.files[0].text();
+            if (editor)
+                editor.sourceCode = _sourceCode;
         }
     });
     let editor = null;
     if (config.get("codeforcesEditor", true)) {
         editor = new Editor(langMap[eLang.value].split(" ")[0]);
         doc.getElementById("pageContent").appendChild(editor.element);
+        language.addListener(lang => {
+            editor.setLanguage(lang);
+        });
     }
     return {
         name: "Codeforces",
         language,
         get sourceCode() {
+            if (editor)
+                return editor.sourceCode;
             return _sourceCode;
         },
         set sourceCode(sourceCode) {
@@ -949,11 +916,14 @@ async function init$1() {
             const eFile = doc.querySelector(".submitForm").elements["sourceFile"];
             eFile.files = container.files;
             _sourceCode = sourceCode;
-            //TODO: 追加した提出欄に設定
+            if (editor)
+                editor.sourceCode = sourceCode;
         },
         submit() {
+            if (editor)
+                _sourceCode = editor.sourceCode;
             this.sourceCode = _sourceCode;
-            doc.querySelector(`#submit_form input[type="submit"]`).click();
+            doc.querySelector(`.submitForm .submit`).click();
         },
         get testButtonContainer() {
             return doc.querySelector(".submitForm");
