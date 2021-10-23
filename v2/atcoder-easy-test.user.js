@@ -895,7 +895,26 @@ async function init$1() {
         }
     });
     let editor = null;
-    if (config.get("codeforcesEditor", true)) {
+    if (document.getElementById("editor")) {
+        // cf-fast-submit
+        const eLang2 = doc.querySelector(".submit-form select[name='programTypeId']");
+        eLang.addEventListener("change", () => {
+            eLang2.value = eLang.value;
+        });
+        eLang2.addEventListener("change", () => {
+            eLang.value = eLang2.value;
+        });
+        const aceEditor = unsafeWindow["ace"].edit("editor");
+        editor = {
+            get sourceCode() {
+                return aceEditor.getValue();
+            },
+            set sourceCode(sourceCode) {
+                aceEditor.setValue(sourceCode);
+            },
+        };
+    }
+    else if (config.get("codeforcesEditor", true)) {
         editor = new Editor(langMap[eLang.value].split(" ")[0]);
         doc.getElementById("pageContent").appendChild(editor.element);
         language.addListener(lang => {
