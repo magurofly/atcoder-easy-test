@@ -12,4 +12,5 @@ export default interface Site {
   get bottomMenuContainer(): HTMLElement;
   get resultListContainer(): HTMLElement;
   get testCases(): TestCase[];
+  get jQuery(): any;
 }
