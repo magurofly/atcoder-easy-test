@@ -111,6 +111,9 @@ async function init() {
       }
       return testCases;
     },
+    get jQuery(): any {
+      return $;
+    },
   };
 }
 
