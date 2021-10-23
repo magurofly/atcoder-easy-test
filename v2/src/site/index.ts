@@ -5,6 +5,7 @@ import init_config from "./about";
 import settings from "../settings";
 import config from "../config";
 
+// 設定ページが開けなくなるのを避ける
 const inits = [init_config()];
 
 settings.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
