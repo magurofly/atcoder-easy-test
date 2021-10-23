@@ -1,5 +1,3 @@
-import { ObservableValue } from "./util";
-
 let data: { [key: string]: string } = {};
 
 function toString() {
@@ -7,13 +5,11 @@ function toString() {
 }
 
 function save() {
-  localStorage.setItem("AtCoderEasyTest", toString());
+  GM_setValue("config", toString());
 }
 
 function load() {
-  if ("AtCoderEasyTest" in localStorage) {
-    data = JSON.parse(localStorage.getItem("AtCoderEasyTest"));
-  }
+  data = JSON.parse(GM_getValue("config") || "{}");
 }
 
 load();
