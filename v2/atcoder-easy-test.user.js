@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.6.0
+// @version     2.6.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -18,6 +18,7 @@
 // @match       https://codeforces.com/problemset/problem/*
 // @match       https://codeforces.com/group/*/contest/*/problem/*
 // @match       https://*.contest.codeforces.com/group/*/contest/*/problem/*
+// @match       https://greasyfork.org/ja/scripts/433152-atcoder-easy-test-v2
 // @grant       unsafeWindow
 // @grant       GM_getValue
 // @grant       GM_setValue
@@ -520,7 +521,7 @@ function pairs(list) {
         pairs.push([list[i * 2], list[i * 2 + 1]]);
     return pairs;
 }
-async function init$3() {
+async function init$4() {
     if (location.host != "atcoder.jp")
         throw "Not AtCoder";
     const doc = unsafeWindow.document;
@@ -669,7 +670,7 @@ async function init$3() {
     };
 }
 
-async function init$2() {
+async function init$3() {
     if (location.host != "yukicoder.me")
         throw "Not yukicoder";
     const $ = unsafeWindow.$;
@@ -891,7 +892,7 @@ const settings = {
 };
 
 settings.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
-async function init$1() {
+async function init$2() {
     if (location.host != "codeforces.com")
         throw "not Codeforces";
     //TODO: m1.codeforces.com, m2.codeforces.com, m3.codeforces.com に対応する
@@ -1061,16 +1062,42 @@ async function init$1() {
     };
 }
 
-const inits = [];
+async function init$1() {
+    if (location.host != "greasyfork.org" && !location.href.match(/433152-atcoder-easy-test-v2/))
+        throw "Not about page";
+    unsafeWindow.document.head.appendChild(newElement("link", {
+        rel: "stylesheet",
+        href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
+    }));
+    await loadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js");
+    const jQuery = unsafeWindow["jQuery"];
+    await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js", null, { jQuery, $: jQuery });
+    const e = newElement("div");
+    return {
+        name: "About Page",
+        language: new ObservableValue(""),
+        get sourceCode() { return ""; },
+        set sourceCode(sourceCode) { },
+        submit() { },
+        get testButtonContainer() { return e; },
+        get sideButtonContainer() { return e; },
+        get bottomMenuContainer() { return document.body; },
+        get resultListContainer() { return e; },
+        get testCases() { return []; },
+        get jQuery() { return jQuery; },
+    };
+}
+
+const inits = [init$1()];
 settings.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
 if (config.get("site.atcoder", true))
-    inits.push(init$3());
+    inits.push(init$4());
 settings.registerFlag("site.yukicoder", true, "Use AtCoder Easy Test in yukicoder");
 if (config.get("site.yukicoder", true))
-    inits.push(init$2());
+    inits.push(init$3());
 settings.registerFlag("site.codeforces", true, "Use AtCoder Easy Test in Codeforces");
 if (config.get("site.codeforces", true))
-    inits.push(init$1());
+    inits.push(init$2());
 var pSite = Promise.any(inits);
 
 const runners = {
@@ -1523,7 +1550,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.6.0";
+        E("version").textContent = "2.6.1";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
