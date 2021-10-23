@@ -18,7 +18,7 @@
 // @match       https://codeforces.com/problemset/problem/*
 // @match       https://codeforces.com/group/*/contest/*/problem/*
 // @match       https://*.contest.codeforces.com/group/*/contest/*/problem/*
-// @match       https://greasyfork.org/ja/scripts/433152-atcoder-easy-test-v2
+// @match       https://greasyfork.org/*/scripts/433152-atcoder-easy-test-v2
 // @grant       unsafeWindow
 // @grant       GM_getValue
 // @grant       GM_setValue
