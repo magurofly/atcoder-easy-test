@@ -130,6 +130,7 @@ async function init() {
     return [];
   };
 
+
   return {
     name: "AtCoder",
     language,
@@ -157,7 +158,10 @@ async function init() {
     },
     get testCases(): TestCase[] {
       return getTestCases();
-    }
+    },
+    get jQuery(): any {
+      return unsafeWindow["jQuery"];
+    },
   };
 }
 

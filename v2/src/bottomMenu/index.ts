@@ -49,7 +49,7 @@ let selectedTab: string | null = null;
 const menuController: BottomMenu = {
   /** タブを選択 */
   selectTab(tabId: string) {
-    const tab = unsafeWindow.$(`#bottom-menu-tab-${tabId}`);
+    const tab = site.jQuery(`#bottom-menu-tab-${tabId}`);
     if (tab && tab[0]) {
       tab.tab("show"); // Bootstrap 3
       selectedTab = tabId;
