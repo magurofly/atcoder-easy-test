@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.6.1
+// @version     2.6.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1065,14 +1065,16 @@ async function init$2() {
 async function init$1() {
     if (location.host != "greasyfork.org" && !location.href.match(/433152-atcoder-easy-test-v2/))
         throw "Not about page";
-    unsafeWindow.document.head.appendChild(newElement("link", {
-        rel: "stylesheet",
-        href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
-    }));
+    const doc = unsafeWindow.document;
     await loadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js");
     const jQuery = unsafeWindow["jQuery"];
     await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js", null, { jQuery, $: jQuery });
     const e = newElement("div");
+    doc.getElementById("install-area").appendChild(newElement("button", {
+        type: "button",
+        textContent: "Open Settings",
+        onclick: () => settings.open(),
+    }));
     return {
         name: "About Page",
         language: new ObservableValue(""),
@@ -1081,7 +1083,7 @@ async function init$1() {
         submit() { },
         get testButtonContainer() { return e; },
         get sideButtonContainer() { return e; },
-        get bottomMenuContainer() { return document.body; },
+        get bottomMenuContainer() { return e; },
         get resultListContainer() { return e; },
         get testCases() { return []; },
         get jQuery() { return jQuery; },
@@ -1550,7 +1552,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.6.1";
+        E("version").textContent = "2.6.2";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
