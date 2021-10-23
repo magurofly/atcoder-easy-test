@@ -29,6 +29,8 @@ export default [
 // @match       https://codeforces.com/group/*/contest/*/problem/*
 // @match       https://*.contest.codeforces.com/group/*/contest/*/problem/*
 // @grant       unsafeWindow
+// @grant       GM_getValue
+// @grant       GM_setValue
 // ==/UserScript==
 (function() {
                 `.trim(),

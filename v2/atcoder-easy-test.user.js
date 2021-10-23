@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.5.1
+// @version     2.6.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -19,6 +19,8 @@
 // @match       https://codeforces.com/group/*/contest/*/problem/*
 // @match       https://*.contest.codeforces.com/group/*/contest/*/problem/*
 // @grant       unsafeWindow
+// @grant       GM_getValue
+// @grant       GM_setValue
 // ==/UserScript==
 (function() {
 const codeSaver = {
@@ -786,12 +788,10 @@ function toString() {
     return JSON.stringify(data);
 }
 function save() {
-    localStorage.setItem("AtCoderEasyTest", toString());
+    GM_setValue("config", toString());
 }
 function load() {
-    if ("AtCoderEasyTest" in localStorage) {
-        data = JSON.parse(localStorage.getItem("AtCoderEasyTest"));
-    }
+    data = JSON.parse(GM_getValue("config") || "{}");
 }
 load();
 /** プロパティ名は camelCase にすること */
@@ -842,6 +842,55 @@ class Editor {
     }
 }
 
+var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">Settings</div>\n        <div class=\"panel-body\">\n          <form id=\"options\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
+
+const options = [];
+const settings = {
+    /** 設定ページを開く
+     * クリックなどのイベント時にしか正しく実行できない
+     */
+    open() {
+        const win = window.open("about:blank");
+        const doc = win.document;
+        doc.open();
+        doc.write(hPage);
+        doc.close();
+        const root = doc.getElementById("options");
+        for (const { type, key, defaultValue, description } of options) {
+            switch (type) {
+                case "checkbox": {
+                    const container = newElement("div", { className: "checkbox" });
+                    root.appendChild(container);
+                    const label = newElement("label");
+                    container.appendChild(label);
+                    const element = newElement("input", {
+                        type: "checkbox",
+                        checked: config.get(key, defaultValue),
+                    });
+                    element.addEventListener("change", () => {
+                        config.set(key, element.checked);
+                    });
+                    label.appendChild(element);
+                    label.appendChild(document.createTextNode(description));
+                    break;
+                }
+                default:
+                    throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
+            }
+        }
+    },
+    /** 設定項目を登録 */
+    registerFlag(key, defaultValue, description) {
+        options.push({
+            type: "checkbox",
+            key,
+            defaultValue,
+            description,
+        });
+    }
+};
+
+settings.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
 async function init$1() {
     if (location.host != "codeforces.com")
         throw "not Codeforces";
@@ -956,7 +1005,7 @@ async function init$1() {
                 clearInterval(waitCfFastSubmit);
         }
     }, 100);
-    if (config.get("codeforcesEditor", true)) {
+    if (config.get("codeforces.showEditor", true)) {
         editor = new Editor(langMap[eLang.value].split(" ")[0]);
         doc.getElementById("pageContent").appendChild(editor.element);
         language.addListener(lang => {
@@ -1012,7 +1061,17 @@ async function init$1() {
     };
 }
 
-var pSite = Promise.any([init$3(), init$2(), init$1()]);
+const inits = [];
+settings.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
+if (config.get("site.atcoder", true))
+    inits.push(init$3());
+settings.registerFlag("site.yukicoder", true, "Use AtCoder Easy Test in yukicoder");
+if (config.get("site.yukicoder", true))
+    inits.push(init$2());
+settings.registerFlag("site.codeforces", true, "Use AtCoder Easy Test in Codeforces");
+if (config.get("site.codeforces", true))
+    inits.push(init$1());
+var pSite = Promise.any(inits);
 
 const runners = {
     "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),
@@ -1296,30 +1355,6 @@ const resultList = {
     },
 };
 
-var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">Settings</div>\n        <div class=\"panel-body\">\n          <form>\n            <div class=\"checkbox\">\n              <label><input id=\"useKeyboardShortcut\" type=\"checkbox\">Use Keyboard Shortcuts</label>\n            </div>\n            <div class=\"checkbox\">\n              <label><input id=\"codeforcesShowEditor\" type=\"checkbox\">Show Editor in Codeforces Problem Page</label>\n            </div>\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
-
-const settings = {
-    /** 設定ページを開く
-     * クリックなどのイベント時にしか正しく実行できない
-     */
-    open() {
-        const win = window.open("about:blank");
-        const doc = win.document;
-        doc.open();
-        doc.write(hPage);
-        doc.close();
-        const bindCheckbox = (key, defaultValue) => {
-            const element = doc.getElementById(key);
-            element.checked = config.get(key, defaultValue);
-            element.addEventListener("change", () => {
-                config.set(key, element.checked);
-            });
-        };
-        bindCheckbox("useKeyboardShortcut", true);
-        bindCheckbox("codeforcesShowEditor", false);
-    }
-};
-
 var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\" data-if-expected-output=\"col-sm-6 col-sm-push-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\" data-if-expected-output=\"!hidden col-sm-pull-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\" data-if-error=\"col-md-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\" data-if-error=\"!hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
 
 function setClassFromData(element, name) {
@@ -1488,7 +1523,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.5.1";
+        E("version").textContent = "2.6.0";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
@@ -1628,6 +1663,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         console.error(e);
     }
     // キーボードショートカット
+    settings.registerFlag("useKeyboardShortcut", true, "Use Keyboard Shortcuts");
     unsafeWindow.addEventListener("keydown", (event) => {
         if (config.get("useKeyboardShortcut", true)) {
             if (event.key == "Enter" && event.ctrlKey) {
