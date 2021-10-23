@@ -1,10 +1,11 @@
 import init_AtCoder from "./atcoder";
 import init_yukicoder from "./yukicoder";
 import init_Codeforces from "./codeforces";
+import init_config from "./about";
 import settings from "../settings";
 import config from "../config";
 
-const inits = [];
+const inits = [init_config()];
 
 settings.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
 if (config.get("site.atcoder", true)) inits.push(init_AtCoder());
