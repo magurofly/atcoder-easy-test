@@ -1,18 +1,23 @@
 import TestCase from "../TestCase";
 import { loadScript, newElement, ObservableValue } from "../util";
+import settings from "../settings";
 
 async function init() {
   if (location.host != "greasyfork.org" && !location.href.match(/433152-atcoder-easy-test-v2/)) throw "Not about page";
 
-  unsafeWindow.document.head.appendChild(newElement("link", {
-    rel: "stylesheet",
-    href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
-  }));
+  const doc = unsafeWindow.document;
+
   await loadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js");
   const jQuery = unsafeWindow["jQuery"];
   await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js", null, { jQuery, $: jQuery });
 
   const e = newElement("div");
+
+  doc.getElementById("install-area").appendChild(newElement("button", {
+    type: "button",
+    textContent: "Open Settings",
+    onclick: () => settings.open(),
+  }));
 
   return {
     name: "About Page",
@@ -22,7 +27,7 @@ async function init() {
     submit(): void {},
     get testButtonContainer(): HTMLElement { return e; },
     get sideButtonContainer(): HTMLElement { return e; },
-    get bottomMenuContainer(): HTMLElement { return document.body; },
+    get bottomMenuContainer(): HTMLElement { return e; },
     get resultListContainer(): HTMLElement { return e; },
     get testCases(): TestCase[] { return []; },
     get jQuery(): any { return jQuery; },
