@@ -16,6 +16,25 @@ export function html2element(html: string): Node {
   return template.content.firstChild;
 }
 
+export function newElement<T extends HTMLElement>(tagName: string, attrs: any = {}): T {
+  const e = document.createElement(tagName) as T;
+  for (const [key, value] of Object.entries(attrs)) {
+    e[key] = value;
+  }
+  return e;
+}
+
+export async function loadScript(src: string, ctx = null, env: any = {}): Promise<void> {
+  const js = await fetch(src).then(res => res.text());
+  const keys = [];
+  const values = [];
+  for (const [key, value] of Object.entries(env)) {
+    keys.push(key);
+    values.push(value);
+  }
+  unsafeWindow["Function"](keys.join(), js).apply(ctx, values);
+}
+
 const eventListeners = {};
 
 export const events = {
