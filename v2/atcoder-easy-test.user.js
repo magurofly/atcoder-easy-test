@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.6.3
+// @version     2.6.4
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1090,6 +1090,7 @@ async function init$1() {
     };
 }
 
+// 設定ページが開けなくなるのを避ける
 const inits = [init$1()];
 settings.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
 if (config.get("site.atcoder", true))
@@ -1552,7 +1553,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.6.3";
+        E("version").textContent = "2.6.4";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
