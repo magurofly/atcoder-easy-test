@@ -10,7 +10,8 @@ import PaizaIORunner from "./PaizaIORunner";
 import WandboxRunner from "./WandboxRunner";
 import WandboxCppRunner from "./WandboxCppRunner";
 import brythonRunner from "./brythonRunner";
-import site from "../site";
+import pyodideRunner from "./pyodideRunner";
+import pSite from "../site";
 
 const runners = {
   "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),
@@ -19,6 +20,7 @@ const runners = {
   "C++ Clang 10.0.0 + ACL Wandbox": new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0) + ACL", {options: "warning,boost-nothing-clang-10.0.0,c++17"}),
   "Python3 CPython 3.8.2 paiza.io": new PaizaIORunner("python3", "Python (3.8.2)"),
   "Python3 Brython": brythonRunner,
+  "Python3 Pyodide": pyodideRunner,
   "Bash 5.0.17 paiza.io": new PaizaIORunner("bash", "Bash (5.0.17)"),
   "C# .NET Core 6.0.100-alpha.1.20562.2 Wandbox": new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)"),
   "C# Mono-mcs HEAD Wandbox": new WandboxRunner("mono-head", "C# (Mono-mcs HEAD)"),
@@ -68,17 +70,19 @@ const runners = {
   "C++ GCC 9.2.0 + ACL Wandbox": new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0) + ACL"),
 };
 
-if (site.name == "AtCoder") {
-  // AtCoderRunner がない場合は、追加する
-  for (const e of document.querySelectorAll("#select-lang option[value]")) {
-    const m = e.textContent.match(/([^ ]+) \(([^)]+)\)/);
-    if (m) {
-      const name = `${m[1]} ${m[2]} AtCoder`;
-      const languageId = (e as HTMLOptionElement).value;
-      runners[name] = new AtCoderRunner(languageId, e.textContent);
+pSite.then(site => {
+  if (site.name == "AtCoder") {
+    // AtCoderRunner がない場合は、追加する
+    for (const e of document.querySelectorAll("#select-lang option[value]")) {
+      const m = e.textContent.match(/([^ ]+) \(([^)]+)\)/);
+      if (m) {
+        const name = `${m[1]} ${m[2]} AtCoder`;
+        const languageId = (e as HTMLOptionElement).value;
+        runners[name] = new AtCoderRunner(languageId, e.textContent);
+      }
     }
   }
-}
+});
 
 console.info("AtCoder Easy Test: codeRunner OK");
 
