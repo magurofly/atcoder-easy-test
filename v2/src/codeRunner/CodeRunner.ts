@@ -11,7 +11,13 @@ export default abstract class CodeRunner {
   }
   
   async test(sourceCode: string, input: string, expectedOutput: string | null, options: Options): Promise<Result> {
-    const result = await this.run(sourceCode, input);
+    let result: Result = { status: "IE", input };
+    try {
+      result = await this.run(sourceCode, input);
+    } catch (e) {
+      result.error = e.toString();
+      return result;
+    }
     if (expectedOutput != null) result.expectedOutput = expectedOutput;
     if (result.status != "OK" || typeof expectedOutput != "string") return result;
     let output = result.output || "";
