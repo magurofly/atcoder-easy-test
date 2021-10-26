@@ -11,9 +11,7 @@ async function loadPyodide(): Promise<any> {
 import contextlib, io, platform
 class __redirect_stdin(contextlib._RedirectStream):
   _stream = "stdin"
-__version = platform.python_version()
 `);
-  (pyodideRunner as any)._label = `Python (${pyodide.globals.__version}) [Pyodide ${pyodide.version}]`;
   return pyodide;
 }
 
@@ -57,7 +55,7 @@ def __run():
     resolve({
       status,
       exitCode,
-      execTime: (startTime - endTime),
+      execTime: (endTime - startTime),
       input,
       output: stdout,
       error: stderr,

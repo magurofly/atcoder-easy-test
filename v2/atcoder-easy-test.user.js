@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.7.0
+// @version     2.7.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -531,9 +531,7 @@ async function loadPyodide() {
 import contextlib, io, platform
 class __redirect_stdin(contextlib._RedirectStream):
   _stream = "stdin"
-__version = platform.python_version()
 `);
-    pyodideRunner._label = `Python (${pyodide.globals.__version}) [Pyodide ${pyodide.version}]`;
     return pyodide;
 }
 let _pyodide = Promise.reject();
@@ -572,7 +570,7 @@ def __run():
         resolve({
             status,
             exitCode,
-            execTime: (startTime - endTime),
+            execTime: (endTime - startTime),
             input,
             output: stdout,
             error: stderr,
@@ -1622,7 +1620,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.7.0";
+        E("version").textContent = "2.7.1";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
