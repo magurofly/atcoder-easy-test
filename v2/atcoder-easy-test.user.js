@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.6.4
+// @version     2.7.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -104,7 +104,14 @@ class CodeRunner {
         this._label = `${label} [${site}]`;
     }
     async test(sourceCode, input, expectedOutput, options) {
-        const result = await this.run(sourceCode, input);
+        let result = { status: "IE", input };
+        try {
+            result = await this.run(sourceCode, input);
+        }
+        catch (e) {
+            result.error = e.toString();
+            return result;
+        }
         if (expectedOutput != null)
             result.expectedOutput = expectedOutput;
         if (result.status != "OK" || typeof expectedOutput != "string")
@@ -513,6 +520,65 @@ const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
         error: stderr,
     };
 });
+
+async function loadPyodide() {
+    const script = await fetch("https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js").then(res => res.text());
+    unsafeWindow["Function"](script)();
+    const pyodide = await unsafeWindow["loadPyodide"]({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.18.1/full/",
+    });
+    await pyodide.runPythonAsync(`
+import contextlib, io, platform
+class __redirect_stdin(contextlib._RedirectStream):
+  _stream = "stdin"
+__version = platform.python_version()
+`);
+    pyodideRunner._label = `Python (${pyodide.globals.__version}) [Pyodide ${pyodide.version}]`;
+    return pyodide;
+}
+let _pyodide = Promise.reject();
+let _serial = Promise.resolve();
+const pyodideRunner = new CustomRunner("Pyodide", (sourceCode, input) => new Promise((resolve, reject) => {
+    _serial = _serial.finally(async () => {
+        const pyodide = await (_pyodide = _pyodide.catch(loadPyodide));
+        const code = `
+def __run():
+ global __stdout, __stderr, __stdin
+ with __redirect_stdin(io.StringIO(__stdin)):
+  with contextlib.redirect_stdout(io.StringIO()) as __stdout:
+   with contextlib.redirect_stderr(io.StringIO()) as __stderr:
+` + sourceCode.split("\n").map(line => "    " + line).join("\n");
+        let status = "OK";
+        let exitCode = "0";
+        let stdout = "";
+        let stderr = "";
+        let startTime = -Infinity;
+        let endTime = Infinity;
+        pyodide.globals.__stdin = input;
+        try {
+            await pyodide.loadPackagesFromImports(code);
+            await pyodide.runPythonAsync(code);
+            startTime = Date.now();
+            pyodide.runPython("__run()");
+            endTime = Date.now();
+            stdout += pyodide.globals.__stdout.getvalue();
+            stderr += pyodide.globals.__stderr.getvalue();
+        }
+        catch (error) {
+            status = "RE";
+            exitCode = "-1";
+            stderr += error.toString();
+        }
+        resolve({
+            status,
+            exitCode,
+            execTime: (startTime - endTime),
+            input,
+            output: stdout,
+            error: stderr,
+        });
+    });
+}));
 
 function pairs(list) {
     const pairs = [];
@@ -1110,6 +1176,7 @@ const runners = {
     "C++ Clang 10.0.0 + ACL Wandbox": new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0) + ACL", { options: "warning,boost-nothing-clang-10.0.0,c++17" }),
     "Python3 CPython 3.8.2 paiza.io": new PaizaIORunner("python3", "Python (3.8.2)"),
     "Python3 Brython": brythonRunner,
+    "Python3 Pyodide": pyodideRunner,
     "Bash 5.0.17 paiza.io": new PaizaIORunner("bash", "Bash (5.0.17)"),
     "C# .NET Core 6.0.100-alpha.1.20562.2 Wandbox": new WandboxRunner("csharp", "C# (.NET Core 6.0.100-alpha.1.20562.2)"),
     "C# Mono-mcs HEAD Wandbox": new WandboxRunner("mono-head", "C# (Mono-mcs HEAD)"),
@@ -1156,17 +1223,19 @@ const runners = {
     "COBOL Free OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4061", "COBOL - Free (OpenCOBOL 1.1.0)"),
     "C++ GCC 9.2.0 + ACL Wandbox": new WandboxCppRunner("gcc-9.2.0", "C++ (GCC 9.2.0) + ACL"),
 };
-if (pSite.name == "AtCoder") {
-    // AtCoderRunner がない場合は、追加する
-    for (const e of document.querySelectorAll("#select-lang option[value]")) {
-        const m = e.textContent.match(/([^ ]+) \(([^)]+)\)/);
-        if (m) {
-            const name = `${m[1]} ${m[2]} AtCoder`;
-            const languageId = e.value;
-            runners[name] = new AtCoderRunner(languageId, e.textContent);
+pSite.then(site => {
+    if (site.name == "AtCoder") {
+        // AtCoderRunner がない場合は、追加する
+        for (const e of document.querySelectorAll("#select-lang option[value]")) {
+            const m = e.textContent.match(/([^ ]+) \(([^)]+)\)/);
+            if (m) {
+                const name = `${m[1]} ${m[2]} AtCoder`;
+                const languageId = e.value;
+                runners[name] = new AtCoderRunner(languageId, e.textContent);
+            }
         }
     }
-}
+});
 console.info("AtCoder Easy Test: codeRunner OK");
 var codeRunner = {
     // 指定した環境でコードを実行する
@@ -1553,7 +1622,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.6.4";
+        E("version").textContent = "2.7.0";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
