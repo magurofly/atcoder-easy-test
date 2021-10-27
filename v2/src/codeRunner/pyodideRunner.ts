@@ -24,11 +24,16 @@ const pyodideRunner = new CustomRunner("Pyodide", (sourceCode: string, input: st
 
     const code = `
 def __run():
- global __stdout, __stderr, __stdin
+ global __stdout, __stderr, __stdin, __code
  with __redirect_stdin(io.StringIO(__stdin)):
   with contextlib.redirect_stdout(io.StringIO()) as __stdout:
    with contextlib.redirect_stderr(io.StringIO()) as __stderr:
-` + sourceCode.split("\n").map(line => "    " + line).join("\n");
+    try:
+     pass
+` + sourceCode.split("\n").map(line => "     " + line).join("\n") + `
+    except SystemExit as e:
+     __code = e.code
+`;
 
     let status: "OK" | "RE" = "OK";
     let exitCode: string = "0";
@@ -39,6 +44,7 @@ def __run():
     pyodide.globals.__stdin = input;
 
     try {
+      pyodide.globals.__code = null;
       await pyodide.loadPackagesFromImports(code);
       await pyodide.runPythonAsync(code);
       startTime = Date.now();
@@ -46,6 +52,10 @@ def __run():
       endTime = Date.now();
       stdout += pyodide.globals.__stdout.getvalue();
       stderr += pyodide.globals.__stderr.getvalue();
+      if (typeof pyodide.globals.__code == "number") {
+        exitCode = String(pyodide.globals.__code);
+        if (pyodide.globals.__code != 0) status = "RE";
+      }
     } catch (error) {
       status = "RE";
       exitCode = "-1";

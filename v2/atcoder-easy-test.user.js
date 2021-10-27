@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.7.1
+// @version     2.7.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -541,11 +541,16 @@ const pyodideRunner = new CustomRunner("Pyodide", (sourceCode, input) => new Pro
         const pyodide = await (_pyodide = _pyodide.catch(loadPyodide));
         const code = `
 def __run():
- global __stdout, __stderr, __stdin
+ global __stdout, __stderr, __stdin, __code
  with __redirect_stdin(io.StringIO(__stdin)):
   with contextlib.redirect_stdout(io.StringIO()) as __stdout:
    with contextlib.redirect_stderr(io.StringIO()) as __stderr:
-` + sourceCode.split("\n").map(line => "    " + line).join("\n");
+    try:
+     pass
+` + sourceCode.split("\n").map(line => "     " + line).join("\n") + `
+    except SystemExit as e:
+     __code = e.code
+`;
         let status = "OK";
         let exitCode = "0";
         let stdout = "";
@@ -554,6 +559,7 @@ def __run():
         let endTime = Infinity;
         pyodide.globals.__stdin = input;
         try {
+            pyodide.globals.__code = null;
             await pyodide.loadPackagesFromImports(code);
             await pyodide.runPythonAsync(code);
             startTime = Date.now();
@@ -561,6 +567,11 @@ def __run():
             endTime = Date.now();
             stdout += pyodide.globals.__stdout.getvalue();
             stderr += pyodide.globals.__stderr.getvalue();
+            if (typeof pyodide.globals.__code == "number") {
+                exitCode = String(pyodide.globals.__code);
+                if (pyodide.globals.__code != 0)
+                    status = "RE";
+            }
         }
         catch (error) {
             status = "RE";
@@ -1620,7 +1631,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.7.1";
+        E("version").textContent = "2.7.2";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
