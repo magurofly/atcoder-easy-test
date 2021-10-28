@@ -1,10 +1,9 @@
 import config from "../config";
 import Editor from "../editor";
-import settings from "../settings";
 import TestCase from "../TestCase";
 import { ObservableValue, loadScript, newElement, events } from "../util";
 
-settings.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
+config.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
 
 async function init() {
   if (location.host != "codeforces.com") throw "not Codeforces";

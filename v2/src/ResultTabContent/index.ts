@@ -1,5 +1,4 @@
 import { html2element } from "../util";
-import events from "../events";
 import hTabTemplate from "./tabTemplate.html";
 import Result from "../codeRunner/Result";
 
