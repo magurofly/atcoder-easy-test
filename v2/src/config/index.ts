@@ -1,9 +1,9 @@
-import { newElement } from "../util";
+import { newElement, uuid } from "../util";
 
 import hPage from "./page.html";
 
 interface Option<T> {
-  type: "checkbox",
+  type: "flag" | "count",
   key: string,
   defaultValue: T,
   description: string,
@@ -63,21 +63,47 @@ const config = {
     const root = doc.getElementById("options");
 
     for (const { type, key, defaultValue, description } of options) {
+      const id = uuid();
+      const control = newElement("div", { className: "col-sm-3 text-center" });
+      const group = newElement("div", { className: "form-group" }, [
+        control,
+        newElement("label", {
+          className: "col-sm-3",
+          htmlFor: id,
+          textContent: key,
+          style: {
+            fontFamily: "monospace",
+          },
+        }),
+        newElement("label", {
+          className: "col-sm-6",
+          htmlFor: id,
+          textContent: description,
+        }),
+      ]);
+      root.appendChild(group);
       switch (type) {
-        case "checkbox": {
-          const container = newElement("div", { className: "checkbox" });
-          root.appendChild(container);
-          const label = newElement("label");
-          container.appendChild(label);
-          const element = newElement<HTMLInputElement>("input", {
+        case "flag": {
+          control.appendChild(newElement<HTMLInputElement>("input", {
+            id,
             type: "checkbox",
             checked: config.get(key, defaultValue),
-          });
-          element.addEventListener("change", () => {
-            config.set(key, element.checked);
-          });
-          label.appendChild(element);
-          label.appendChild(document.createTextNode(description));
+            onchange() {
+              config.set(key, this.checked);
+            },
+          }));
+          break;
+        }
+        case "count": {
+          control.appendChild(newElement<HTMLInputElement>("input", {
+            id,
+            type: "number",
+            min: "0",
+            value: config.get(key, defaultValue),
+            onchange() {
+              config.set(key, +this.value);
+            },
+          }));
           break;
         }
         default:
@@ -87,14 +113,23 @@ const config = {
   },
 
   /** 設定項目を登録 */
-  registerFlag(key: string, defaultValue: any, description: string) {
+  registerFlag(key: string, defaultValue: boolean, description: string) {
     options.push({
-      type: "checkbox",
+      type: "flag",
       key,
       defaultValue,
       description,
-    })
-  }
+    });
+  },
+
+  registerCount(key: string, defaultValue: number, description: string) {
+    options.push({
+      type: "count",
+      key,
+      defaultValue,
+      description,
+    });
+  },
 }
 
 export default config;

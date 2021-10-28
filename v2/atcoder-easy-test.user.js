@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.7.4
+// @version     2.7.5
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -173,12 +173,27 @@ function html2element(html) {
     template.innerHTML = html;
     return template.content.firstChild;
 }
-function newElement(tagName, attrs = {}) {
+function newElement(tagName, attrs = {}, children = []) {
     const e = document.createElement(tagName);
     for (const [key, value] of Object.entries(attrs)) {
-        e[key] = value;
+        if (key == "style") {
+            for (const [propKey, propValue] of Object.entries(value)) {
+                e.style[propKey] = propValue;
+            }
+        }
+        else {
+            e[key] = value;
+        }
+    }
+    for (const child of children) {
+        e.appendChild(child);
     }
     return e;
+}
+function uuid() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".
+        replace(/x/g, () => "0123456789abcdef"[Math.random() * 16 | 0]).
+        replace(/y/g, () => "89ab"[Math.random() * 4 | 0]);
 }
 async function loadScript(src, ctx = null, env = {}) {
     const js = await fetch(src).then(res => res.text());
@@ -859,7 +874,7 @@ async function init$3() {
     };
 }
 
-var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">config</div>\n        <div class=\"panel-body\">\n          <form id=\"options\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
+var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">config</div>\n        <div class=\"panel-body\">\n          <form id=\"options\" class=\"form-horizontal\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
 
 const options = [];
 let data = {};
@@ -908,21 +923,47 @@ const config = {
         doc.close();
         const root = doc.getElementById("options");
         for (const { type, key, defaultValue, description } of options) {
+            const id = uuid();
+            const control = newElement("div", { className: "col-sm-3 text-center" });
+            const group = newElement("div", { className: "form-group" }, [
+                control,
+                newElement("label", {
+                    className: "col-sm-3",
+                    htmlFor: id,
+                    textContent: key,
+                    style: {
+                        fontFamily: "monospace",
+                    },
+                }),
+                newElement("label", {
+                    className: "col-sm-6",
+                    htmlFor: id,
+                    textContent: description,
+                }),
+            ]);
+            root.appendChild(group);
             switch (type) {
-                case "checkbox": {
-                    const container = newElement("div", { className: "checkbox" });
-                    root.appendChild(container);
-                    const label = newElement("label");
-                    container.appendChild(label);
-                    const element = newElement("input", {
+                case "flag": {
+                    control.appendChild(newElement("input", {
+                        id,
                         type: "checkbox",
                         checked: config.get(key, defaultValue),
-                    });
-                    element.addEventListener("change", () => {
-                        config.set(key, element.checked);
-                    });
-                    label.appendChild(element);
-                    label.appendChild(document.createTextNode(description));
+                        onchange() {
+                            config.set(key, this.checked);
+                        },
+                    }));
+                    break;
+                }
+                case "count": {
+                    control.appendChild(newElement("input", {
+                        id,
+                        type: "number",
+                        min: "0",
+                        value: config.get(key, defaultValue),
+                        onchange() {
+                            config.set(key, +this.value);
+                        },
+                    }));
                     break;
                 }
                 default:
@@ -933,12 +974,20 @@ const config = {
     /** 設定項目を登録 */
     registerFlag(key, defaultValue, description) {
         options.push({
-            type: "checkbox",
+            type: "flag",
             key,
             defaultValue,
             description,
         });
-    }
+    },
+    registerCount(key, defaultValue, description) {
+        options.push({
+            type: "count",
+            key,
+            defaultValue,
+            description,
+        });
+    },
 };
 
 class Editor {
@@ -962,7 +1011,7 @@ class Editor {
     }
 }
 
-config.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
+config.registerFlag("site.codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
 async function init$2() {
     if (location.host != "codeforces.com")
         throw "not Codeforces";
@@ -1077,7 +1126,7 @@ async function init$2() {
                 clearInterval(waitCfFastSubmit);
         }
     }, 100);
-    if (config.get("codeforces.showEditor", true)) {
+    if (config.get("site.codeforces.showEditor", true)) {
         editor = new Editor(langMap[eLang.value].split(" ")[0]);
         doc.getElementById("pageContent").appendChild(editor.element);
         language.addListener(lang => {
@@ -1242,7 +1291,7 @@ pSite.then(site => {
     }
 });
 console.info("AtCoder Easy Test: codeRunner OK");
-const RETRY_MAX = 3;
+config.registerCount("codeRunner.maxRetry", 3, "codeRunner: Max count of retry");
 var codeRunner = {
     // 指定した環境でコードを実行する
     async run(runnerId, sourceCode, input, expectedOutput, options = { trim: true, split: true }) {
@@ -1253,7 +1302,8 @@ var codeRunner = {
         if (sourceCode.length > 0)
             codeSaver.save(sourceCode);
         // 実行
-        for (let retry = 0; retry < RETRY_MAX; retry++) {
+        const maxRetry = config.get("codeRunner.maxRetry", 3);
+        for (let retry = 0; retry < maxRetry; retry++) {
             try {
                 const result = await runners[runnerId].test(sourceCode, input, expectedOutput, options);
                 const lang = runnerId.split(" ")[0];
@@ -1604,7 +1654,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.7.4",
+        version: "2.7.5",
         config,
         codeSaver,
         enableButtons() {
@@ -1646,7 +1696,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.7.4";
+        E("version").textContent = "2.7.5";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
@@ -1786,9 +1836,9 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         console.error(e);
     }
     // キーボードショートカット
-    config.registerFlag("useKeyboardShortcut", true, "Use Keyboard Shortcuts");
+    config.registerFlag("ui.useKeyboardShortcut", true, "Use Keyboard Shortcuts");
     unsafeWindow.addEventListener("keydown", (event) => {
-        if (config.get("useKeyboardShortcut", true)) {
+        if (config.get("ui.useKeyboardShortcut", true)) {
             if (event.key == "Enter" && event.ctrlKey) {
                 events.trig("testAndSubmit");
             }

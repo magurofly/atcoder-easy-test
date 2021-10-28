@@ -3,7 +3,7 @@ import Editor from "../editor";
 import TestCase from "../TestCase";
 import { ObservableValue, loadScript, newElement, events } from "../util";
 
-config.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
+config.registerFlag("site.codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
 
 async function init() {
   if (location.host != "codeforces.com") throw "not Codeforces";
@@ -128,7 +128,7 @@ async function init() {
       if (waitCfFastSubmitCount >= 100) clearInterval(waitCfFastSubmit);
     }
   }, 100);
-  if (config.get("codeforces.showEditor", true)) {
+  if (config.get("site.codeforces.showEditor", true)) {
     editor = new Editor(langMap[eLang.value].split(" ")[0]);
     doc.getElementById("pageContent").appendChild(editor.element);
     language.addListener(lang => {

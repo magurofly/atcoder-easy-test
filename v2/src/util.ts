@@ -16,12 +16,27 @@ export function html2element(html: string): Node {
   return template.content.firstChild;
 }
 
-export function newElement<T extends HTMLElement>(tagName: string, attrs: any = {}): T {
+export function newElement<T extends HTMLElement>(tagName: string, attrs: any = {}, children = []): T {
   const e = document.createElement(tagName) as T;
   for (const [key, value] of Object.entries(attrs)) {
-    e[key] = value;
+    if (key == "style") {
+      for (const [propKey, propValue] of Object.entries(value)) {
+        e.style[propKey] = propValue;
+      }
+    } else {
+      e[key] = value;
+    }
+  }
+  for (const child of children) {
+    e.appendChild(child);
   }
   return e;
+}
+
+export function uuid(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".
+    replace(/x/g, () => "0123456789abcdef"[Math.random() * 16 | 0]).
+    replace(/y/g, () => "89ab"[Math.random() * 4 | 0]);
 }
 
 export async function loadScript(src: string, ctx = null, env: any = {}): Promise<void> {
