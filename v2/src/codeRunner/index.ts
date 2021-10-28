@@ -87,7 +87,7 @@ pSite.then(site => {
 
 console.info("AtCoder Easy Test: codeRunner OK");
 
-config.registerCount("codeRunner.maxRetry", 3, "codeRunner: Max count of retry");
+config.registerCount("codeRunner.maxRetry", 3, "Max count of retry when IE (Internal Error)");
 
 export default {
   // 指定した環境でコードを実行する

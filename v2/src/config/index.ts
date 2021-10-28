@@ -62,6 +62,12 @@ const config = {
 
     const root = doc.getElementById("options");
 
+    options.sort((a, b) => {
+      const x = a.key.split(".");
+      const y = b.key.split(".");
+      return x < y ? -1 : x > y ? 1 : 0;
+    });
+
     for (const { type, key, defaultValue, description } of options) {
       const id = uuid();
       const control = newElement("div", { className: "col-sm-3 text-center" });
