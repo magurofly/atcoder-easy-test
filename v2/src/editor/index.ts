@@ -1,24 +1,3 @@
-const langMap = {
-  "C": "c",
-  "C++": "cpp",
-  "C#": "csharp",
-  // sorry no D
-  // sorry no haskell
-  "Java": "java",
-  "Kotlin": "kotlin",
-  // sorry no OCaml
-  // sorry no Delphi
-  "Pascal": "pascal",
-  "Perl": "perl",
-  "PHP": "php",
-  "Python": "python",
-  "Python3": "python",
-  "Ruby": "ruby",
-  "Rust": "rust",
-  "Scala": "scala",
-  "JavaScript": "javascript",
-};
-
 export default class Editor {
   private _element: HTMLTextAreaElement;
 

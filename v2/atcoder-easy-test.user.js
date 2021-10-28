@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.7.2
+// @version     2.7.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1246,24 +1246,42 @@ pSite.then(site => {
     }
 });
 console.info("AtCoder Easy Test: codeRunner OK");
+const RETRY_MAX = 3;
 var codeRunner = {
     // 指定した環境でコードを実行する
-    run(languageId, sourceCode, input, expectedOutput, options = { trim: true, split: true }) {
+    async run(runnerId, sourceCode, input, expectedOutput, options = { trim: true, split: true }) {
         // CodeRunner が存在しない言語ID
-        if (!(languageId in runners))
+        if (!(runnerId in runners))
             return Promise.reject("Language not supported");
         // 最後に実行したコードを保存
         if (sourceCode.length > 0)
             codeSaver.save(sourceCode);
         // 実行
-        return runners[languageId].test(sourceCode, input, expectedOutput, options);
+        for (let retry = 0; retry < RETRY_MAX; retry++) {
+            try {
+                const result = await runners[runnerId].test(sourceCode, input, expectedOutput, options);
+                const lang = runnerId.split(" ")[0];
+                if (result.status == "IE") {
+                    console.error(result);
+                    const runnerIds = Object.keys(runners).filter(runnerId => runnerId.split(" ")[0] == lang);
+                    const index = runnerIds.indexOf(runnerId);
+                    runnerId = runnerIds[(index + 1) % runnerIds.length];
+                    continue;
+                }
+                return result;
+            }
+            catch (e) {
+                console.error(e);
+            }
+        }
     },
     // 環境の名前の一覧を取得する
+    // @return runnerIdとラベルのペアの配列
     async getEnvironment(languageId) {
         const langs = similarLangs(languageId, Object.keys(runners));
         if (langs.length == 0)
             throw `Undefined language: ${languageId}`;
-        return langs.map(lang => [lang, runners[lang].label]);
+        return langs.map(runnerId => [runnerId, runners[runnerId].label]);
     },
 };
 
@@ -1590,6 +1608,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
+        version: "2.7.3",
         config,
         codeSaver,
         enableButtons() {
@@ -1631,7 +1650,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.7.2";
+        E("version").textContent = "2.7.3";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
