@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.7.3
+// @version     2.7.4
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -859,6 +859,9 @@ async function init$3() {
     };
 }
 
+var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">config</div>\n        <div class=\"panel-body\">\n          <form id=\"options\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
+
+const options = [];
 let data = {};
 function toString() {
     return JSON.stringify(data);
@@ -870,7 +873,6 @@ function load() {
     data = JSON.parse(GM_getValue("config") || "{}");
 }
 load();
-/** プロパティ名は camelCase にすること */
 const config = {
     getString(key, defaultValue = "") {
         if (!(key in data))
@@ -895,33 +897,6 @@ const config = {
     save,
     load,
     toString,
-};
-
-class Editor {
-    _element;
-    constructor(lang) {
-        this._element = document.createElement("textarea");
-        this._element.style.fontFamily = "monospace";
-        this._element.style.width = "100%";
-        this._element.style.minHeight = "5em";
-    }
-    get element() {
-        return this._element;
-    }
-    get sourceCode() {
-        return this._element.value;
-    }
-    set sourceCode(sourceCode) {
-        this._element.value = sourceCode;
-    }
-    setLanguage(lang) {
-    }
-}
-
-var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">Settings</div>\n        <div class=\"panel-body\">\n          <form id=\"options\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
-
-const options = [];
-const settings = {
     /** 設定ページを開く
      * クリックなどのイベント時にしか正しく実行できない
      */
@@ -966,7 +941,28 @@ const settings = {
     }
 };
 
-settings.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
+class Editor {
+    _element;
+    constructor(lang) {
+        this._element = document.createElement("textarea");
+        this._element.style.fontFamily = "monospace";
+        this._element.style.width = "100%";
+        this._element.style.minHeight = "5em";
+    }
+    get element() {
+        return this._element;
+    }
+    get sourceCode() {
+        return this._element.value;
+    }
+    set sourceCode(sourceCode) {
+        this._element.value = sourceCode;
+    }
+    setLanguage(lang) {
+    }
+}
+
+config.registerFlag("codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
 async function init$2() {
     if (location.host != "codeforces.com")
         throw "not Codeforces";
@@ -1147,8 +1143,8 @@ async function init$1() {
     const e = newElement("div");
     doc.getElementById("install-area").appendChild(newElement("button", {
         type: "button",
-        textContent: "Open Settings",
-        onclick: () => settings.open(),
+        textContent: "Open config",
+        onclick: () => config.open(),
     }));
     return {
         name: "About Page",
@@ -1167,13 +1163,13 @@ async function init$1() {
 
 // 設定ページが開けなくなるのを避ける
 const inits = [init$1()];
-settings.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
+config.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
 if (config.get("site.atcoder", true))
     inits.push(init$4());
-settings.registerFlag("site.yukicoder", true, "Use AtCoder Easy Test in yukicoder");
+config.registerFlag("site.yukicoder", true, "Use AtCoder Easy Test in yukicoder");
 if (config.get("site.yukicoder", true))
     inits.push(init$3());
-settings.registerFlag("site.codeforces", true, "Use AtCoder Easy Test in Codeforces");
+config.registerFlag("site.codeforces", true, "Use AtCoder Easy Test in Codeforces");
 if (config.get("site.codeforces", true))
     inits.push(init$2());
 var pSite = Promise.any(inits);
@@ -1608,7 +1604,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.7.3",
+        version: "2.7.4",
         config,
         codeSaver,
         enableButtons() {
@@ -1650,7 +1646,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.7.3";
+        E("version").textContent = "2.7.4";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
@@ -1658,7 +1654,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
             eRun.classList.remove("enabled");
         });
         eSetting.addEventListener("click", () => {
-            settings.open();
+            config.open();
         });
         // 言語選択関係
         {
@@ -1790,7 +1786,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         console.error(e);
     }
     // キーボードショートカット
-    settings.registerFlag("useKeyboardShortcut", true, "Use Keyboard Shortcuts");
+    config.registerFlag("useKeyboardShortcut", true, "Use Keyboard Shortcuts");
     unsafeWindow.addEventListener("keydown", (event) => {
         if (config.get("useKeyboardShortcut", true)) {
             if (event.key == "Enter" && event.ctrlKey) {

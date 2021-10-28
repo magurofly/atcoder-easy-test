@@ -5,7 +5,6 @@ import initBottomMenu from "./bottomMenu";
 import resultList from "./resultList";
 import pSite from "./site";
 import config from "./config";
-import settings from "./settings";
 
 import { doneOrFail, events, html2element } from "./util";
 import ResultTabContent from "./ResultTabContent";
@@ -100,7 +99,7 @@ const atCoderEasyTest = {
   });
 
   eSetting.addEventListener("click", () => {
-    settings.open();
+    config.open();
   });
 
   // 言語選択関係
@@ -243,7 +242,7 @@ try {
 codeRunner;
 
 // キーボードショートカット
-settings.registerFlag("useKeyboardShortcut", true, "Use Keyboard Shortcuts");
+config.registerFlag("useKeyboardShortcut", true, "Use Keyboard Shortcuts");
 unsafeWindow.addEventListener("keydown", (event: KeyboardEvent) => {
   if (config.get("useKeyboardShortcut", true)) {
     if (event.key == "Enter" && event.ctrlKey) {

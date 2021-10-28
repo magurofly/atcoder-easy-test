@@ -1,6 +1,5 @@
 import Result from "./Result";
 import CodeRunner from "./CodeRunner";
-import Options from "./Options";
 
 interface WandboxRequest {
   compiler: string,
