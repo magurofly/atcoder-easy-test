@@ -1,4 +1,3 @@
-import config from "../config";
 import { newElement } from "../util";
 
 import hPage from "./page.html";
@@ -12,7 +11,45 @@ interface Option<T> {
 
 const options: Option<any>[] = [];
 
-const settings = {
+let data: { [key: string]: string } = {};
+
+function toString() {
+  return JSON.stringify(data);
+}
+
+function save() {
+  GM_setValue("config", toString());
+}
+
+function load() {
+  data = JSON.parse(GM_getValue("config") || "{}");
+}
+
+load();
+
+const config = {
+  getString(key: string, defaultValue: string = ""): string {
+    if (!(key in data)) config.setString(key, defaultValue);
+    return data[key];
+  },
+  setString(key: string, value: string): void {
+    data[key] = value;
+    save();
+  },
+  has(key: string): boolean {
+    return key in data;
+  },
+  get<T = null>(key: string, defaultValue: T = null): T {
+    if (!(key in data)) config.set(key, defaultValue);
+    return JSON.parse(data[key]);
+  },
+  set<T>(key: string, value: T): void {
+    config.setString(key, JSON.stringify(value));
+  },
+  save,
+  load,
+  toString,
+
   /** 設定ページを開く
    * クリックなどのイベント時にしか正しく実行できない
    */
@@ -60,4 +97,4 @@ const settings = {
   }
 }
 
-export default settings;
+export default config;
