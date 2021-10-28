@@ -12,6 +12,7 @@ import WandboxCppRunner from "./WandboxCppRunner";
 import brythonRunner from "./brythonRunner";
 import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
+import config from "../config";
 
 const runners: { [runnerId: string]: CodeRunner } = {
   "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),
@@ -86,7 +87,7 @@ pSite.then(site => {
 
 console.info("AtCoder Easy Test: codeRunner OK");
 
-const RETRY_MAX = 3;
+config.registerCount("codeRunner.maxRetry", 3, "codeRunner: Max count of retry");
 
 export default {
   // 指定した環境でコードを実行する
@@ -98,7 +99,8 @@ export default {
     if (sourceCode.length > 0) codeSaver.save(sourceCode);
 
     // 実行
-    for (let retry = 0; retry < RETRY_MAX; retry++) {
+    const maxRetry = config.get("codeRunner.maxRetry", 3);
+    for (let retry = 0; retry < maxRetry; retry++) {
       try {
         const result = await runners[runnerId].test(sourceCode, input, expectedOutput, options);
         const lang = runnerId.split(" ")[0];

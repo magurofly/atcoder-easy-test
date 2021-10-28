@@ -242,9 +242,9 @@ try {
 codeRunner;
 
 // キーボードショートカット
-config.registerFlag("useKeyboardShortcut", true, "Use Keyboard Shortcuts");
+config.registerFlag("ui.useKeyboardShortcut", true, "Use Keyboard Shortcuts");
 unsafeWindow.addEventListener("keydown", (event: KeyboardEvent) => {
-  if (config.get("useKeyboardShortcut", true)) {
+  if (config.get("ui.useKeyboardShortcut", true)) {
     if (event.key == "Enter" && event.ctrlKey) {
       events.trig("testAndSubmit");
     } else if (event.key == "Enter" && event.altKey) {
