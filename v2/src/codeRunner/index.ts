@@ -12,8 +12,9 @@ import WandboxCppRunner from "./WandboxCppRunner";
 import brythonRunner from "./brythonRunner";
 import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
+import { events } from "../util";
 
-const runners = {
+const runners: { [runnerId: string]: CodeRunner } = {
   "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),
   "C C17 Clang 10.0.0 paiza.io": new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
   "C++ GCC 10.1.0 + Boost 1.73.0 + ACL Wandbox": new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 10.1.0) + ACL", {options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17"}),
@@ -86,23 +87,41 @@ pSite.then(site => {
 
 console.info("AtCoder Easy Test: codeRunner OK");
 
+const RETRY_MAX = 3;
+
 export default {
   // 指定した環境でコードを実行する
-  run(languageId: string, sourceCode: string, input: string, expectedOutput: string | null, options: Options = { trim: true, split: true }): Promise<Result> {
+  async run(runnerId: string, sourceCode: string, input: string, expectedOutput: string | null, options: Options = { trim: true, split: true }): Promise<Result> {
     // CodeRunner が存在しない言語ID
-    if (!(languageId in runners)) return Promise.reject("Language not supported");
+    if (!(runnerId in runners)) return Promise.reject("Language not supported");
 
     // 最後に実行したコードを保存
     if (sourceCode.length > 0) codeSaver.save(sourceCode);
 
     // 実行
-    return runners[languageId].test(sourceCode, input, expectedOutput, options);
+    for (let retry = 0; retry < RETRY_MAX; retry++) {
+      try {
+        const result = await runners[runnerId].test(sourceCode, input, expectedOutput, options);
+        const lang = runnerId.split(" ")[0];
+        if (result.status == "IE") {
+          console.error(result);
+          const runnerIds = Object.keys(runners).filter(runnerId => runnerId.split(" ")[0] == lang);
+          const index = runnerIds.indexOf(runnerId);
+          runnerId = runnerIds[(index + 1) % runnerIds.length];
+          continue;
+        }
+        return result;
+      } catch (e) {
+        console.error(e);
+      }
+    }
   },
 
   // 環境の名前の一覧を取得する
+  // @return runnerIdとラベルのペアの配列
   async getEnvironment(languageId: string): Promise<[string, string][]> {
     const langs = similarLangs(languageId, Object.keys(runners));
     if (langs.length == 0) throw `Undefined language: ${languageId}`;
-    return langs.map(lang => [lang, runners[lang].label]);
+    return langs.map(runnerId => [runnerId, runners[runnerId].label]);
   },
 };

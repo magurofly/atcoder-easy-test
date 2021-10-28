@@ -18,7 +18,6 @@ import hStyle from "./style.html";
 import hRunButton from "./runButton.html";
 import hTestAndSubmit from "./testAndSubmit.html";
 import hTestAllSamples from "./testAllSamples.html";
-import atcoder from "./site/atcoder";
 
 (async () => {
 
@@ -40,6 +39,7 @@ doc.head.appendChild(html2element(hStyle));
 
 // interface
 const atCoderEasyTest = {
+  version: "$_ATCODER_EASY_TEST_VERSION",
   config,
   codeSaver,
   enableButtons() {
