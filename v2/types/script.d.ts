@@ -15,3 +15,6 @@ declare interface AtCoderWindow extends Window {
 }
 
 declare const unsafeWindow: AtCoderWindow;
+
+declare function GM_getValue(key: string): string | null;
+declare function GM_setValue(key: string, value: string): void;

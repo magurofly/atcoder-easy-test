@@ -12,7 +12,6 @@ import WandboxCppRunner from "./WandboxCppRunner";
 import brythonRunner from "./brythonRunner";
 import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
-import { events } from "../util";
 
 const runners: { [runnerId: string]: CodeRunner } = {
   "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),

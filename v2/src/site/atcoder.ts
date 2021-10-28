@@ -1,5 +1,5 @@
 import TestCase from "../TestCase";
-import { events, ObservableValue } from "../util";
+import { ObservableValue } from "../util";
 
 function pairs<T>(list: T[]): [T, T][] {
   const pairs = [];

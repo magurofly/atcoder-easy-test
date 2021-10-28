@@ -1,4 +1,3 @@
-import Result from "./Result";
 import CustomRunner from "./CustomRunner";
 
 let brythonRunnerLoaded = false;
