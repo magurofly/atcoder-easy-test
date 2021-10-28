@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.7.5
+// @version     2.7.6
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -922,6 +922,11 @@ const config = {
         doc.write(hPage);
         doc.close();
         const root = doc.getElementById("options");
+        options.sort((a, b) => {
+            const x = a.key.split(".");
+            const y = b.key.split(".");
+            return x < y ? -1 : x > y ? 1 : 0;
+        });
         for (const { type, key, defaultValue, description } of options) {
             const id = uuid();
             const control = newElement("div", { className: "col-sm-3 text-center" });
@@ -1291,7 +1296,7 @@ pSite.then(site => {
     }
 });
 console.info("AtCoder Easy Test: codeRunner OK");
-config.registerCount("codeRunner.maxRetry", 3, "codeRunner: Max count of retry");
+config.registerCount("codeRunner.maxRetry", 3, "Max count of retry when IE (Internal Error)");
 var codeRunner = {
     // 指定した環境でコードを実行する
     async run(runnerId, sourceCode, input, expectedOutput, options = { trim: true, split: true }) {
@@ -1654,7 +1659,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.7.5",
+        version: "2.7.6",
         config,
         codeSaver,
         enableButtons() {
@@ -1696,7 +1701,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.7.5";
+        E("version").textContent = "2.7.6";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
