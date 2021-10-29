@@ -12,6 +12,15 @@ export default class ResultRow {
     this._tabs = pairs.map(([_, tab]) => tab);
     this._element = html2element(hRowTemplate) as HTMLDivElement;
 
+    this._element.querySelector(".close").addEventListener("click", () => this.remove());
+    {
+      const date = new Date();
+      const h = date.getHours().toString().padStart(2, "0");
+      const m = date.getMinutes().toString().padStart(2, "0");
+      const s = date.getSeconds().toString().padStart(2, "0");
+      this._element.querySelector(".atcoder-easy-test-cases-row-date").textContent = `${h}:${m}:${s}`;
+    }
+
     const numCases = pairs.length;
     let numFinished = 0;
     let numAccepted = 0;
