@@ -95,7 +95,7 @@ const atCoderEasyTest = {
     eRun.classList.remove("disabled");
   });
   events.on("disable", () => {
-    eRun.classList.remove("enabled");
+    eRun.classList.add("disabled");
   });
 
   eSetting.addEventListener("click", () => {
@@ -199,7 +199,7 @@ const atCoderEasyTest = {
 
   // place "Test & Submit" button
   {
-    const button = html2element(hTestAndSubmit);
+    const button = html2element(hTestAndSubmit) as HTMLElement;
     site.testButtonContainer.appendChild(button);
     const testAndSubmit = async () => {
       await runAllCases(site.testCases);
@@ -207,15 +207,19 @@ const atCoderEasyTest = {
     };
     button.addEventListener("click", testAndSubmit);
     events.on("testAndSubmit", testAndSubmit);
+    events.on("disable", () => button.classList.add("disabled"));
+    events.on("enable", () => button.classList.remove("disabled"));
   }
 
   // place "Test All Samples" button
   {
-    const button = html2element(hTestAllSamples);
+    const button = html2element(hTestAllSamples) as HTMLElement;
     site.testButtonContainer.appendChild(button);
     const testAllSamples = () => runAllCases(site.testCases);
     button.addEventListener("click", testAllSamples);
     events.on("testAllSamples", testAllSamples);
+    events.on("disable", () => button.classList.add("disabled"));
+    events.on("enable", () => button.classList.remove("disabled"));
   }
 }
 

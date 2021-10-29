@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.7.6
+// @version     2.7.7
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1459,7 +1459,7 @@ async function init() {
     return menuController;
 }
 
-var hRowTemplate = "<div class=\"atcoder-easy-test-cases-row alert alert-dismissible\">\n  <button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">\n    <span aria-hidden=\"true\">×</span>\n  </button>\n  <div class=\"progress\">\n    <div class=\"progress-bar\" style=\"width: 0%;\">0 / 0</div>\n  </div>\n  <!--div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div>\n  <div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div>\n  <div class=\"label label-default label-warning\" style=\"margin: 3px; cursor: pointer;\">WA</div-->\n</div>";
+var hRowTemplate = "<div class=\"atcoder-easy-test-cases-row alert alert-dismissible\">\n  <button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"close\">\n    <span aria-hidden=\"true\">×</span>\n  </button>\n  <div class=\"progress\">\n    <div class=\"progress-bar\" style=\"width: 0%;\">0 / 0</div>\n  </div>\n  <div class=\"atcoder-easy-test-cases-row-date\" style=\"font-family: monospace; text-align: right; position: absolute; right: 1em;\"></div>\n</div>";
 
 class ResultRow {
     _tabs;
@@ -1468,6 +1468,14 @@ class ResultRow {
     constructor(pairs) {
         this._tabs = pairs.map(([_, tab]) => tab);
         this._element = html2element(hRowTemplate);
+        this._element.querySelector(".close").addEventListener("click", () => this.remove());
+        {
+            const date = new Date();
+            const h = date.getHours().toString().padStart(2, "0");
+            const m = date.getMinutes().toString().padStart(2, "0");
+            const s = date.getSeconds().toString().padStart(2, "0");
+            this._element.querySelector(".atcoder-easy-test-cases-row-date").textContent = `${h}:${m}:${s}`;
+        }
         const numCases = pairs.length;
         let numFinished = 0;
         let numAccepted = 0;
@@ -1659,7 +1667,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.7.6",
+        version: "2.7.7",
         config,
         codeSaver,
         enableButtons() {
@@ -1701,12 +1709,12 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eOutput = E("output");
         const eRun = E("run");
         const eSetting = E("setting");
-        E("version").textContent = "2.7.6";
+        E("version").textContent = "2.7.7";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
         events.on("disable", () => {
-            eRun.classList.remove("enabled");
+            eRun.classList.add("disabled");
         });
         eSetting.addEventListener("click", () => {
             config.open();
@@ -1809,6 +1817,8 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
             };
             button.addEventListener("click", testAndSubmit);
             events.on("testAndSubmit", testAndSubmit);
+            events.on("disable", () => button.classList.add("disabled"));
+            events.on("enable", () => button.classList.remove("disabled"));
         }
         // place "Test All Samples" button
         {
@@ -1817,6 +1827,8 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
             const testAllSamples = () => runAllCases(site.testCases);
             button.addEventListener("click", testAllSamples);
             events.on("testAllSamples", testAllSamples);
+            events.on("disable", () => button.classList.add("disabled"));
+            events.on("enable", () => button.classList.remove("disabled"));
         }
     }
     // place "Restore Last Play" button
