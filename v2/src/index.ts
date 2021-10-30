@@ -6,7 +6,7 @@ import resultList from "./resultList";
 import pSite from "./site";
 import config from "./config";
 
-import { doneOrFail, events, html2element } from "./util";
+import { doneOrFail, events, html2element, newElement } from "./util";
 import ResultTabContent from "./ResultTabContent";
 import Options from "./codeRunner/Options";
 import Result from "./codeRunner/Result";
@@ -122,11 +122,12 @@ const atCoderEasyTest = {
       resolve("Latest Version");
     })).
     catch((version: string) => {
-      eVersion.className = "btn btn-xs btn-info";
-      eVersion.title = `Update to v${version}`;
-      eVersion.onclick = () => {
-        unsafeWindow.open("https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js");
-      };
+      eVersion.insertAdjacentElement("afterend", newElement("a", {
+        href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
+        target: "_blank",
+        className: "btn btn-xs btn-info",
+        textContent: `Update to v${version}`,
+      }));
     });
 
   // 言語選択関係

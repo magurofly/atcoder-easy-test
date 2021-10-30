@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.8.0
+// @version     2.8.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1667,7 +1667,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.8.0",
+        version: "2.8.1",
         config,
         codeSaver,
         enableButtons() {
@@ -1710,7 +1710,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eRun = E("run");
         const eSetting = E("setting");
         const eVersion = E("version");
-        eVersion.textContent = "2.8.0";
+        eVersion.textContent = "2.8.1";
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
@@ -1724,7 +1724,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
             then(r => r.json()).
             then((data) => new Promise((resolve, reject) => {
-            const currentVersion = "2.8.0".split(".").map(s => parseInt(s, 10));
+            const currentVersion = "2.8.1".split(".").map(s => parseInt(s, 10));
             const latestVersion = data.version.split(".").map(s => parseInt(s, 10));
             for (let i = 0; i < 3; i++) {
                 if (currentVersion[i] < latestVersion[i]) {
@@ -1740,11 +1740,12 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
             resolve("Latest Version");
         })).
             catch((version) => {
-            eVersion.className = "btn btn-xs btn-info";
-            eVersion.title = `Update to v${version}`;
-            eVersion.onclick = () => {
-                unsafeWindow.open("https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js");
-            };
+            eVersion.insertAdjacentElement("afterend", newElement("a", {
+                href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
+                target: "_blank",
+                className: "btn btn-xs btn-info",
+                textContent: `Update to v${version}`,
+            }));
         });
         // 言語選択関係
         {
