@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.8.1
+// @version     2.8.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1667,7 +1667,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.8.1",
+        version: "2.8.2",
         config,
         codeSaver,
         enableButtons() {
@@ -1710,7 +1710,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         const eRun = E("run");
         const eSetting = E("setting");
         const eVersion = E("version");
-        eVersion.textContent = "2.8.1";
+        eVersion.textContent = atCoderEasyTest.version;
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
@@ -1721,32 +1721,41 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
             config.open();
         });
         // バージョン確認
-        fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
-            then(r => r.json()).
-            then((data) => new Promise((resolve, reject) => {
-            const currentVersion = "2.8.1".split(".").map(s => parseInt(s, 10));
-            const latestVersion = data.version.split(".").map(s => parseInt(s, 10));
-            for (let i = 0; i < 3; i++) {
-                if (currentVersion[i] < latestVersion[i]) {
-                    console.info(`AtCoder Easy Test: New version available: v${data.version}`);
-                    reject(data.version);
-                    return;
-                }
-                else if (currentVersion[i] > latestVersion[i]) {
-                    resolve("Newer than Latest");
-                    return;
-                }
+        {
+            const aDay = 24 * 60 * 60 * 1e3;
+            config.registerCount("version.checkInterval", aDay, "Interval [ms] of checking for new version");
+            const lastCheck = config.get("version.lastCheck", 0);
+            const now = Date.now();
+            if (now - lastCheck >= aDay) {
+                config.set("version.lastCheck", now);
+                fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
+                    then(r => r.json()).
+                    then((data) => new Promise((resolve, reject) => {
+                    const currentVersion = atCoderEasyTest.version.split(".").map(s => parseInt(s, 10));
+                    const latestVersion = data.version.split(".").map(s => parseInt(s, 10));
+                    for (let i = 0; i < 3; i++) {
+                        if (currentVersion[i] < latestVersion[i]) {
+                            console.info(`AtCoder Easy Test: New version available: v${data.version}`);
+                            reject(data.version);
+                            return;
+                        }
+                        else if (currentVersion[i] > latestVersion[i]) {
+                            resolve("Newer than Latest");
+                            return;
+                        }
+                    }
+                    resolve("Latest Version");
+                })).
+                    catch((version) => {
+                    eVersion.insertAdjacentElement("afterend", newElement("a", {
+                        href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
+                        target: "_blank",
+                        className: "btn btn-xs btn-info",
+                        textContent: `Update to v${version}`,
+                    }));
+                });
             }
-            resolve("Latest Version");
-        })).
-            catch((version) => {
-            eVersion.insertAdjacentElement("afterend", newElement("a", {
-                href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
-                target: "_blank",
-                className: "btn btn-xs btn-info",
-                textContent: `Update to v${version}`,
-            }));
-        });
+        }
         // 言語選択関係
         {
             eLanguage.addEventListener("change", async () => {

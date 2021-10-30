@@ -90,7 +90,7 @@ const atCoderEasyTest = {
   const eSetting = E<HTMLAnchorElement>("setting");
   const eVersion = E<HTMLSpanElement>("version");
 
-  eVersion.textContent = "$_ATCODER_EASY_TEST_VERSION";
+  eVersion.textContent = atCoderEasyTest.version;
 
   events.on("enable", () => {
     eRun.classList.remove("disabled");
@@ -104,31 +104,40 @@ const atCoderEasyTest = {
   });
 
   // バージョン確認
-  fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
-    then(r => r.json()).
-    then((data: any) => new Promise((resolve, reject) => {
-      const currentVersion = "$_ATCODER_EASY_TEST_VERSION".split(".").map(s => parseInt(s, 10));
-      const latestVersion = data.version.split(".").map(s => parseInt(s, 10));
-      for (let i = 0; i < 3; i++) {
-        if (currentVersion[i] < latestVersion[i]) {
-          console.info(`AtCoder Easy Test: New version available: v${data.version}`);
-          reject(data.version);
-          return;
-        } else if (currentVersion[i] > latestVersion[i]) {
-          resolve("Newer than Latest");
-          return;
-        }
+  {
+    const aDay = 24 * 60 * 60 * 1e3;
+    config.registerCount("version.checkInterval", aDay, "Interval [ms] of checking for new version");
+    const lastCheck = config.get("version.lastCheck", 0);
+    const now = Date.now();
+    if (now - lastCheck >= aDay) {
+      config.set("version.lastCheck", now);
+      fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
+        then(r => r.json()).
+        then((data: any) => new Promise((resolve, reject) => {
+          const currentVersion = atCoderEasyTest.version.split(".").map(s => parseInt(s, 10));
+          const latestVersion = data.version.split(".").map(s => parseInt(s, 10));
+          for (let i = 0; i < 3; i++) {
+            if (currentVersion[i] < latestVersion[i]) {
+              console.info(`AtCoder Easy Test: New version available: v${data.version}`);
+              reject(data.version);
+              return;
+            } else if (currentVersion[i] > latestVersion[i]) {
+              resolve("Newer than Latest");
+              return;
+            }
+          }
+          resolve("Latest Version");
+        })).
+        catch((version: string) => {
+          eVersion.insertAdjacentElement("afterend", newElement("a", {
+            href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
+            target: "_blank",
+            className: "btn btn-xs btn-info",
+            textContent: `Update to v${version}`,
+          }));
+        });
       }
-      resolve("Latest Version");
-    })).
-    catch((version: string) => {
-      eVersion.insertAdjacentElement("afterend", newElement("a", {
-        href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
-        target: "_blank",
-        className: "btn btn-xs btn-info",
-        textContent: `Update to v${version}`,
-      }));
-    });
+    }
 
   // 言語選択関係
   {
