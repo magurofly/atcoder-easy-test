@@ -88,8 +88,9 @@ const atCoderEasyTest = {
   const eOutput = E<HTMLTextAreaElement>("output");
   const eRun = E<HTMLAnchorElement>("run");
   const eSetting = E<HTMLAnchorElement>("setting");
+  const eVersion = E<HTMLSpanElement>("version");
 
-  E("version").textContent = "$_ATCODER_EASY_TEST_VERSION";
+  eVersion.textContent = "$_ATCODER_EASY_TEST_VERSION";
 
   events.on("enable", () => {
     eRun.classList.remove("disabled");
@@ -101,6 +102,32 @@ const atCoderEasyTest = {
   eSetting.addEventListener("click", () => {
     config.open();
   });
+
+  // バージョン確認
+  fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
+    then(r => r.json()).
+    then((data: any) => new Promise((resolve, reject) => {
+      const currentVersion = "$_ATCODER_EASY_TEST_VERSION".split(".").map(s => parseInt(s, 10));
+      const latestVersion = data.version.split(".").map(s => parseInt(s, 10));
+      for (let i = 0; i < 3; i++) {
+        if (currentVersion[i] < latestVersion[i]) {
+          console.info(`AtCoder Easy Test: New version available: v${data.version}`);
+          reject(data.version);
+          return;
+        } else if (currentVersion[i] > latestVersion[i]) {
+          resolve("Newer than Latest");
+          return;
+        }
+      }
+      resolve("Latest Version");
+    })).
+    catch((version: string) => {
+      eVersion.className = "btn btn-xs btn-info";
+      eVersion.title = `Update to v${version}`;
+      eVersion.onclick = () => {
+        unsafeWindow.open("https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js");
+      };
+    });
 
   // 言語選択関係
   {
