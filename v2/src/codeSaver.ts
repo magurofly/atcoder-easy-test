@@ -1,11 +1,13 @@
+import config from "./config";
+
 interface SavedCode {
   path: string,
   code: string,
 }
 
-const codeSaver = {
-  LIMIT: 10,
+config.registerCount("codeSaver.limit", 10, "Max number to save codes");
 
+const codeSaver = {
   get(): SavedCode[] {
     // `json` は、ソースコード文字列またはJSON文字列
     let json = unsafeWindow.localStorage.AtCoderEasyTest$lastCode as string;
@@ -37,7 +39,7 @@ const codeSaver = {
         path: location.pathname,
         code,
     });
-    while (data.length > codeSaver.LIMIT) data.shift();
+    while (data.length > config.get("codeSaver.limit", 10)) data.shift();
     codeSaver.set(data);
   },
 

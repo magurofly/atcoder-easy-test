@@ -106,12 +106,16 @@ async function init() {
       let e = [... doc.querySelectorAll(selector)];
       e = e.filter(e => !e.closest(".io-style")); // practice2
       if (e.length == 0) continue;
-      return pairs(e).map(([input, output], index) => ({
-        title: `Sample ${index + 1}`,
-        input: input.textContent,
-        output: output.textContent,
-        anchor: (input.closest(closestSelector) || input.parentElement).querySelector(".btn-copy"),
-      }));
+      return pairs(e).map(([input, output], index) => {
+        const container = input.closest(closestSelector) || input.parentElement;
+        return {
+          selector,
+          title: `Sample ${index + 1}`,
+          input: input.textContent,
+          output: output.textContent,
+          anchor: container.querySelector(".btn-copy") || container.querySelector("h1,h2,h3,h4,h5,h6"),
+        };
+      });
     }
 
     { // maximum_cup_2018_d
@@ -119,6 +123,7 @@ async function init() {
       e = e.filter(f => !f.childElementCount);
       if (e.length) {
         return pairs(e).map(([input, output], index) => ({
+          selector: "#task-statement .div-btn-copy+pre",
           title: `Sample ${index + 1}`,
           input: input.textContent,
           output: output.textContent,

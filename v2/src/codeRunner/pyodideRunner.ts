@@ -15,7 +15,7 @@ class __redirect_stdin(contextlib._RedirectStream):
   return pyodide;
 }
 
-let _pyodide: Promise<any> = Promise.reject();
+let _pyodide: Promise<any> = Promise.reject("Pyodide is not yet loaded");
 let _serial = Promise.resolve();
 const pyodideRunner = new CustomRunner("Pyodide", (sourceCode: string, input: string): Promise<Result> => new Promise((resolve, reject) => {
   _serial = _serial.finally(async () => {
