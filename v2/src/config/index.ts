@@ -25,6 +25,11 @@ function load() {
   data = JSON.parse(GM_getValue("config") || "{}");
 }
 
+function reset() {
+  data = {};
+  save();
+}
+
 load();
 
 const config = {
@@ -49,6 +54,7 @@ const config = {
   save,
   load,
   toString,
+  reset,
 
   /** 設定ページを開く
    * クリックなどのイベント時にしか正しく実行できない
@@ -116,6 +122,16 @@ const config = {
           throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
       }
     }
+    root.appendChild(newElement("button", {
+      className: "btn btn-danger",
+      textContent: "Reset",
+      type: "button",
+      onclick() {
+        if (win.confirm("Configuration data will be cleared. Are you sure?")) {
+          config.reset();
+        }
+      },
+    }));
   },
 
   /** 設定項目を登録 */

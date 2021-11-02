@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.1
+// @version     2.9.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -221,6 +221,19 @@ const events = {
         }
     },
 };
+function compareVersion(a, b) {
+    const x = a.split(".").map((s) => parseInt(s, 10));
+    const y = b.split(".").map((s) => parseInt(s, 10));
+    for (let i = 0; i < 3; i++) {
+        if (x[i] < y[i]) {
+            return -1;
+        }
+        else if (x[i] > y[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
 class ObservableValue {
     _value;
     _listeners;
@@ -890,6 +903,10 @@ function save() {
 function load() {
     data = JSON.parse(GM_getValue("config") || "{}");
 }
+function reset() {
+    data = {};
+    save();
+}
 load();
 const config = {
     getString(key, defaultValue = "") {
@@ -915,6 +932,7 @@ const config = {
     save,
     load,
     toString,
+    reset,
     /** 設定ページを開く
      * クリックなどのイベント時にしか正しく実行できない
      */
@@ -978,6 +996,16 @@ const config = {
                     throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
             }
         }
+        root.appendChild(newElement("button", {
+            className: "btn btn-danger",
+            textContent: "Reset",
+            type: "button",
+            onclick() {
+                if (win.confirm("Configuration data will be cleared. Are you sure?")) {
+                    config.reset();
+                }
+            },
+        }));
     },
     /** 設定項目を登録 */
     registerFlag(key, defaultValue, description) {
@@ -1769,7 +1797,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.9.1",
+        version: "2.9.2",
         config,
         codeSaver,
         enableButtons() {
@@ -1826,37 +1854,46 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
         {
             const aDay = 24 * 60 * 60 * 1e3;
             config.registerCount("version.checkInterval", aDay, "Interval [ms] of checking for new version");
-            const lastCheck = config.get("version.lastCheck", 0);
-            const now = Date.now();
-            if (now - lastCheck >= aDay) {
-                config.set("version.lastCheck", now);
-                fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
-                    then(r => r.json()).
-                    then((data) => new Promise((resolve, reject) => {
-                    const currentVersion = atCoderEasyTest.version.split(".").map(s => parseInt(s, 10));
-                    const latestVersion = data.version.split(".").map(s => parseInt(s, 10));
-                    for (let i = 0; i < 3; i++) {
-                        if (currentVersion[i] < latestVersion[i]) {
-                            console.info(`AtCoder Easy Test: New version available: v${data.version}`);
-                            reject(data.version);
-                            return;
-                        }
-                        else if (currentVersion[i] > latestVersion[i]) {
-                            resolve("Newer than Latest");
-                            return;
-                        }
+            let isButtonShown = false;
+            const interval = config.get("version.checkInterval", aDay);
+            const showButton = (version) => {
+                if (isButtonShown)
+                    return;
+                isButtonShown = true;
+                console.info(`AtCoder Easy Test: New version available: v${version}`);
+                eVersion.insertAdjacentElement("afterend", newElement("a", {
+                    href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
+                    target: "_blank",
+                    className: "btn btn-xs btn-info",
+                    textContent: `Update to v${version}`,
+                }));
+            };
+            const checkVersion = () => {
+                const latest = config.get("version.latest", atCoderEasyTest.version);
+                if (compareVersion(atCoderEasyTest.version, latest) < 0) {
+                    showButton(latest);
+                }
+                else {
+                    const lastCheck = config.get("version.lastCheck", 0);
+                    const now = Date.now();
+                    if (now - lastCheck >= interval) {
+                        config.set("version.lastCheck", now);
+                        fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
+                            then(r => r.json()).
+                            then((data) => new Promise((resolve, reject) => {
+                            const x = compareVersion(atCoderEasyTest.version, data.version);
+                            if (x >= 0)
+                                resolve("OK");
+                            else {
+                                reject(data.version);
+                            }
+                        })).
+                            catch(showButton);
                     }
-                    resolve("Latest Version");
-                })).
-                    catch((version) => {
-                    eVersion.insertAdjacentElement("afterend", newElement("a", {
-                        href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
-                        target: "_blank",
-                        className: "btn btn-xs btn-info",
-                        textContent: `Update to v${version}`,
-                    }));
-                });
-            }
+                }
+            };
+            setInterval(checkVersion, interval);
+            checkVersion();
         }
         // 言語選択関係
         {

@@ -65,6 +65,19 @@ export const events = {
   },
 };
 
+export function compareVersion(a: string, b: string): number {
+  const x = a.split(".").map((s: string) => parseInt(s, 10));
+  const y = b.split(".").map((s: string) => parseInt(s, 10));
+  for (let i = 0; i < 3; i++) {
+    if (x[i] < y[i]) {
+      return -1;
+    } else if (x[i] > y[i]) {
+      return 1;
+    }
+  }
+  return 0;
+};
+
 export class ObservableValue<T> {
   private _value: T;
   private _listeners: Set<(value: T) => void>;
