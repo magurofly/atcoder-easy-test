@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.2
+// @version     2.9.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -27,141 +27,6 @@
 // @grant       GM_setValue
 // ==/UserScript==
 (function() {
-const codeSaver = {
-    LIMIT: 10,
-    get() {
-        // `json` は、ソースコード文字列またはJSON文字列
-        let json = unsafeWindow.localStorage.AtCoderEasyTest$lastCode;
-        let data = [];
-        try {
-            if (typeof json == "string") {
-                data.push(...JSON.parse(json));
-            }
-            else {
-                data = [];
-            }
-        }
-        catch (e) {
-            data.push({
-                path: unsafeWindow.localStorage.AtCoderEasyTset$lastPage,
-                code: json,
-            });
-        }
-        return data;
-    },
-    set(data) {
-        unsafeWindow.localStorage.AtCoderEasyTest$lastCode = JSON.stringify(data);
-    },
-    save(code) {
-        let data = codeSaver.get();
-        const idx = data.findIndex(({ path }) => path == location.pathname);
-        if (idx != -1)
-            data.splice(idx, idx + 1);
-        data.push({
-            path: location.pathname,
-            code,
-        });
-        while (data.length > codeSaver.LIMIT)
-            data.shift();
-        codeSaver.set(data);
-    },
-    restore() {
-        const data = codeSaver.get();
-        const idx = data.findIndex(({ path }) => path == location.pathname);
-        if (idx == -1 || !(data[idx] instanceof Object))
-            return Promise.reject(`No saved code found for ${location.pathname}`);
-        return Promise.resolve(data[idx].code);
-    }
-};
-
-function similarLangs(targetLang, candidateLangs) {
-    const [targetName, targetDetail] = targetLang.split(" ", 2);
-    const selectedLangs = candidateLangs.filter(candidateLang => {
-        const [name, _] = candidateLang.split(" ", 2);
-        return name == targetName;
-    }).map(candidateLang => {
-        const [_, detail] = candidateLang.split(" ", 2);
-        return [candidateLang, similarity(detail, targetDetail)];
-    });
-    return selectedLangs.sort((a, b) => a[1] - b[1]).map(([lang, _]) => lang);
-}
-function similarity(s, t) {
-    const n = s.length, m = t.length;
-    let dp = new Array(m + 1).fill(0);
-    for (let i = 0; i < n; i++) {
-        const dp2 = new Array(m + 1).fill(0);
-        for (let j = 0; j < m; j++) {
-            const cost = (s.charCodeAt(i) - t.charCodeAt(j)) ** 2;
-            dp2[j + 1] = Math.min(dp[j] + cost, dp[j + 1] + cost * 0.25, dp2[j] + cost * 0.25);
-        }
-        dp = dp2;
-    }
-    return dp[m];
-}
-
-class CodeRunner {
-    get label() {
-        return this._label;
-    }
-    constructor(label, site) {
-        this._label = `${label} [${site}]`;
-    }
-    async test(sourceCode, input, expectedOutput, options) {
-        let result = { status: "IE", input };
-        try {
-            result = await this.run(sourceCode, input);
-        }
-        catch (e) {
-            result.error = e.toString();
-            return result;
-        }
-        if (expectedOutput != null)
-            result.expectedOutput = expectedOutput;
-        if (result.status != "OK" || typeof expectedOutput != "string")
-            return result;
-        let output = result.output || "";
-        if (options.trim) {
-            expectedOutput = expectedOutput.trim();
-            output = output.trim();
-        }
-        let equals = (x, y) => x === y;
-        if (options.allowableError) {
-            const floatPattern = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/;
-            const superEquals = equals;
-            equals = (x, y) => {
-                if (floatPattern.test(x) && floatPattern.test(y))
-                    return Math.abs(parseFloat(x) - parseFloat(y)) <= options.allowableError;
-                return superEquals(x, y);
-            };
-        }
-        if (options.split) {
-            const superEquals = equals;
-            equals = (x, y) => {
-                const xs = x.split(/\s+/);
-                const ys = y.split(/\s+/);
-                if (xs.length != ys.length)
-                    return false;
-                const len = xs.length;
-                for (let i = 0; i < len; i++) {
-                    if (!superEquals(xs[i], ys[i]))
-                        return false;
-                }
-                return true;
-            };
-        }
-        result.status = equals(output, expectedOutput) ? "AC" : "WA";
-        return result;
-    }
-}
-
-class CustomRunner extends CodeRunner {
-    run;
-    constructor(label, run) {
-        super(label, "Browser");
-        this.run = run;
-    }
-}
-
 function buildParams(data) {
     return Object.entries(data).map(([key, value]) => encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
 }
@@ -262,6 +127,277 @@ class ObservableValue {
             y.value = f(x);
         });
         return y;
+    }
+}
+
+var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">config</div>\n        <div class=\"panel-body\">\n          <form id=\"options\" class=\"form-horizontal\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
+
+const options = [];
+let data = {};
+function toString() {
+    return JSON.stringify(data);
+}
+function save() {
+    GM_setValue("config", toString());
+}
+function load() {
+    data = JSON.parse(GM_getValue("config") || "{}");
+}
+function reset() {
+    data = {};
+    save();
+}
+load();
+const config = {
+    getString(key, defaultValue = "") {
+        if (!(key in data))
+            config.setString(key, defaultValue);
+        return data[key];
+    },
+    setString(key, value) {
+        data[key] = value;
+        save();
+    },
+    has(key) {
+        return key in data;
+    },
+    get(key, defaultValue = null) {
+        if (!(key in data))
+            config.set(key, defaultValue);
+        return JSON.parse(data[key]);
+    },
+    set(key, value) {
+        config.setString(key, JSON.stringify(value));
+    },
+    save,
+    load,
+    toString,
+    reset,
+    /** 設定ページを開く
+     * クリックなどのイベント時にしか正しく実行できない
+     */
+    open() {
+        const win = window.open("about:blank");
+        const doc = win.document;
+        doc.open();
+        doc.write(hPage);
+        doc.close();
+        const root = doc.getElementById("options");
+        options.sort((a, b) => {
+            const x = a.key.split(".");
+            const y = b.key.split(".");
+            return x < y ? -1 : x > y ? 1 : 0;
+        });
+        for (const { type, key, defaultValue, description } of options) {
+            const id = uuid();
+            const control = newElement("div", { className: "col-sm-3 text-center" });
+            const group = newElement("div", { className: "form-group" }, [
+                control,
+                newElement("label", {
+                    className: "col-sm-3",
+                    htmlFor: id,
+                    textContent: key,
+                    style: {
+                        fontFamily: "monospace",
+                    },
+                }),
+                newElement("label", {
+                    className: "col-sm-6",
+                    htmlFor: id,
+                    textContent: description,
+                }),
+            ]);
+            root.appendChild(group);
+            switch (type) {
+                case "flag": {
+                    control.appendChild(newElement("input", {
+                        id,
+                        type: "checkbox",
+                        checked: config.get(key, defaultValue),
+                        onchange() {
+                            config.set(key, this.checked);
+                        },
+                    }));
+                    break;
+                }
+                case "count": {
+                    control.appendChild(newElement("input", {
+                        id,
+                        type: "number",
+                        min: "0",
+                        value: config.get(key, defaultValue),
+                        onchange() {
+                            config.set(key, +this.value);
+                        },
+                    }));
+                    break;
+                }
+                default:
+                    throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
+            }
+        }
+        root.appendChild(newElement("button", {
+            className: "btn btn-danger",
+            textContent: "Reset",
+            type: "button",
+            onclick() {
+                if (win.confirm("Configuration data will be cleared. Are you sure?")) {
+                    config.reset();
+                }
+            },
+        }));
+    },
+    /** 設定項目を登録 */
+    registerFlag(key, defaultValue, description) {
+        options.push({
+            type: "flag",
+            key,
+            defaultValue,
+            description,
+        });
+    },
+    registerCount(key, defaultValue, description) {
+        options.push({
+            type: "count",
+            key,
+            defaultValue,
+            description,
+        });
+    },
+};
+
+config.registerCount("codeSaver.limit", 10, "Max number to save codes");
+const codeSaver = {
+    get() {
+        // `json` は、ソースコード文字列またはJSON文字列
+        let json = unsafeWindow.localStorage.AtCoderEasyTest$lastCode;
+        let data = [];
+        try {
+            if (typeof json == "string") {
+                data.push(...JSON.parse(json));
+            }
+            else {
+                data = [];
+            }
+        }
+        catch (e) {
+            data.push({
+                path: unsafeWindow.localStorage.AtCoderEasyTset$lastPage,
+                code: json,
+            });
+        }
+        return data;
+    },
+    set(data) {
+        unsafeWindow.localStorage.AtCoderEasyTest$lastCode = JSON.stringify(data);
+    },
+    save(code) {
+        let data = codeSaver.get();
+        const idx = data.findIndex(({ path }) => path == location.pathname);
+        if (idx != -1)
+            data.splice(idx, idx + 1);
+        data.push({
+            path: location.pathname,
+            code,
+        });
+        while (data.length > config.get("codeSaver.limit", 10))
+            data.shift();
+        codeSaver.set(data);
+    },
+    restore() {
+        const data = codeSaver.get();
+        const idx = data.findIndex(({ path }) => path == location.pathname);
+        if (idx == -1 || !(data[idx] instanceof Object))
+            return Promise.reject(`No saved code found for ${location.pathname}`);
+        return Promise.resolve(data[idx].code);
+    }
+};
+
+function similarLangs(targetLang, candidateLangs) {
+    const [targetName, targetDetail] = targetLang.split(" ", 2);
+    const selectedLangs = candidateLangs.filter(candidateLang => {
+        const [name, _] = candidateLang.split(" ", 2);
+        return name == targetName;
+    }).map(candidateLang => {
+        const [_, detail] = candidateLang.split(" ", 2);
+        return [candidateLang, similarity(detail, targetDetail)];
+    });
+    return selectedLangs.sort((a, b) => a[1] - b[1]).map(([lang, _]) => lang);
+}
+function similarity(s, t) {
+    const n = s.length, m = t.length;
+    let dp = new Array(m + 1).fill(0);
+    for (let i = 0; i < n; i++) {
+        const dp2 = new Array(m + 1).fill(0);
+        for (let j = 0; j < m; j++) {
+            const cost = (s.charCodeAt(i) - t.charCodeAt(j)) ** 2;
+            dp2[j + 1] = Math.min(dp[j] + cost, dp[j + 1] + cost * 0.25, dp2[j] + cost * 0.25);
+        }
+        dp = dp2;
+    }
+    return dp[m];
+}
+
+class CodeRunner {
+    get label() {
+        return this._label;
+    }
+    constructor(label, site) {
+        this._label = `${label} [${site}]`;
+    }
+    async test(sourceCode, input, expectedOutput, options) {
+        let result = { status: "IE", input };
+        try {
+            result = await this.run(sourceCode, input);
+        }
+        catch (e) {
+            result.error = e.toString();
+            return result;
+        }
+        if (expectedOutput != null)
+            result.expectedOutput = expectedOutput;
+        if (result.status != "OK" || typeof expectedOutput != "string")
+            return result;
+        let output = result.output || "";
+        if (options.trim) {
+            expectedOutput = expectedOutput.trim();
+            output = output.trim();
+        }
+        let equals = (x, y) => x === y;
+        if (options.allowableError) {
+            const floatPattern = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/;
+            const superEquals = equals;
+            equals = (x, y) => {
+                if (floatPattern.test(x) && floatPattern.test(y))
+                    return Math.abs(parseFloat(x) - parseFloat(y)) <= options.allowableError;
+                return superEquals(x, y);
+            };
+        }
+        if (options.split) {
+            const superEquals = equals;
+            equals = (x, y) => {
+                const xs = x.split(/\s+/);
+                const ys = y.split(/\s+/);
+                if (xs.length != ys.length)
+                    return false;
+                const len = xs.length;
+                for (let i = 0; i < len; i++) {
+                    if (!superEquals(xs[i], ys[i]))
+                        return false;
+                }
+                return true;
+            };
+        }
+        result.status = equals(output, expectedOutput) ? "AC" : "WA";
+        return result;
+    }
+}
+
+class CustomRunner extends CodeRunner {
+    run;
+    constructor(label, run) {
+        super(label, "Browser");
+        this.run = run;
     }
 }
 
@@ -565,7 +701,7 @@ class __redirect_stdin(contextlib._RedirectStream):
 `);
     return pyodide;
 }
-let _pyodide = Promise.reject();
+let _pyodide = Promise.reject("Pyodide is not yet loaded");
 let _serial = Promise.resolve();
 const pyodideRunner = new CustomRunner("Pyodide", (sourceCode, input) => new Promise((resolve, reject) => {
     _serial = _serial.finally(async () => {
@@ -721,18 +857,23 @@ async function init$5() {
             e = e.filter(e => !e.closest(".io-style")); // practice2
             if (e.length == 0)
                 continue;
-            return pairs(e).map(([input, output], index) => ({
-                title: `Sample ${index + 1}`,
-                input: input.textContent,
-                output: output.textContent,
-                anchor: (input.closest(closestSelector) || input.parentElement).querySelector(".btn-copy"),
-            }));
+            return pairs(e).map(([input, output], index) => {
+                const container = input.closest(closestSelector) || input.parentElement;
+                return {
+                    selector,
+                    title: `Sample ${index + 1}`,
+                    input: input.textContent,
+                    output: output.textContent,
+                    anchor: container.querySelector(".btn-copy") || container.querySelector("h1,h2,h3,h4,h5,h6"),
+                };
+            });
         }
         { // maximum_cup_2018_d
             let e = [...doc.querySelectorAll("#task-statement .div-btn-copy+pre")];
             e = e.filter(f => !f.childElementCount);
             if (e.length) {
                 return pairs(e).map(([input, output], index) => ({
+                    selector: "#task-statement .div-btn-copy+pre",
                     title: `Sample ${index + 1}`,
                     input: input.textContent,
                     output: output.textContent,
@@ -889,142 +1030,6 @@ async function init$4() {
         },
     };
 }
-
-var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">config</div>\n        <div class=\"panel-body\">\n          <form id=\"options\" class=\"form-horizontal\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
-
-const options = [];
-let data = {};
-function toString() {
-    return JSON.stringify(data);
-}
-function save() {
-    GM_setValue("config", toString());
-}
-function load() {
-    data = JSON.parse(GM_getValue("config") || "{}");
-}
-function reset() {
-    data = {};
-    save();
-}
-load();
-const config = {
-    getString(key, defaultValue = "") {
-        if (!(key in data))
-            config.setString(key, defaultValue);
-        return data[key];
-    },
-    setString(key, value) {
-        data[key] = value;
-        save();
-    },
-    has(key) {
-        return key in data;
-    },
-    get(key, defaultValue = null) {
-        if (!(key in data))
-            config.set(key, defaultValue);
-        return JSON.parse(data[key]);
-    },
-    set(key, value) {
-        config.setString(key, JSON.stringify(value));
-    },
-    save,
-    load,
-    toString,
-    reset,
-    /** 設定ページを開く
-     * クリックなどのイベント時にしか正しく実行できない
-     */
-    open() {
-        const win = window.open("about:blank");
-        const doc = win.document;
-        doc.open();
-        doc.write(hPage);
-        doc.close();
-        const root = doc.getElementById("options");
-        options.sort((a, b) => {
-            const x = a.key.split(".");
-            const y = b.key.split(".");
-            return x < y ? -1 : x > y ? 1 : 0;
-        });
-        for (const { type, key, defaultValue, description } of options) {
-            const id = uuid();
-            const control = newElement("div", { className: "col-sm-3 text-center" });
-            const group = newElement("div", { className: "form-group" }, [
-                control,
-                newElement("label", {
-                    className: "col-sm-3",
-                    htmlFor: id,
-                    textContent: key,
-                    style: {
-                        fontFamily: "monospace",
-                    },
-                }),
-                newElement("label", {
-                    className: "col-sm-6",
-                    htmlFor: id,
-                    textContent: description,
-                }),
-            ]);
-            root.appendChild(group);
-            switch (type) {
-                case "flag": {
-                    control.appendChild(newElement("input", {
-                        id,
-                        type: "checkbox",
-                        checked: config.get(key, defaultValue),
-                        onchange() {
-                            config.set(key, this.checked);
-                        },
-                    }));
-                    break;
-                }
-                case "count": {
-                    control.appendChild(newElement("input", {
-                        id,
-                        type: "number",
-                        min: "0",
-                        value: config.get(key, defaultValue),
-                        onchange() {
-                            config.set(key, +this.value);
-                        },
-                    }));
-                    break;
-                }
-                default:
-                    throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
-            }
-        }
-        root.appendChild(newElement("button", {
-            className: "btn btn-danger",
-            textContent: "Reset",
-            type: "button",
-            onclick() {
-                if (win.confirm("Configuration data will be cleared. Are you sure?")) {
-                    config.reset();
-                }
-            },
-        }));
-    },
-    /** 設定項目を登録 */
-    registerFlag(key, defaultValue, description) {
-        options.push({
-            type: "flag",
-            key,
-            defaultValue,
-            description,
-        });
-    },
-    registerCount(key, defaultValue, description) {
-        options.push({
-            type: "count",
-            key,
-            defaultValue,
-            description,
-        });
-    },
-};
 
 class Editor {
     _element;
@@ -1797,7 +1802,8 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.9.2",
+        version: "2.9.3",
+        site,
         config,
         codeSaver,
         enableButtons() {

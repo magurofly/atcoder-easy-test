@@ -40,6 +40,7 @@ doc.head.appendChild(html2element(hStyle));
 // interface
 const atCoderEasyTest = {
   version: "$_ATCODER_EASY_TEST_VERSION",
+  site,
   config,
   codeSaver,
   enableButtons() {
