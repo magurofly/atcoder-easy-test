@@ -17,8 +17,8 @@ import config from "../config";
 const runners: { [runnerId: string]: CodeRunner } = {
   "C GCC 10.1.0 Wandbox": new WandboxRunner("gcc-10.1.0-c", "C (GCC 10.1.0)"),
   "C C17 Clang 10.0.0 paiza.io": new PaizaIORunner("c", "C (C17 / Clang 10.0.0)"),
-  "C++ GCC 10.1.0 + Boost 1.73.0 + ACL Wandbox": new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 10.1.0) + ACL", {options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17"}),
-  "C++ Clang 10.0.0 + ACL Wandbox": new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0) + ACL", {options: "warning,boost-nothing-clang-10.0.0,c++17"}),
+  "C++ GCC 10.1.0 + Boost 1.73.0 + ACL Wandbox": new WandboxCppRunner("gcc-10.1.0", "C++ (GCC 10.1.0) + ACL", { options: "warning,boost-1.73.0-gcc-9.2.0,gnu++17" }),
+  "C++ Clang 10.0.0 + ACL Wandbox": new WandboxCppRunner("clang-10.0.0", "C++ (Clang 10.0.0) + ACL", { options: "warning,boost-nothing-clang-10.0.0,c++17" }),
   "Python3 CPython 3.8.2 paiza.io": new PaizaIORunner("python3", "Python (3.8.2)"),
   "Python3 Brython": brythonRunner,
   "Python3 Pyodide": pyodideRunner,
@@ -32,13 +32,15 @@ const runners: { [runnerId: string]: CodeRunner } = {
   "F# Interactive 4.0 paiza.io": new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
   "Go 1.14.1 Wandbox": new WandboxRunner("go-1.14.1", "Go (1.14.1)"),
   "Haskell GHC HEAD Wandbox": new WandboxRunner("ghc-head", "Haskell (GHC HEAD)"),
+  "Java 1.8.0 jdk8u121-b13 Wandbox": new WandboxRunner("openjdk-jdk8u121-b13", "Java (1.8.0_121 jdk8u121-b13)"),
+  "Java 11 jdk-11+28 Wandbox": new WandboxRunner("openjdk-jdk-11+28", "Java (11)"),
   "JavaScript Node.js paiza.io": new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)"),
   "Kotlin 1.4.0 paiza.io": new PaizaIORunner("kotlin", "Kotlin (1.4.0)"),
   "Lua 5.3.4 Wandbox": new WandboxRunner("lua-5.3.4", "Lua (Lua 5.3.4)"),
   "Lua LuaJIT HEAD Wandbox": new WandboxRunner("luajit-head", "Lua (LuaJIT HEAD)"),
   "Nim 1.0.6 Wandbox": new WandboxRunner("nim-1.0.6", "Nim (1.0.6)"),
   "Objective-C Clang 10.0.0 paiza.io": new PaizaIORunner("objective-c", "Objective-C (Clang 10.0.0)"),
-  "Ocaml HEAD Wandbox": new WandboxRunner("ocaml-head", "OCaml (HEAD)"),
+  "OCaml HEAD Wandbox": new WandboxRunner("ocaml-head", "OCaml (HEAD)"),
   "Pascal FPC 3.0.2 Wandbox": new WandboxRunner("fpc-3.0.2", "Pascal (FPC 3.0.2)"),
   "Perl 5.30.0 paiza.io": new PaizaIORunner("perl", "Perl (5.30.0)"),
   "PHP 7.4.10 paiza.io": new PaizaIORunner("php", "PHP (7.4.10)"),
@@ -55,14 +57,14 @@ const runners: { [runnerId: string]: CodeRunner } = {
   "Scheme Gauche 0.9.6 paiza.io": new PaizaIORunner("scheme", "Scheme (Gauche 0.9.6)"),
   "Swift 5.2.5 paiza.io": new PaizaIORunner("swift", "Swift (5.2.5)"),
   "Text local": new CustomRunner("Text",
-      async (sourceCode: string, input: string) => {
-          return {
-              status: "OK",
-              exitCode: "0",
-              input,
-              output: sourceCode,
-          };
-      }
+    async (sourceCode: string, input: string) => {
+      return {
+        status: "OK",
+        exitCode: "0",
+        input,
+        output: sourceCode,
+      };
+    }
   ),
   "Basic Visual Basic .NET Core 4.0.1 paiza.io": new PaizaIORunner("vb", "Visual Basic (.NET Core 4.0.1)"),
   "COBOL Free OpenCOBOL 2.2.0 paiza.io": new PaizaIORunner("cobol", "COBOL - Free (OpenCOBOL 2.2.0)"),
