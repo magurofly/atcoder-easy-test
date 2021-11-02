@@ -1,8 +1,7 @@
 import config from "../config";
-import Editor from "../editor";
 import TestCase from "../TestCase";
 import langMap from "./codeforcesLangMap";
-import { ObservableValue, loadScript, newElement, events } from "../util";
+import { ObservableValue, loadScript, newElement } from "../util";
 
 config.registerFlag("site.codeforcesMobile.showEditor", true, "Show Editor in Mobile Codeforces (m[1-3].codeforces.com) Problem Page");
 
