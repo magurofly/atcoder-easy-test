@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.8.2
+// @version     2.8.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -18,6 +18,9 @@
 // @match       https://codeforces.com/problemset/problem/*
 // @match       https://codeforces.com/group/*/contest/*/problem/*
 // @match       https://*.contest.codeforces.com/group/*/contest/*/problem/*
+// @match       https://m1.codeforces.com/contest/*/problem/*
+// @match       https://m2.codeforces.com/contest/*/problem/*
+// @match       https://m3.codeforces.com/contest/*/problem/*
 // @match       https://greasyfork.org/*/scripts/433152-atcoder-easy-test-v2
 // @grant       unsafeWindow
 // @grant       GM_getValue
@@ -611,7 +614,7 @@ function pairs(list) {
         pairs.push([list[i * 2], list[i * 2 + 1]]);
     return pairs;
 }
-async function init$4() {
+async function init$5() {
     if (location.host != "atcoder.jp")
         throw "Not AtCoder";
     const doc = unsafeWindow.document;
@@ -760,7 +763,7 @@ async function init$4() {
     };
 }
 
-async function init$3() {
+async function init$4() {
     if (location.host != "yukicoder.me")
         throw "Not yukicoder";
     const $ = unsafeWindow.$;
@@ -1016,8 +1019,43 @@ class Editor {
     }
 }
 
+var langMap = {
+    3: "Delphi 7",
+    4: "Pascal Free Pascal 3.0.2",
+    6: "PHP 7.2.13",
+    7: "Python 2.7.18",
+    9: "C# Mono 6.8",
+    12: "Haskell GHC 8.10.1",
+    13: "Perl 5.20.1",
+    19: "OCaml 4.02.1",
+    20: "Scala 2.12.8",
+    28: "D DMD32 v2.091.0",
+    31: "Python3 3.8.10",
+    32: "Go 1.15.6",
+    34: "JavaScript V8 4.8.0",
+    36: "Java 1.8.0_241",
+    40: "Python PyPy2 2.7 (7.3.0)",
+    41: "Python3 PyPy3 3.7 (7.3.0)",
+    43: "C C11 GCC 5.1.0",
+    48: "Kotlin 1.5.31",
+    49: "Rust 1.49.0",
+    50: "C++ C++14 G++ 6.4.0",
+    51: "Pascal PascalABC.NET 3.4.1",
+    52: "C++ C++17 Clang++",
+    54: "C++ C++17 G++ 7.3.0",
+    55: "JavaScript Node.js 12.6.3",
+    59: "C++ Microsoft Visual C++ 2017",
+    60: "Java 11.0.6",
+    61: "C++ C++17 9.2.0 (64 bit, msys 2)",
+    65: "C# 8, .NET Core 3.1",
+    67: "Ruby 3.0.0",
+    70: "Python3 PyPy 3.7 (7.3.5, 64bit)",
+    72: "Kotlin 1.5.31",
+    73: "C++ GNU G++ 11.2.0 (64 bit, winlibs)",
+};
+
 config.registerFlag("site.codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
-async function init$2() {
+async function init$3() {
     if (location.host != "codeforces.com")
         throw "not Codeforces";
     //TODO: m1.codeforces.com, m2.codeforces.com, m3.codeforces.com に対応する
@@ -1034,40 +1072,6 @@ async function init$2() {
     unsafeWindow["jQuery"] = unsafeWindow["$"];
     unsafeWindow["jQuery11"] = jQuery;
     await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js", null, { jQuery, $: jQuery });
-    const langMap = {
-        3: "Delphi 7",
-        4: "Pascal Free Pascal 3.0.2",
-        6: "PHP 7.2.13",
-        7: "Python 2.7.18",
-        9: "C# Mono 6.8",
-        12: "Haskell GHC 8.10.1",
-        13: "Perl 5.20.1",
-        19: "OCaml 4.02.1",
-        20: "Scala 2.12.8",
-        28: "D DMD32 v2.091.0",
-        31: "Python3 3.8.10",
-        32: "Go 1.15.6",
-        34: "JavaScript V8 4.8.0",
-        36: "Java 1.8.0_241",
-        40: "Python PyPy2 2.7 (7.3.0)",
-        41: "Python3 PyPy3 3.7 (7.3.0)",
-        43: "C C11 GCC 5.1.0",
-        48: "Kotlin 1.5.31",
-        49: "Rust 1.49.0",
-        50: "C++ C++14 G++ 6.4.0",
-        51: "Pascal PascalABC.NET 3.4.1",
-        52: "C++ C++17 Clang++",
-        54: "C++ C++17 G++ 7.3.0",
-        55: "JavaScript Node.js 12.6.3",
-        59: "C++ Microsoft Visual C++ 2017",
-        60: "Java 11.0.6",
-        61: "C++ C++17 9.2.0 (64 bit, msys 2)",
-        65: "C# 8, .NET Core 3.1",
-        67: "Ruby 3.0.0",
-        70: "Python3 PyPy 3.7 (7.3.5, 64bit)",
-        72: "Kotlin 1.5.31",
-        73: "C++ GNU G++ 11.2.0 (64 bit, winlibs)",
-    };
     const language = new ObservableValue(langMap[eLang.value]);
     eLang.addEventListener("change", () => {
         language.value = langMap[eLang.value];
@@ -1187,6 +1191,99 @@ async function init$2() {
     };
 }
 
+config.registerFlag("site.codeforcesMobile.showEditor", true, "Show Editor in Mobile Codeforces (m[1-3].codeforces.com) Problem Page");
+async function init$2() {
+    if (!/^m[1-3]\.codeforces\.com$/.test(location.host))
+        throw "not Codeforces Mobile";
+    const url = /\/contest\/(\d+)\/problem\/([^/]+)/.exec(location.pathname);
+    const contestId = url[1];
+    const problemId = url[2];
+    const doc = unsafeWindow.document;
+    const main = doc.querySelector("main");
+    doc.head.appendChild(newElement("link", {
+        rel: "stylesheet",
+        href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
+    }));
+    await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js");
+    const language = new ObservableValue("");
+    let submit = () => { };
+    let getSourceCode = () => "";
+    let setSourceCode = (_) => { };
+    // make Editor
+    if (config.get("site.codeforcesMobile.showEditor", true)) {
+        const frame = newElement("iframe", {
+            src: `/contest/${contestId}/submit`,
+            style: {
+                display: "none",
+            },
+        });
+        doc.body.appendChild(frame);
+        await new Promise(done => frame.onload = done);
+        const fdoc = frame.contentDocument;
+        const form = fdoc.querySelector("._SubmitPage_submitForm");
+        form.elements["problemIndex"].value = problemId;
+        form.elements["problemIndex"].readonly = true;
+        form.elements["programTypeId"].addEventListener("change", function () {
+            language.value = langMap[this.value];
+        });
+        for (const row of form.children) {
+            if (row.tagName != "DIV")
+                continue;
+            row.classList.add("form-group");
+            const control = row.querySelector("*[name]");
+            if (control)
+                control.classList.add("form-control");
+        }
+        form.parentElement.removeChild(form);
+        main.appendChild(form);
+        submit = () => form.submit();
+        getSourceCode = () => form.elements["source"].value;
+        setSourceCode = sourceCode => {
+            form.elements["source"].value = sourceCode;
+        };
+    }
+    return {
+        name: "Codeforces",
+        language,
+        get sourceCode() {
+            return getSourceCode();
+        },
+        set sourceCode(sourceCode) {
+            setSourceCode(sourceCode);
+        },
+        submit,
+        get testButtonContainer() {
+            return main;
+        },
+        get sideButtonContainer() {
+            return main;
+        },
+        get bottomMenuContainer() {
+            return doc.body;
+        },
+        get resultListContainer() {
+            return main;
+        },
+        get testCases() {
+            const testcases = [];
+            let index = 1;
+            for (const container of doc.querySelectorAll(".sample-test")) {
+                const input = container.querySelector(".input pre.content").textContent;
+                const output = container.querySelector(".output pre.content").textContent;
+                const anchor = container.querySelector(".input .title");
+                testcases.push({
+                    input, output, anchor,
+                    title: `Sample ${index++}`,
+                });
+            }
+            return testcases;
+        },
+        get jQuery() {
+            return unsafeWindow["jQuery"];
+        },
+    };
+}
+
 async function init$1() {
     if (location.host != "greasyfork.org" && !location.href.match(/433152-atcoder-easy-test-v2/))
         throw "Not about page";
@@ -1219,12 +1316,15 @@ async function init$1() {
 const inits = [init$1()];
 config.registerFlag("site.atcoder", true, "Use AtCoder Easy Test in AtCoder");
 if (config.get("site.atcoder", true))
-    inits.push(init$4());
+    inits.push(init$5());
 config.registerFlag("site.yukicoder", true, "Use AtCoder Easy Test in yukicoder");
 if (config.get("site.yukicoder", true))
-    inits.push(init$3());
+    inits.push(init$4());
 config.registerFlag("site.codeforces", true, "Use AtCoder Easy Test in Codeforces");
 if (config.get("site.codeforces", true))
+    inits.push(init$3());
+config.registerFlag("site.codeforcesMobile", true, "Use AtCoder Easy Test in Codeforces Mobile (m[1-3].codeforces.com)");
+if (config.get("site.codeforcesMobile", true))
     inits.push(init$2());
 var pSite = Promise.any(inits);
 
@@ -1667,7 +1767,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.8.2",
+        version: "2.8.3",
         config,
         codeSaver,
         enableButtons() {
