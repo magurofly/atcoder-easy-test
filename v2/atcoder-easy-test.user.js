@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.4
+// @version     2.9.5
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1378,7 +1378,8 @@ const runners = {
     "Elixir 1.10.4 paiza.io": new PaizaIORunner("elixir", "Elixir (1.10.4)"),
     "F# Interactive 4.0 paiza.io": new PaizaIORunner("fsharp", "F# (Interactive 4.0)"),
     "Go 1.14.1 Wandbox": new WandboxRunner("go-1.14.1", "Go (1.14.1)"),
-    "Haskell GHC HEAD Wandbox": new WandboxRunner("ghc-head", "Haskell (GHC HEAD)"),
+    "Haskell GHC 8.4.2 Wandbox": new WandboxRunner("ghc-8.4.2", "Haskell (GHC 8.4.2)"),
+    "Haskell GHC 8.6.5 paiza.io": new PaizaIORunner("haskell", "Haskell (GHC 8.6.5)"),
     "Java 1.8.0 jdk8u121-b13 Wandbox": new WandboxRunner("openjdk-jdk8u121-b13", "Java (1.8.0_121 jdk8u121-b13)"),
     "Java 11 jdk-11+28 Wandbox": new WandboxRunner("openjdk-jdk-11+28", "Java (11)"),
     "JavaScript Node.js paiza.io": new PaizaIORunner("javascript", "JavaScript (Node.js 12.18.3)"),
@@ -1802,7 +1803,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.9.4",
+        version: "2.9.5",
         site,
         config,
         codeSaver,
