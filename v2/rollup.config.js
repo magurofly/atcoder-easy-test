@@ -18,6 +18,7 @@ export default [
 // @supportURL  ${packageJson.bugs.url}
 // @match       https://atcoder.jp/contests/*/tasks/*
 // @match       https://yukicoder.me/problems/no/*
+// @match       https://yukicoder.me/problems/*
 // @match       http://codeforces.com/contest/*/problem/*
 // @match       http://codeforces.com/gym/*/problem/*
 // @match       http://codeforces.com/problemset/problem/*

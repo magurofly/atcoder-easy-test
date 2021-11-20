@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.5
+// @version     2.9.6
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
 // @supportURL  https://github.com/magurofly/atcoder-easy-test/
 // @match       https://atcoder.jp/contests/*/tasks/*
 // @match       https://yukicoder.me/problems/no/*
+// @match       https://yukicoder.me/problems/*
 // @match       http://codeforces.com/contest/*/problem/*
 // @match       http://codeforces.com/gym/*/problem/*
 // @match       http://codeforces.com/problemset/problem/*
@@ -1803,7 +1804,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.9.5",
+        version: "2.9.6",
         site,
         config,
         codeSaver,
