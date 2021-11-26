@@ -18,6 +18,15 @@ async function init() {
     href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
   }));
 
+  doc.head.appendChild(newElement("style", {
+    textContent: `
+.atcoder-easy-test-btn-run-case {
+  float: right;
+  line-height: 1.1rem;
+}
+    `,
+  }))
+
   const eButtons = newElement("span");
   doc.querySelector(".submitForm").appendChild(eButtons);
 
@@ -78,12 +87,14 @@ async function init() {
 
       // ボタンを追加する
       const buttonContainer = doc.querySelector(".submit-form .submit").parentElement;
-      buttonContainer.appendChild(newElement("a", {
+      buttonContainer.appendChild(newElement("button", {
+        type: "button",
         className: "btn btn-info",
         textContent: "Test & Submit",
         onclick: () => events.trig("testAndSubmit"),
       }));
-      buttonContainer.appendChild(newElement("a", {
+      buttonContainer.appendChild(newElement("button", {
+        type: "button",
         className: "btn btn-default",
         textContent: "Test All Samples",
         onclick: () => events.trig("testAllSamples"),
@@ -136,12 +147,23 @@ async function init() {
       return doc.querySelector("#pageContent");
     },
     get testCases(): TestCase[] {
-      return [... doc.querySelectorAll(".sample-test")].map((e, i) => ({
-        title: `Sample ${i + 1}`,
-        input: e.querySelector(".input pre").textContent,
-        output: e.querySelector(".output pre").textContent,
-        anchor: e.querySelector(".input .title"),
-      }));
+      const testcases = [];
+      let num = 1;
+      for (const eSampleTest of doc.querySelectorAll(".sample-test")) {
+        const inputs = eSampleTest.querySelectorAll(".input pre");
+        const outputs = eSampleTest.querySelectorAll(".output pre");
+        const anchors = eSampleTest.querySelectorAll(".input .title .input-output-copier");
+        const count = Math.min(inputs.length, outputs.length, anchors.length);
+        for (let i = 0; i < count; i++) {
+          testcases.push({
+            title: `Sample ${num++}`,
+            input: inputs[i].textContent,
+            output: outputs[i].textContent,
+            anchor: anchors[i],
+          });
+        }
+      }
+      return testcases;
     },
     get jQuery(): any {
       return jQuery;

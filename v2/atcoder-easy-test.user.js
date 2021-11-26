@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.6
+// @version     2.9.7
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1099,6 +1099,14 @@ async function init$3() {
         rel: "stylesheet",
         href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
     }));
+    doc.head.appendChild(newElement("style", {
+        textContent: `
+.atcoder-easy-test-btn-run-case {
+  float: right;
+  line-height: 1.1rem;
+}
+    `,
+    }));
     const eButtons = newElement("span");
     doc.querySelector(".submitForm").appendChild(eButtons);
     await loadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js");
@@ -1151,12 +1159,14 @@ async function init$3() {
             };
             // ボタンを追加する
             const buttonContainer = doc.querySelector(".submit-form .submit").parentElement;
-            buttonContainer.appendChild(newElement("a", {
+            buttonContainer.appendChild(newElement("button", {
+                type: "button",
                 className: "btn btn-info",
                 textContent: "Test & Submit",
                 onclick: () => events.trig("testAndSubmit"),
             }));
-            buttonContainer.appendChild(newElement("a", {
+            buttonContainer.appendChild(newElement("button", {
+                type: "button",
                 className: "btn btn-default",
                 textContent: "Test All Samples",
                 onclick: () => events.trig("testAllSamples"),
@@ -1212,12 +1222,23 @@ async function init$3() {
             return doc.querySelector("#pageContent");
         },
         get testCases() {
-            return [...doc.querySelectorAll(".sample-test")].map((e, i) => ({
-                title: `Sample ${i + 1}`,
-                input: e.querySelector(".input pre").textContent,
-                output: e.querySelector(".output pre").textContent,
-                anchor: e.querySelector(".input .title"),
-            }));
+            const testcases = [];
+            let num = 1;
+            for (const eSampleTest of doc.querySelectorAll(".sample-test")) {
+                const inputs = eSampleTest.querySelectorAll(".input pre");
+                const outputs = eSampleTest.querySelectorAll(".output pre");
+                const anchors = eSampleTest.querySelectorAll(".input .title .input-output-copier");
+                const count = Math.min(inputs.length, outputs.length, anchors.length);
+                for (let i = 0; i < count; i++) {
+                    testcases.push({
+                        title: `Sample ${num++}`,
+                        input: inputs[i].textContent,
+                        output: outputs[i].textContent,
+                        anchor: anchors[i],
+                    });
+                }
+            }
+            return testcases;
         },
         get jQuery() {
             return jQuery;
@@ -1784,11 +1805,11 @@ var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">
 
 var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: normal;\n}\n</style>";
 
-var hRunButton = "<a class=\"btn btn-primary btn-sm\" style=\"vertical-align: top; margin-left: 0.5em\">Run</a>";
+var hRunButton = "<button type=\"button\" class=\"btn btn-primary btn-sm atcoder-easy-test-btn-run-case\" style=\"vertical-align: top; margin-left: 0.5em\">Run</button>";
 
-var hTestAndSubmit = "<a id=\"atcoder-easy-test-btn-test-and-submit\" class=\"btn btn-info btn\" style=\"margin-left: 1rem\" title=\"Ctrl+Enter\" data-toggle=\"tooltip\">Test &amp; Submit</a>";
+var hTestAndSubmit = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-and-submit\" class=\"btn btn-info btn\" style=\"margin-left: 1rem\" title=\"Ctrl+Enter\" data-toggle=\"tooltip\">Test &amp; Submit</button>";
 
-var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-default btn-sm\" style=\"margin-left: 1rem\" title=\"Alt+Enter\" data-toggle=\"tooltip\">Test All Samples</a>";
+var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-default btn-sm\" style=\"margin-left: 1rem\" title=\"Alt+Enter\" data-toggle=\"tooltip\">Test All Samples</button>";
 
 (async () => {
     const site = await pSite;
@@ -1804,7 +1825,7 @@ var hTestAllSamples = "<a id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.9.6",
+        version: "2.9.7",
         site,
         config,
         codeSaver,
