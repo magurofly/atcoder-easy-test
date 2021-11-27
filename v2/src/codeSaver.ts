@@ -1,4 +1,6 @@
 import config from "./config";
+import settings from "./settings";
+import { newElement } from "./util";
 
 interface SavedCode {
   path: string,
@@ -50,5 +52,31 @@ const codeSaver = {
     return Promise.resolve(data[idx].code);
   }
 };
+
+settings.add(`codeSaver (${location.host})`, (win) => {
+  const root = newElement<HTMLTableElement>("table", { className: "table" }, [
+    newElement("thead", {}, [
+      newElement("tr", {}, [
+        newElement("th", { textContent: "path" }),
+        newElement("th", { textContent: "code" }),
+      ]),
+    ]),
+    newElement("tbody"),
+  ]);
+  root.tBodies
+  for (const savedCode of codeSaver.get()) {
+    root.tBodies[0].appendChild(newElement("tr", {}, [
+      newElement("td", { textContent: savedCode.path }),
+      newElement("td", {}, [
+        newElement("textarea", {
+          rows: 1,
+          cols: 30,
+          textContent: savedCode.code,
+        }),
+      ]),
+    ]));
+  }
+  return root;
+});
 
 export default codeSaver;

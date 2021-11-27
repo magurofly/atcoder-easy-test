@@ -5,8 +5,9 @@ import initBottomMenu from "./bottomMenu";
 import resultList from "./resultList";
 import pSite from "./site";
 import config from "./config";
+import version from "./version";
 
-import { compareVersion, doneOrFail, events, html2element, newElement } from "./util";
+import { doneOrFail, events, html2element, newElement } from "./util";
 import ResultTabContent from "./ResultTabContent";
 import Options from "./codeRunner/Options";
 import Result from "./codeRunner/Result";
@@ -18,6 +19,7 @@ import hRunButton from "./runButton.html";
 import hTestAndSubmit from "./testAndSubmit.html";
 import hTestAllSamples from "./testAllSamples.html";
 import { check } from "prettier";
+import settings from "./settings";
 
 (async () => {
 
@@ -39,7 +41,7 @@ doc.head.appendChild(html2element(hStyle));
 
 // interface
 const atCoderEasyTest = {
-  version: "$_ATCODER_EASY_TEST_VERSION",
+  version,
   site,
   config,
   codeSaver,
@@ -92,7 +94,7 @@ const atCoderEasyTest = {
   const eSetting = E<HTMLAnchorElement>("setting");
   const eVersion = E<HTMLSpanElement>("version");
 
-  eVersion.textContent = atCoderEasyTest.version;
+  eVersion.textContent = atCoderEasyTest.version.current;
 
   events.on("enable", () => {
     eRun.classList.remove("disabled");
@@ -102,51 +104,30 @@ const atCoderEasyTest = {
   });
 
   eSetting.addEventListener("click", () => {
-    config.open();
+    settings.open();
   });
 
   // バージョン確認
   {
-    const aDay = 24 * 60 * 60 * 1e3;
-    config.registerCount("version.checkInterval", aDay, "Interval [ms] of checking for new version");
-    let isButtonShown = false;
-    const interval = config.get("version.checkInterval", aDay);
-    const showButton = (version: string) => {
-      if (isButtonShown) return;
-      isButtonShown = true;
+    let button = null;
+    const showButton = () => {
+      if (!version.hasUpdate) return;
+      if (button) {
+        button.textContent = `Update to v${version.latest}`;
+        return;
+      }
       console.info(`AtCoder Easy Test: New version available: v${version}`);
-      eVersion.insertAdjacentElement("afterend", newElement("a", {
+      button = newElement("a", {
         href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
         target: "_blank",
         className: "btn btn-xs btn-info",
-        textContent: `Update to v${version}`,
-      }));
+        textContent: `Update to v${version.latest}`,
+      });
+      eVersion.insertAdjacentElement("afterend", button);
     };
-    const checkVersion = () => {
-      const latest = config.get("version.latest", atCoderEasyTest.version);
-      if (compareVersion(atCoderEasyTest.version, latest) < 0) {
-        showButton(latest);
-      } else {
-        const lastCheck = config.get("version.lastCheck", 0);
-        const now = Date.now();
-        if (now - lastCheck >= interval) {
-          config.set("version.lastCheck", now);
-          fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
-            then(r => r.json()).
-            then((data: any) => new Promise((resolve, reject) => {
-              const x = compareVersion(atCoderEasyTest.version, data.version);
-              if (x >= 0) resolve("OK");
-              else {
-                reject(data.version);
-              }
-            })).
-            catch(showButton);
-          }
-        }
-      };
-      setInterval(checkVersion, interval);
-      checkVersion();
-    }
+    version.latestProperty.addListener(showButton);
+    showButton();
+  }
 
   // 言語選択関係
   {

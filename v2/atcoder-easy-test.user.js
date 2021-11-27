@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.7
+// @version     2.9.8
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -87,19 +87,6 @@ const events = {
         }
     },
 };
-function compareVersion(a, b) {
-    const x = a.split(".").map((s) => parseInt(s, 10));
-    const y = b.split(".").map((s) => parseInt(s, 10));
-    for (let i = 0; i < 3; i++) {
-        if (x[i] < y[i]) {
-            return -1;
-        }
-        else if (x[i] > y[i]) {
-            return 1;
-        }
-    }
-    return 0;
-}
 class ObservableValue {
     _value;
     _listeners;
@@ -131,7 +118,29 @@ class ObservableValue {
     }
 }
 
-var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\">\n      <div class=\"panel panel-default\">\n        <div class=\"panel-heading\">config</div>\n        <div class=\"panel-body\">\n          <form id=\"options\" class=\"form-horizontal\">\n          </form>\n        </div>\n      </div>\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
+var hPage = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n    <title>AtCoder Easy Test</title>\n    <link href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css\" rel=\"stylesheet\">\n  </head>\n  <body>\n    <div class=\"container\" id=\"root\">\n    </div>\n    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n    <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js\"></script>\n  </body>\n</html>";
+
+const components = [];
+const settings = {
+    add(title, generator) {
+        components.push({ title, generator });
+    },
+    open() {
+        const win = window.open("about:blank");
+        const doc = win.document;
+        doc.open();
+        doc.write(hPage);
+        doc.close();
+        const root = doc.getElementById("root");
+        for (const { title, generator } of components) {
+            const panel = newElement("div", { className: "panel panel-default" }, [
+                newElement("div", { className: "panel-heading", textContent: title }),
+                newElement("div", { className: "panel-body" }, [generator(win)]),
+            ]);
+            root.appendChild(panel);
+        }
+    },
+};
 
 const options = [];
 let data = {};
@@ -149,6 +158,74 @@ function reset() {
     save();
 }
 load();
+// 設定ページ
+settings.add("config", (win) => {
+    const root = newElement("form", { className: "form-horizontal" });
+    options.sort((a, b) => {
+        const x = a.key.split(".");
+        const y = b.key.split(".");
+        return x < y ? -1 : x > y ? 1 : 0;
+    });
+    for (const { type, key, defaultValue, description } of options) {
+        const id = uuid();
+        const control = newElement("div", { className: "col-sm-3 text-center" });
+        const group = newElement("div", { className: "form-group" }, [
+            control,
+            newElement("label", {
+                className: "col-sm-3",
+                htmlFor: id,
+                textContent: key,
+                style: {
+                    fontFamily: "monospace",
+                },
+            }),
+            newElement("label", {
+                className: "col-sm-6",
+                htmlFor: id,
+                textContent: description,
+            }),
+        ]);
+        root.appendChild(group);
+        switch (type) {
+            case "flag": {
+                control.appendChild(newElement("input", {
+                    id,
+                    type: "checkbox",
+                    checked: config.get(key, defaultValue),
+                    onchange() {
+                        config.set(key, this.checked);
+                    },
+                }));
+                break;
+            }
+            case "count": {
+                control.appendChild(newElement("input", {
+                    id,
+                    type: "number",
+                    min: "0",
+                    value: config.get(key, defaultValue),
+                    onchange() {
+                        config.set(key, +this.value);
+                    },
+                }));
+                break;
+            }
+            default:
+                throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
+        }
+    }
+    root.appendChild(newElement("button", {
+        className: "btn btn-danger",
+        textContent: "Reset",
+        type: "button",
+        onclick() {
+            if (win.confirm("Configuration data will be cleared. Are you sure?")) {
+                config.reset();
+            }
+        },
+    }));
+    return root;
+});
 const config = {
     getString(key, defaultValue = "") {
         if (!(key in data))
@@ -174,80 +251,6 @@ const config = {
     load,
     toString,
     reset,
-    /** 設定ページを開く
-     * クリックなどのイベント時にしか正しく実行できない
-     */
-    open() {
-        const win = window.open("about:blank");
-        const doc = win.document;
-        doc.open();
-        doc.write(hPage);
-        doc.close();
-        const root = doc.getElementById("options");
-        options.sort((a, b) => {
-            const x = a.key.split(".");
-            const y = b.key.split(".");
-            return x < y ? -1 : x > y ? 1 : 0;
-        });
-        for (const { type, key, defaultValue, description } of options) {
-            const id = uuid();
-            const control = newElement("div", { className: "col-sm-3 text-center" });
-            const group = newElement("div", { className: "form-group" }, [
-                control,
-                newElement("label", {
-                    className: "col-sm-3",
-                    htmlFor: id,
-                    textContent: key,
-                    style: {
-                        fontFamily: "monospace",
-                    },
-                }),
-                newElement("label", {
-                    className: "col-sm-6",
-                    htmlFor: id,
-                    textContent: description,
-                }),
-            ]);
-            root.appendChild(group);
-            switch (type) {
-                case "flag": {
-                    control.appendChild(newElement("input", {
-                        id,
-                        type: "checkbox",
-                        checked: config.get(key, defaultValue),
-                        onchange() {
-                            config.set(key, this.checked);
-                        },
-                    }));
-                    break;
-                }
-                case "count": {
-                    control.appendChild(newElement("input", {
-                        id,
-                        type: "number",
-                        min: "0",
-                        value: config.get(key, defaultValue),
-                        onchange() {
-                            config.set(key, +this.value);
-                        },
-                    }));
-                    break;
-                }
-                default:
-                    throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
-            }
-        }
-        root.appendChild(newElement("button", {
-            className: "btn btn-danger",
-            textContent: "Reset",
-            type: "button",
-            onclick() {
-                if (win.confirm("Configuration data will be cleared. Are you sure?")) {
-                    config.reset();
-                }
-            },
-        }));
-    },
     /** 設定項目を登録 */
     registerFlag(key, defaultValue, description) {
         options.push({
@@ -313,6 +316,31 @@ const codeSaver = {
         return Promise.resolve(data[idx].code);
     }
 };
+settings.add(`codeSaver (${location.host})`, (win) => {
+    const root = newElement("table", { className: "table" }, [
+        newElement("thead", {}, [
+            newElement("tr", {}, [
+                newElement("th", { textContent: "path" }),
+                newElement("th", { textContent: "code" }),
+            ]),
+        ]),
+        newElement("tbody"),
+    ]);
+    root.tBodies;
+    for (const savedCode of codeSaver.get()) {
+        root.tBodies[0].appendChild(newElement("tr", {}, [
+            newElement("td", { textContent: savedCode.path }),
+            newElement("td", {}, [
+                newElement("textarea", {
+                    rows: 1,
+                    cols: 30,
+                    textContent: savedCode.code,
+                }),
+            ]),
+        ]));
+    }
+    return root;
+});
 
 function similarLangs(targetLang, candidateLangs) {
     const [targetName, targetDetail] = targetLang.split(" ", 2);
@@ -1698,6 +1726,108 @@ const resultList = {
     },
 };
 
+const version = {
+    currentProperty: new ObservableValue("2.9.8"),
+    get current() {
+        return this.currentProperty.value;
+    },
+    latestProperty: new ObservableValue(config.get("version.latest", "2.9.8")),
+    get latest() {
+        return this.latestProperty.value;
+    },
+    lastCheckProperty: new ObservableValue(config.get("version.lastCheck", 0)),
+    get lastCheck() {
+        return this.lastCheckProperty.value;
+    },
+    get hasUpdate() {
+        return this.compare(this.current, this.latest) < 0;
+    },
+    compare(a, b) {
+        const x = a.split(".").map((s) => parseInt(s, 10));
+        const y = b.split(".").map((s) => parseInt(s, 10));
+        for (let i = 0; i < 3; i++) {
+            if (x[i] < y[i]) {
+                return -1;
+            }
+            else if (x[i] > y[i]) {
+                return 1;
+            }
+        }
+        return 0;
+    },
+    async checkUpdate(force = false) {
+        const now = Date.now();
+        if (!force && now - version.lastCheck < config.get("version.checkInterval", aDay)) {
+            return this.current;
+        }
+        const packageJson = await fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").then(r => r.json());
+        console.log(packageJson);
+        const latest = packageJson["version"];
+        this.latestProperty.value = latest;
+        config.set("version.latest", latest);
+        this.lastCheckProperty.value = now;
+        config.set("version.lastCheck", now);
+        return latest;
+    },
+};
+// 更新チェック
+const aDay = 24 * 60 * 60 * 1e3;
+config.registerCount("version.checkInterval", aDay, "Interval [ms] of checking for new version");
+config.get("version.checkInterval", aDay);
+setInterval(() => {
+    version.checkUpdate(false);
+}, 60e3);
+settings.add("version", (win) => {
+    const root = newElement("div");
+    const text = win.document.createTextNode.bind(win.document);
+    const textAuto = (property) => {
+        const t = text(property.value);
+        property.addListener(value => {
+            t.textContent = value;
+        });
+        return t;
+    };
+    const tCurrent = textAuto(version.currentProperty);
+    const tLatest = textAuto(version.latestProperty);
+    const tLastCheck = textAuto(version.lastCheckProperty.map(time => new Date(time).toLocaleString()));
+    root.appendChild(newElement("p", {}, [
+        text("AtCoder Easy Test v"),
+        tCurrent,
+    ]));
+    const updateButton = newElement("a", {
+        className: "btn btn-info",
+        textContent: "Install",
+        href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
+        target: "_blank",
+    });
+    const showButton = () => {
+        if (version.hasUpdate)
+            updateButton.style.display = "inline";
+        else
+            updateButton.style.display = "none";
+    };
+    showButton();
+    version.lastCheckProperty.addListener(showButton);
+    root.appendChild(newElement("p", {}, [
+        text("Latest: v"),
+        tLatest,
+        text(" (Last Check: "),
+        tLastCheck,
+        text(") "),
+        updateButton,
+    ]));
+    root.appendChild(newElement("p", {}, [
+        newElement("a", {
+            className: "btn btn-primary",
+            textContent: "Check Update",
+            onclick() {
+                version.checkUpdate(true);
+            },
+        }),
+    ]));
+    return root;
+});
+
 var hTabTemplate = "<div class=\"atcoder-easy-test-result container\">\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-input col-xs-12\" data-if-expected-output=\"col-sm-6 col-sm-push-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Input\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-input form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-expected-output col-xs-12 col-sm-6 hidden\" data-if-expected-output=\"!hidden col-sm-pull-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Expected Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-expected-output form-control\" rows=\"3\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\"><div class=\"col-sm-6 col-sm-offset-3\">\n    <div class=\"panel panel-default\">\n      <table class=\"table table-condensed\">\n        <tbody>\n          <tr>\n            <th class=\"text-center\">Exit Code</th>\n            <th class=\"text-center\">Exec Time</th>\n            <th class=\"text-center\">Memory</th>\n          </tr>\n          <tr>\n            <td class=\"atcoder-easy-test-result-exit-code text-center\"></td>\n            <td class=\"atcoder-easy-test-result-exec-time text-center\"></td>\n            <td class=\"atcoder-easy-test-result-memory text-center\"></td>\n          </tr>\n        </tbody>\n      </table>\n    </div>\n  </div></div>\n  <div class=\"row\">\n    <div class=\"atcoder-easy-test-result-col-output col-xs-12\" data-if-error=\"col-md-6\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Output\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-output form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n    <div class=\"atcoder-easy-test-result-col-error col-xs-12 col-md-6 hidden\" data-if-error=\"!hidden\">\n      <div class=\"form-group\">\n        <label class=\"control-label col-xs-12\">\n          Standard Error\n          <div class=\"col-xs-12\">\n            <textarea class=\"atcoder-easy-test-result-error form-control\" rows=\"5\" readonly=\"readonly\"></textarea>\n          </div>\n        </label>\n      </div>\n    </div>\n  </div>\n</div>";
 
 function setClassFromData(element, name) {
@@ -1825,7 +1955,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
     doc.head.appendChild(html2element(hStyle));
     // interface
     const atCoderEasyTest = {
-        version: "2.9.7",
+        version,
         site,
         config,
         codeSaver,
@@ -1869,7 +1999,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         const eRun = E("run");
         const eSetting = E("setting");
         const eVersion = E("version");
-        eVersion.textContent = atCoderEasyTest.version;
+        eVersion.textContent = atCoderEasyTest.version.current;
         events.on("enable", () => {
             eRun.classList.remove("disabled");
         });
@@ -1877,52 +2007,29 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
             eRun.classList.add("disabled");
         });
         eSetting.addEventListener("click", () => {
-            config.open();
+            settings.open();
         });
         // バージョン確認
         {
-            const aDay = 24 * 60 * 60 * 1e3;
-            config.registerCount("version.checkInterval", aDay, "Interval [ms] of checking for new version");
-            let isButtonShown = false;
-            const interval = config.get("version.checkInterval", aDay);
-            const showButton = (version) => {
-                if (isButtonShown)
+            let button = null;
+            const showButton = () => {
+                if (!version.hasUpdate)
                     return;
-                isButtonShown = true;
+                if (button) {
+                    button.textContent = `Update to v${version.latest}`;
+                    return;
+                }
                 console.info(`AtCoder Easy Test: New version available: v${version}`);
-                eVersion.insertAdjacentElement("afterend", newElement("a", {
+                button = newElement("a", {
                     href: "https://github.com/magurofly/atcoder-easy-test/raw/main/v2/atcoder-easy-test.user.js",
                     target: "_blank",
                     className: "btn btn-xs btn-info",
-                    textContent: `Update to v${version}`,
-                }));
+                    textContent: `Update to v${version.latest}`,
+                });
+                eVersion.insertAdjacentElement("afterend", button);
             };
-            const checkVersion = () => {
-                const latest = config.get("version.latest", atCoderEasyTest.version);
-                if (compareVersion(atCoderEasyTest.version, latest) < 0) {
-                    showButton(latest);
-                }
-                else {
-                    const lastCheck = config.get("version.lastCheck", 0);
-                    const now = Date.now();
-                    if (now - lastCheck >= interval) {
-                        config.set("version.lastCheck", now);
-                        fetch("https://raw.githubusercontent.com/magurofly/atcoder-easy-test/main/v2/package.json").
-                            then(r => r.json()).
-                            then((data) => new Promise((resolve, reject) => {
-                            const x = compareVersion(atCoderEasyTest.version, data.version);
-                            if (x >= 0)
-                                resolve("OK");
-                            else {
-                                reject(data.version);
-                            }
-                        })).
-                            catch(showButton);
-                    }
-                }
-            };
-            setInterval(checkVersion, interval);
-            checkVersion();
+            version.latestProperty.addListener(showButton);
+            showButton();
         }
         // 言語選択関係
         {
