@@ -1,5 +1,5 @@
 import TestCase from "../TestCase";
-import { ObservableValue } from "../util";
+import { newElement, ObservableValue } from "../util";
 
 async function init() {
   if (location.host != "yukicoder.me") throw "Not yukicoder";
@@ -60,6 +60,11 @@ async function init() {
     "text": "Text cat 8.3",
   };
 
+  // place anchor elements
+  for (const btnCopyInput of doc.querySelectorAll(".copy-sample-input")) {
+    btnCopyInput.parentElement.insertBefore(newElement("span", { className: "atcoder-easy-test-anchor" }), btnCopyInput);
+  }
+
   const language = new ObservableValue(langMap[eLang.val()]);
   eLang.on("change", () => {
     language.value = langMap[eLang.val()];
@@ -97,16 +102,11 @@ async function init() {
       for (let i = 0; i < eSamples.length; i++) {
         const eSample = eSamples.eq(i);
         const [eInput, eOutput] = eSample.find("pre");
-        const anchorContainer = $(`<span>`);
-        const anchor = $(`<span>`);
-        anchorContainer.append(anchor);
-        eSample.find("h6").eq(0).appendTo(anchorContainer);
-        anchorContainer.insertAfter(eSample.find("button").eq(0));
         testCases.push({
           title: `Sample ${sampleId++}`,
           input: eInput.textContent,
           output: eOutput.textContent,
-          anchor: anchor[0],
+          anchor: eSample.find(".atcoder-easy-test-anchor")[0],
         });
       }
       return testCases;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.8
+// @version     2.9.9
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1003,6 +1003,10 @@ async function init$4() {
         "Whitespace": "Whitespace 0.3",
         "text": "Text cat 8.3",
     };
+    // place anchor elements
+    for (const btnCopyInput of doc.querySelectorAll(".copy-sample-input")) {
+        btnCopyInput.parentElement.insertBefore(newElement("span", { className: "atcoder-easy-test-anchor" }), btnCopyInput);
+    }
     const language = new ObservableValue(langMap[eLang.val()]);
     eLang.on("change", () => {
         language.value = langMap[eLang.val()];
@@ -1040,16 +1044,11 @@ async function init$4() {
             for (let i = 0; i < eSamples.length; i++) {
                 const eSample = eSamples.eq(i);
                 const [eInput, eOutput] = eSample.find("pre");
-                const anchorContainer = $(`<span>`);
-                const anchor = $(`<span>`);
-                anchorContainer.append(anchor);
-                eSample.find("h6").eq(0).appendTo(anchorContainer);
-                anchorContainer.insertAfter(eSample.find("button").eq(0));
                 testCases.push({
                     title: `Sample ${sampleId++}`,
                     input: eInput.textContent,
                     output: eOutput.textContent,
-                    anchor: anchor[0],
+                    anchor: eSample.find(".atcoder-easy-test-anchor")[0],
                 });
             }
             return testCases;
@@ -1727,11 +1726,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.9.8"),
+    currentProperty: new ObservableValue("2.9.9"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.9.8")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.9.9")),
     get latest() {
         return this.latestProperty.value;
     },
