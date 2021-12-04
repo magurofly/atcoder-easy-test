@@ -1,6 +1,7 @@
 import TestCase from "../TestCase";
 import { loadScript, newElement, ObservableValue } from "../util";
 import config from "../config";
+import settings from "../settings";
 
 async function init() {
   if (location.host != "greasyfork.org" && !location.href.match(/433152-atcoder-easy-test-v2/)) throw "Not about page";
@@ -16,7 +17,7 @@ async function init() {
   doc.getElementById("install-area").appendChild(newElement("button", {
     type: "button",
     textContent: "Open config",
-    onclick: () => config.open(),
+    onclick: () => settings.open(),
   }));
 
   return {

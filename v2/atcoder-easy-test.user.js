@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.9
+// @version     2.9.10
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1377,7 +1377,7 @@ async function init$1() {
     doc.getElementById("install-area").appendChild(newElement("button", {
         type: "button",
         textContent: "Open config",
-        onclick: () => config.open(),
+        onclick: () => settings.open(),
     }));
     return {
         name: "About Page",
@@ -1726,11 +1726,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.9.9"),
+    currentProperty: new ObservableValue("2.9.10"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.9.9")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.9.10")),
     get latest() {
         return this.latestProperty.value;
     },
