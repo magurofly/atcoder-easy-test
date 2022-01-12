@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.11
+// @version     2.9.12
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1451,8 +1451,8 @@ const runners = {
     "Perl 5.30.3 Wandbox": new WandboxRunner("perl-5.30.3", "Perl (5.30.3)"),
     "PHP 7.4.10 paiza.io": new PaizaIORunner("php", "PHP (7.4.10)"),
     "PHP 7.4.16 Wandbox": new WandboxRunner("php-7.4.16", "PHP (7.4.16)"),
-    "Python PyPy 7.3.4 Wandbox": new WandboxRunner("pypy-3.7-v7.3.4", "PyPy2 (7.3.4)"),
-    "Python3 PyPy3 7.3.4 Wandbox": new WandboxRunner("pypy-2.7-v7.3.4", "PyPy3 (7.3.4)"),
+    "Python PyPy 7.3.4 Wandbox": new WandboxRunner("pypy-2.7-v7.3.4", "PyPy2 (7.3.4)"),
+    "Python3 PyPy3 7.3.4 Wandbox": new WandboxRunner("pypy-3.7-v7.3.4", "PyPy3 (7.3.4)"),
     "Ruby 2.7.1 paiza.io": new PaizaIORunner("ruby", "Ruby (2.7.1)"),
     "Ruby 3.1.0 Wandbox": new WandboxRunner("ruby-3.1.0", "Ruby (3.1.0)"),
     "Ruby 2.7.3 Wandbox": new WandboxRunner("ruby-2.7.3", "Ruby (2.7.1)"),
@@ -1738,11 +1738,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.9.11"),
+    currentProperty: new ObservableValue("2.9.12"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.9.11")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.9.12")),
     get latest() {
         return this.latestProperty.value;
     },
