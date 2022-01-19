@@ -98,13 +98,18 @@ async function init() {
       ["#task-statement .lang>*:nth-child(1) .div-btn-copy+pre", ".part"],
       ["#task-statement .div-btn-copy+pre", ".part"],
       ["#task-statement>.part pre.linenums", ".part"], // abc003_4
+      ["#task-statement>.part section>pre", ".part"], // tdpc_number
       ["#task-statement>.part:not(.io-style)>h3+section>pre", ".part"],
       ["#task-statement pre", ".part"],
     ];
     
     for (const [selector, closestSelector] of selectors) {
       let e = [... doc.querySelectorAll(selector)];
-      e = e.filter(e => !e.closest(".io-style")); // practice2
+      e = e.filter(e => {
+        if (e.closest(".io-style")) return false; // practice2
+        if (e.querySelector("var")) return false;
+        return true;
+      });
       if (e.length == 0) continue;
       return pairs(e).map(([input, output], index) => {
         const container = input.closest(closestSelector) || input.parentElement;
