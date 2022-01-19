@@ -30,10 +30,10 @@ export default abstract class CodeRunner {
     let equals: (x: string, y: string) => boolean = (x, y) => x === y;
     
     if (options.allowableError) {
-      const floatPattern = /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/;
+      const floatPattern = /^[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?$/;
       const superEquals = equals;
       equals = (x, y) => {
-        if (floatPattern.test(x) && floatPattern.test(y)) return Math.abs(parseFloat(x) - parseFloat(y)) <= options.allowableError;
+        if (floatPattern.test(x) || floatPattern.test(y)) return Math.abs(parseFloat(x) - parseFloat(y)) <= options.allowableError;
         return superEquals(x, y);
       };
     }
