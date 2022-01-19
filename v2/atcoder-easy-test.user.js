@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.13
+// @version     2.9.14
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -878,12 +878,19 @@ async function init$5() {
             ["#task-statement .lang>*:nth-child(1) .div-btn-copy+pre", ".part"],
             ["#task-statement .div-btn-copy+pre", ".part"],
             ["#task-statement>.part pre.linenums", ".part"],
+            ["#task-statement>.part section>pre", ".part"],
             ["#task-statement>.part:not(.io-style)>h3+section>pre", ".part"],
             ["#task-statement pre", ".part"],
         ];
         for (const [selector, closestSelector] of selectors) {
             let e = [...doc.querySelectorAll(selector)];
-            e = e.filter(e => !e.closest(".io-style")); // practice2
+            e = e.filter(e => {
+                if (e.closest(".io-style"))
+                    return false; // practice2
+                if (e.querySelector("var"))
+                    return false;
+                return true;
+            });
             if (e.length == 0)
                 continue;
             return pairs(e).map(([input, output], index) => {
@@ -1738,11 +1745,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.9.13"),
+    currentProperty: new ObservableValue("2.9.14"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.9.13")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.9.14")),
     get latest() {
         return this.latestProperty.value;
     },
