@@ -33,21 +33,21 @@ const codeSaver = {
     unsafeWindow.localStorage.AtCoderEasyTest$lastCode = JSON.stringify(data);
   },
 
-  save(code: string) {
+  save(savePath: string, code: string) {
     let data = codeSaver.get();
-    const idx = data.findIndex(({path}) => path == location.pathname);
+    const idx = data.findIndex(({path}) => path == savePath);
     if (idx != -1) data.splice(idx, idx + 1);
     data.push({
-        path: location.pathname,
+        path: savePath,
         code,
     });
     while (data.length > config.get("codeSaver.limit", 10)) data.shift();
     codeSaver.set(data);
   },
 
-  restore(): Promise<string> {
+  restore(savedPath: string): Promise<string> {
     const data = codeSaver.get();
-    const idx = data.findIndex(({path}) => path == location.pathname);
+    const idx = data.findIndex(({path}) => path === savedPath);
     if (idx == -1 || !(data[idx] instanceof Object)) return Promise.reject(`No saved code found for ${location.pathname}`);
     return Promise.resolve(data[idx].code);
   }

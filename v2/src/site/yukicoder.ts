@@ -114,6 +114,9 @@ async function init() {
     get jQuery(): any {
       return $;
     },
+    get taskURI(): string {
+      return location.href;
+    },
   };
 }
 

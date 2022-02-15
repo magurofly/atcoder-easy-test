@@ -13,4 +13,5 @@ export default interface Site {
   get resultListContainer(): HTMLElement;
   get testCases(): TestCase[];
   get jQuery(): any;
+  get taskURI(): string;
 }

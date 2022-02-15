@@ -1,3 +1,4 @@
+import site from ".";
 import TestCase from "../TestCase";
 import { ObservableValue } from "../util";
 
@@ -89,6 +90,10 @@ async function init() {
 
   const isTestCasesHere = /^\/contests\/[^\/]+\/tasks\//.test(location.pathname);
   const taskSelector = doc.querySelector<HTMLSelectElement>("#select-task");
+  function getTaskURI(): string {
+    if (taskSelector) return `${location.origin}/contests/${unsafeWindow.contestScreenName}/tasks/${taskSelector.value}`;
+    return `${location.origin}${location.pathname}`;
+  }
   interface TestCasesCache {
     testcases?: TestCase[],
     state: "loading" | "loaded" | "error",
@@ -96,22 +101,24 @@ async function init() {
   const testcasesCache: { [key: string]: TestCasesCache } = {};
   if (taskSelector) {
     const doFetchTestCases = async () => {
-      const taskName = taskSelector.value;
-      const load = !("taskName" in testcasesCache) || testcasesCache[taskName].state == "error";
+      console.log(`Fetching test cases...: ${getTaskURI()}`);
+
+      const taskURI = getTaskURI();
+      const load = !(taskURI in testcasesCache) || testcasesCache[taskURI].state == "error";
       if (!load) return;
 
       try {
-        testcasesCache[taskName] = { state: "loading" };
-        const testcases = await fetchTestCases(`/contests/${unsafeWindow.contestScreenName}/tasks/${taskName}`);
-        testcasesCache[taskName] = { testcases, state: "loaded" };
-      } catch(e) {
-        testcasesCache[taskName] = { state: "error" };
+        testcasesCache[taskURI] = { state: "loading" };
+        const testcases = await fetchTestCases(taskURI);
+        testcasesCache[taskURI] = { testcases, state: "loaded" };
+      } catch (e) {
+        testcasesCache[taskURI] = { state: "error" };
       }
     }
-    taskSelector.addEventListener("change", doFetchTestCases);
+    unsafeWindow.$("#select-task").change(doFetchTestCases);
     doFetchTestCases();
   }
-  
+
   async function fetchTestCases(taskUrl: string): Promise<TestCase[]> {
     const html = await fetch(taskUrl).then(res => res.text());
     const taskDoc = new DOMParser().parseFromString(html, "text/html");
@@ -129,9 +136,9 @@ async function init() {
       ["#task-statement>.part:not(.io-style)>h3+section>pre", ".part"],
       ["#task-statement pre", ".part"],
     ];
-    
+
     for (const [selector, closestSelector] of selectors) {
-      let e = [... doc.querySelectorAll(selector)];
+      let e = [...doc.querySelectorAll(selector)];
       e = e.filter(e => {
         if (e.closest(".io-style")) return false; // practice2
         if (e.querySelector("var")) return false;
@@ -151,7 +158,7 @@ async function init() {
     }
 
     { // maximum_cup_2018_d
-      let e = [... doc.querySelectorAll("#task-statement .div-btn-copy+pre")];
+      let e = [...doc.querySelectorAll("#task-statement .div-btn-copy+pre")];
       e = e.filter(f => !f.childElementCount);
       if (e.length) {
         return pairs(e).map(([input, output], index) => ({
@@ -163,12 +170,11 @@ async function init() {
         }));
       }
     }
-    
+
     return [];
   };
 
-
-  return {
+  const atcoder = {
     name: "AtCoder",
     language,
     get sourceCode(): string {
@@ -194,28 +200,25 @@ async function init() {
       return doc.querySelector(".form-code-submit");
     },
     get testCases(): TestCase[] {
+      const taskURI = getTaskURI();
+      if (taskURI in testcasesCache && testcasesCache[taskURI].state == "loaded") return testcasesCache[taskURI].testcases;
       if (isTestCasesHere) {
-        return getTestCases(doc);
+        const testcases = getTestCases(doc);
+        testcasesCache[taskURI] = { testcases, state: "loaded" };
+        return testcases;
       } else {
-        const taskSelection = doc.querySelector<HTMLSelectElement>("#select-task");
-        if (!taskSelection) {
-          console.error("AtCoder Easy Test v2: Couldn't find task name");
-          return [];
-        }
-        const taskName = taskSelection.value;
-
-        if (!(taskName in testcasesCache) || testcasesCache[taskName].state == "error") {
-          console.error("AtCoder Easy Test v2: Test cases are still not loaded");
-          return [];
-        }
-
-        return testcasesCache[taskName].testcases || [];
+        console.error("AtCoder Easy Test v2: Test cases are still not loaded");
+        return [];
       }
     },
     get jQuery(): any {
       return unsafeWindow["jQuery"];
     },
+    get taskURI(): string {
+      return getTaskURI();
+    },
   };
+  return atcoder;
 }
 
 export default init;

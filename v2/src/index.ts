@@ -257,7 +257,7 @@ try {
   restoreButton.textContent = "Restore Last Play";
   restoreButton.addEventListener("click", async () => {
     try {
-      const lastCode = await codeSaver.restore();
+      const lastCode = await codeSaver.restore(site.taskURI);
       if (site.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
         site.sourceCode = lastCode;
       }
