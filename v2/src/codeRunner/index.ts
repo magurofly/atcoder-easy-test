@@ -111,7 +111,7 @@ export default {
     if (!(runnerId in runners)) return Promise.reject("Language not supported");
 
     // 最後に実行したコードを保存
-    if (sourceCode.length > 0) codeSaver.save(sourceCode);
+    if (sourceCode.length > 0) pSite.then(site => codeSaver.save(site.taskURI, sourceCode));
 
     // 実行
     const maxRetry = config.get("codeRunner.maxRetry", 3);

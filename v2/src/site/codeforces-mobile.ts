@@ -103,6 +103,9 @@ async function init() {
     get jQuery(): any {
       return unsafeWindow["jQuery"];
     },
+    get taskURI(): string {
+      return location.href;
+    },
   };
 }
 

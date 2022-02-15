@@ -32,6 +32,7 @@ async function init() {
     get resultListContainer(): HTMLElement { return e; },
     get testCases(): TestCase[] { return []; },
     get jQuery(): any { return jQuery; },
+    get taskURI(): string { return ""; },
   };
 }
 

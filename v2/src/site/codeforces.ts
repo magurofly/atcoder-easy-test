@@ -168,6 +168,9 @@ async function init() {
     get jQuery(): any {
       return jQuery;
     },
+    get taskURI(): string {
+      return location.href;
+    },
   };
 }
 

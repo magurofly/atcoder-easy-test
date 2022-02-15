@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.10.0
+// @version     2.10.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -296,22 +296,22 @@ const codeSaver = {
     set(data) {
         unsafeWindow.localStorage.AtCoderEasyTest$lastCode = JSON.stringify(data);
     },
-    save(code) {
+    save(savePath, code) {
         let data = codeSaver.get();
-        const idx = data.findIndex(({ path }) => path == location.pathname);
+        const idx = data.findIndex(({ path }) => path == savePath);
         if (idx != -1)
             data.splice(idx, idx + 1);
         data.push({
-            path: location.pathname,
+            path: savePath,
             code,
         });
         while (data.length > config.get("codeSaver.limit", 10))
             data.shift();
         codeSaver.set(data);
     },
-    restore() {
+    restore(savedPath) {
         const data = codeSaver.get();
-        const idx = data.findIndex(({ path }) => path == location.pathname);
+        const idx = data.findIndex(({ path }) => path === savedPath);
         if (idx == -1 || !(data[idx] instanceof Object))
             return Promise.reject(`No saved code found for ${location.pathname}`);
         return Promise.resolve(data[idx].code);
@@ -873,23 +873,29 @@ async function init$5() {
     const language = languageId.map(lang => langMap[lang]);
     const isTestCasesHere = /^\/contests\/[^\/]+\/tasks\//.test(location.pathname);
     const taskSelector = doc.querySelector("#select-task");
+    function getTaskURI() {
+        if (taskSelector)
+            return `${location.origin}/contests/${unsafeWindow.contestScreenName}/tasks/${taskSelector.value}`;
+        return `${location.origin}${location.pathname}`;
+    }
     const testcasesCache = {};
     if (taskSelector) {
         const doFetchTestCases = async () => {
-            const taskName = taskSelector.value;
-            const load = !("taskName" in testcasesCache) || testcasesCache[taskName].state == "error";
+            console.log(`Fetching test cases...: ${getTaskURI()}`);
+            const taskURI = getTaskURI();
+            const load = !(taskURI in testcasesCache) || testcasesCache[taskURI].state == "error";
             if (!load)
                 return;
             try {
-                testcasesCache[taskName] = { state: "loading" };
-                const testcases = await fetchTestCases(`/contests/${unsafeWindow.contestScreenName}/tasks/${taskName}`);
-                testcasesCache[taskName] = { testcases, state: "loaded" };
+                testcasesCache[taskURI] = { state: "loading" };
+                const testcases = await fetchTestCases(taskURI);
+                testcasesCache[taskURI] = { testcases, state: "loaded" };
             }
             catch (e) {
-                testcasesCache[taskName] = { state: "error" };
+                testcasesCache[taskURI] = { state: "error" };
             }
         };
-        taskSelector.addEventListener("change", doFetchTestCases);
+        unsafeWindow.$("#select-task").change(doFetchTestCases);
         doFetchTestCases();
     }
     async function fetchTestCases(taskUrl) {
@@ -945,7 +951,7 @@ async function init$5() {
         }
         return [];
     }
-    return {
+    const atcoder = {
         name: "AtCoder",
         language,
         get sourceCode() {
@@ -971,27 +977,27 @@ async function init$5() {
             return doc.querySelector(".form-code-submit");
         },
         get testCases() {
+            const taskURI = getTaskURI();
+            if (taskURI in testcasesCache && testcasesCache[taskURI].state == "loaded")
+                return testcasesCache[taskURI].testcases;
             if (isTestCasesHere) {
-                return getTestCases(doc);
+                const testcases = getTestCases(doc);
+                testcasesCache[taskURI] = { testcases, state: "loaded" };
+                return testcases;
             }
             else {
-                const taskSelection = doc.querySelector("#select-task");
-                if (!taskSelection) {
-                    console.error("AtCoder Easy Test v2: Couldn't find task name");
-                    return [];
-                }
-                const taskName = taskSelection.value;
-                if (!(taskName in testcasesCache) || testcasesCache[taskName].state == "error") {
-                    console.error("AtCoder Easy Test v2: Test cases are still not loaded");
-                    return [];
-                }
-                return testcasesCache[taskName].testcases || [];
+                console.error("AtCoder Easy Test v2: Test cases are still not loaded");
+                return [];
             }
         },
         get jQuery() {
             return unsafeWindow["jQuery"];
         },
+        get taskURI() {
+            return getTaskURI();
+        },
     };
+    return atcoder;
 }
 
 async function init$4() {
@@ -1103,6 +1109,9 @@ async function init$4() {
         },
         get jQuery() {
             return $;
+        },
+        get taskURI() {
+            return location.href;
         },
     };
 }
@@ -1318,6 +1327,9 @@ async function init$3() {
         get jQuery() {
             return jQuery;
         },
+        get taskURI() {
+            return location.href;
+        },
     };
 }
 
@@ -1411,6 +1423,9 @@ async function init$2() {
         get jQuery() {
             return unsafeWindow["jQuery"];
         },
+        get taskURI() {
+            return location.href;
+        },
     };
 }
 
@@ -1439,6 +1454,7 @@ async function init$1() {
         get resultListContainer() { return e; },
         get testCases() { return []; },
         get jQuery() { return jQuery; },
+        get taskURI() { return ""; },
     };
 }
 
@@ -1555,7 +1571,7 @@ var codeRunner = {
             return Promise.reject("Language not supported");
         // 最後に実行したコードを保存
         if (sourceCode.length > 0)
-            codeSaver.save(sourceCode);
+            site.then(site => codeSaver.save(site.taskURI, sourceCode));
         // 実行
         const maxRetry = config.get("codeRunner.maxRetry", 3);
         for (let retry = 0; retry < maxRetry; retry++) {
@@ -1791,11 +1807,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.10.0"),
+    currentProperty: new ObservableValue("2.10.1"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.10.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.10.1")),
     get latest() {
         return this.latestProperty.value;
     },
@@ -2214,7 +2230,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         restoreButton.textContent = "Restore Last Play";
         restoreButton.addEventListener("click", async () => {
             try {
-                const lastCode = await codeSaver.restore();
+                const lastCode = await codeSaver.restore(site$1.taskURI);
                 if (site$1.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
                     site$1.sourceCode = lastCode;
                 }
