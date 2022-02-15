@@ -17,6 +17,7 @@ export default [
 // @license     ${packageJson.license}
 // @supportURL  ${packageJson.bugs.url}
 // @match       https://atcoder.jp/contests/*/tasks/*
+// @match       https://atcoder.jp/contests/*/submit*
 // @match       https://yukicoder.me/problems/no/*
 // @match       https://yukicoder.me/problems/*
 // @match       http://codeforces.com/contest/*/problem/*

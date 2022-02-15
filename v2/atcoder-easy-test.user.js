@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.9.14
+// @version     2.10.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
 // @supportURL  https://github.com/magurofly/atcoder-easy-test/
 // @match       https://atcoder.jp/contests/*/tasks/*
+// @match       https://atcoder.jp/contests/*/submit*
 // @match       https://yukicoder.me/problems/no/*
 // @match       https://yukicoder.me/problems/*
 // @match       http://codeforces.com/contest/*/problem/*
@@ -796,7 +797,6 @@ async function init$5() {
     if (location.host != "atcoder.jp")
         throw "Not AtCoder";
     const doc = unsafeWindow.document;
-    const eLanguage = unsafeWindow.$("#select-lang>select");
     const langMap = {
         4001: "C GCC 9.2.1",
         4002: "C Clang 10.0.0",
@@ -866,12 +866,38 @@ async function init$5() {
         4066: "Sed 4.4",
         4067: "Vim 8.2.0460",
     };
-    const languageId = new ObservableValue(eLanguage.val());
-    eLanguage.change(() => {
-        languageId.value = eLanguage.val();
+    const languageId = new ObservableValue(unsafeWindow.$("#select-lang select.current").val());
+    unsafeWindow.$("#select-lang select").change(() => {
+        languageId.value = unsafeWindow.$("#select-lang select.current").val();
     });
     const language = languageId.map(lang => langMap[lang]);
-    function getTestCases() {
+    const isTestCasesHere = /^\/contests\/[^\/]+\/tasks\//.test(location.pathname);
+    const taskSelector = doc.querySelector("#select-task");
+    const testcasesCache = {};
+    if (taskSelector) {
+        const doFetchTestCases = async () => {
+            const taskName = taskSelector.value;
+            const load = !("taskName" in testcasesCache) || testcasesCache[taskName].state == "error";
+            if (!load)
+                return;
+            try {
+                testcasesCache[taskName] = { state: "loading" };
+                const testcases = await fetchTestCases(`/contests/${unsafeWindow.contestScreenName}/tasks/${taskName}`);
+                testcasesCache[taskName] = { testcases, state: "loaded" };
+            }
+            catch (e) {
+                testcasesCache[taskName] = { state: "error" };
+            }
+        };
+        taskSelector.addEventListener("change", doFetchTestCases);
+        doFetchTestCases();
+    }
+    async function fetchTestCases(taskUrl) {
+        const html = await fetch(taskUrl).then(res => res.text());
+        const taskDoc = new DOMParser().parseFromString(html, "text/html");
+        return getTestCases(taskDoc);
+    }
+    function getTestCases(doc) {
         const selectors = [
             ["#task-statement p+pre.literal-block", ".section"],
             ["#task-statement pre.source-code-for-copy", ".part"],
@@ -945,7 +971,22 @@ async function init$5() {
             return doc.querySelector(".form-code-submit");
         },
         get testCases() {
-            return getTestCases();
+            if (isTestCasesHere) {
+                return getTestCases(doc);
+            }
+            else {
+                const taskSelection = doc.querySelector("#select-task");
+                if (!taskSelection) {
+                    console.error("AtCoder Easy Test v2: Couldn't find task name");
+                    return [];
+                }
+                const taskName = taskSelection.value;
+                if (!(taskName in testcasesCache) || testcasesCache[taskName].state == "error") {
+                    console.error("AtCoder Easy Test v2: Test cases are still not loaded");
+                    return [];
+                }
+                return testcasesCache[taskName].testcases || [];
+            }
         },
         get jQuery() {
             return unsafeWindow["jQuery"];
@@ -1415,7 +1456,12 @@ if (config.get("site.codeforces", true))
 config.registerFlag("site.codeforcesMobile", true, "Use AtCoder Easy Test in Codeforces Mobile (m[1-3].codeforces.com)");
 if (config.get("site.codeforcesMobile", true))
     inits.push(init$2());
-var pSite = Promise.any(inits);
+const site = Promise.any(inits);
+site.catch(() => {
+    for (const promise of inits) {
+        promise.catch(console.error);
+    }
+});
 
 const runners = {
     "C GCC 10.2.0 Wandbox": new WandboxRunner("gcc-10.2.0-c", "C (GCC 10.2.0)"),
@@ -1486,7 +1532,7 @@ const runners = {
     "COBOL Free OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4061", "COBOL - Free (OpenCOBOL 1.1.0)"),
     "C++ GCC 9.3.0 + ACL Wandbox": new WandboxCppRunner("gcc-9.3.0", "C++ (GCC 9.3.0) + ACL"),
 };
-pSite.then(site => {
+site.then(site => {
     if (site.name == "AtCoder") {
         // AtCoderRunner がない場合は、追加する
         for (const e of document.querySelectorAll("#select-lang option[value]")) {
@@ -1545,11 +1591,11 @@ var hBottomMenu = "<div id=\"bottom-menu-wrapper\" class=\"navbar navbar-default
 var hStyle$1 = "<style>\n#bottom-menu-wrapper {\n  background: transparent !important;\n  border: none !important;\n  pointer-events: none;\n  padding: 0;\n}\n\n#bottom-menu-wrapper>.container {\n  position: absolute;\n  bottom: 0;\n  width: 100%;\n  padding: 0;\n}\n\n#bottom-menu-wrapper>.container>.navbar-header {\n  float: none;\n}\n\n#bottom-menu-key {\n  display: block;\n  float: none;\n  margin: 0 auto;\n  padding: 10px 3em;\n  border-radius: 5px 5px 0 0;\n  background: #000;\n  opacity: 0.5;\n  color: #FFF;\n  cursor: pointer;\n  pointer-events: auto;\n  text-align: center;\n}\n\n@media screen and (max-width: 767px) {\n  #bottom-menu-key {\n    opacity: 0.25;\n  }\n}\n\n#bottom-menu-key.collapsed:before {\n  content: \"\\e260\";\n}\n\n#bottom-menu-tabs {\n  padding: 3px 0 0 10px;\n  cursor: n-resize;\n}\n\n#bottom-menu-tabs a {\n  pointer-events: auto;\n}\n\n#bottom-menu {\n  pointer-events: auto;\n  background: rgba(0, 0, 0, 0.8);\n  color: #fff;\n  max-height: unset;\n}\n\n#bottom-menu.collapse:not(.in) {\n  display: none !important;\n}\n\n#bottom-menu-tabs>li>a {\n  background: rgba(150, 150, 150, 0.5);\n  color: #000;\n  border: solid 1px #ccc;\n  filter: brightness(0.75);\n}\n\n#bottom-menu-tabs>li>a:hover {\n  background: rgba(150, 150, 150, 0.5);\n  border: solid 1px #ccc;\n  color: #111;\n  filter: brightness(0.9);\n}\n\n#bottom-menu-tabs>li.active>a {\n  background: #eee;\n  border: solid 1px #ccc;\n  color: #333;\n  filter: none;\n}\n\n.bottom-menu-btn-close {\n  font-size: 8pt;\n  vertical-align: baseline;\n  padding: 0 0 0 6px;\n  margin-right: -6px;\n}\n\n#bottom-menu-contents {\n  padding: 5px 15px;\n  max-height: 50vh;\n  overflow-y: auto;\n}\n\n#bottom-menu-contents .panel {\n  color: #333;\n}\n</style>";
 
 async function init() {
-    const site = await pSite;
+    const site$1 = await site;
     const style = html2element(hStyle$1);
     const bottomMenu = html2element(hBottomMenu);
     unsafeWindow.document.head.appendChild(style);
-    site.bottomMenuContainer.appendChild(bottomMenu);
+    site$1.bottomMenuContainer.appendChild(bottomMenu);
     const bottomMenuKey = bottomMenu.querySelector("#bottom-menu-key");
     const bottomMenuTabs = bottomMenu.querySelector("#bottom-menu-tabs");
     const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents");
@@ -1583,7 +1629,7 @@ async function init() {
     const menuController = {
         /** タブを選択 */
         selectTab(tabId) {
-            const tab = site.jQuery(`#bottom-menu-tab-${tabId}`);
+            const tab = site$1.jQuery(`#bottom-menu-tab-${tabId}`);
             if (tab && tab[0]) {
                 tab.tab("show"); // Bootstrap 3
                 selectedTab = tabId;
@@ -1735,7 +1781,7 @@ class ResultRow {
 var hResultList = "<div class=\"row\"></div>";
 
 const eResultList = html2element(hResultList);
-pSite.then(site => site.resultListContainer.appendChild(eResultList));
+site.then(site => site.resultListContainer.appendChild(eResultList));
 const resultList = {
     addResult(pairs) {
         const result = new ResultRow(pairs);
@@ -1745,11 +1791,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.9.14"),
+    currentProperty: new ObservableValue("2.10.0"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.9.14")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.10.0")),
     get latest() {
         return this.latestProperty.value;
     },
@@ -1960,7 +2006,7 @@ var hTestAndSubmit = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-an
 var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-all\" class=\"btn btn-default btn-sm\" style=\"margin-left: 1rem\" title=\"Alt+Enter\" data-toggle=\"tooltip\">Test All Samples</button>";
 
 (async () => {
-    const site = await pSite;
+    const site$1 = await site;
     const doc = unsafeWindow.document;
     // init bottomMenu
     const pBottomMenu = init();
@@ -1974,7 +2020,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
     // interface
     const atCoderEasyTest = {
         version,
-        site,
+        site: site$1,
         config,
         codeSaver,
         enableButtons() {
@@ -2053,11 +2099,11 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         {
             eLanguage.addEventListener("change", async () => {
                 const langSelection = config.get("langSelection", {});
-                langSelection[site.language.value] = eLanguage.value;
+                langSelection[site$1.language.value] = eLanguage.value;
                 config.set("langSelection", langSelection);
             });
             async function setLanguage() {
-                const languageId = site.language.value;
+                const languageId = site$1.language.value;
                 while (eLanguage.firstChild)
                     eLanguage.removeChild(eLanguage.firstChild);
                 try {
@@ -2090,7 +2136,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
                     events.trig("disable");
                 }
             }
-            site.language.addListener(() => setLanguage());
+            site$1.language.addListener(() => setLanguage());
             eAllowableError.disabled = !eAllowableErrorCheck.checked;
             eAllowableErrorCheck.addEventListener("change", event => {
                 eAllowableError.disabled = !eAllowableErrorCheck.checked;
@@ -2102,7 +2148,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
             if (eAllowableErrorCheck.checked) {
                 options.allowableError = parseFloat(eAllowableError.value);
             }
-            return atCoderEasyTest.runTest(title, eLanguage.value, site.sourceCode, input, output, options);
+            return atCoderEasyTest.runTest(title, eLanguage.value, site$1.sourceCode, input, output, options);
         }
         function runAllCases(testcases) {
             const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
@@ -2122,7 +2168,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         });
         await doneOrFail(pBottomMenu.then(bottomMenu => bottomMenu.addTab("easy-test", "Easy Test", root)));
         // place "Run" button on each sample
-        for (const testCase of site.testCases) {
+        for (const testCase of site$1.testCases) {
             const eRunButton = html2element(hRunButton);
             eRunButton.addEventListener("click", async () => {
                 const [pResult, pTab] = runTest(testCase.title, testCase.input, testCase.output);
@@ -2140,10 +2186,10 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         // place "Test & Submit" button
         {
             const button = html2element(hTestAndSubmit);
-            site.testButtonContainer.appendChild(button);
+            site$1.testButtonContainer.appendChild(button);
             const testAndSubmit = async () => {
-                await runAllCases(site.testCases);
-                site.submit();
+                await runAllCases(site$1.testCases);
+                site$1.submit();
             };
             button.addEventListener("click", testAndSubmit);
             events.on("testAndSubmit", testAndSubmit);
@@ -2153,8 +2199,8 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         // place "Test All Samples" button
         {
             const button = html2element(hTestAllSamples);
-            site.testButtonContainer.appendChild(button);
-            const testAllSamples = () => runAllCases(site.testCases);
+            site$1.testButtonContainer.appendChild(button);
+            const testAllSamples = () => runAllCases(site$1.testCases);
             button.addEventListener("click", testAllSamples);
             events.on("testAllSamples", testAllSamples);
             events.on("disable", () => button.classList.add("disabled"));
@@ -2169,15 +2215,15 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         restoreButton.addEventListener("click", async () => {
             try {
                 const lastCode = await codeSaver.restore();
-                if (site.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
-                    site.sourceCode = lastCode;
+                if (site$1.sourceCode.length == 0 || confirm("Your current code will be replaced. Are you sure?")) {
+                    site$1.sourceCode = lastCode;
                 }
             }
             catch (reason) {
                 alert(reason);
             }
         });
-        site.sideButtonContainer.appendChild(restoreButton);
+        site$1.sideButtonContainer.appendChild(restoreButton);
     }
     catch (e) {
         console.error(e);
