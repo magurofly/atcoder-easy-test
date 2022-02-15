@@ -20,4 +20,11 @@ if (config.get("site.codeforces", true)) inits.push(init_Codeforces());
 config.registerFlag("site.codeforcesMobile", true, "Use AtCoder Easy Test in Codeforces Mobile (m[1-3].codeforces.com)");
 if (config.get("site.codeforcesMobile", true)) inits.push(init_CodeforcesMobile());
 
-export default Promise.any(inits);
+const site = Promise.any(inits);
+export default site;
+
+site.catch(() => {
+  for (const promise of inits) {
+    promise.catch(console.error);
+  }
+});

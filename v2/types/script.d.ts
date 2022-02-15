@@ -1,7 +1,11 @@
 declare interface AtCoderWindow extends Window {
+  // atcoder.jp
   getSourceCode(): string;
   csrfToken: string;
+  contestScreenName: string;
   $: any;
+
+  // AtCoder Easy Test v2
   bottomMenu: {
     selectTab(tabId: string): void;
     addTab(tabId: string, tabLabel: string, paneContent: Node, options?: {}): any;
