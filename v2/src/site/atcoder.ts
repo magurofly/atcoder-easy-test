@@ -10,9 +10,7 @@ function pairs<T>(list: T[]): [T, T][] {
 
 async function init() {
   if (location.host != "atcoder.jp") throw "Not AtCoder";
-
   const doc = unsafeWindow.document;
-  const eLanguage = unsafeWindow.$("#select-lang>select");
 
   const langMap = {
     4001: "C GCC 9.2.1",
@@ -83,15 +81,44 @@ async function init() {
     4066: "Sed 4.4",
     4067: "Vim 8.2.0460",
   };
-
-  const languageId = new ObservableValue(eLanguage.val());
-  eLanguage.change(() => {
-    languageId.value = eLanguage.val();
+  const languageId = new ObservableValue(unsafeWindow.$("#select-lang select.current").val());
+  unsafeWindow.$("#select-lang select").change(() => {
+    languageId.value = unsafeWindow.$("#select-lang select.current").val();
   });
-
   const language = languageId.map(lang => langMap[lang]);
 
-  function getTestCases(): TestCase[] {
+  const isTestCasesHere = /^\/contests\/[^\/]+\/tasks\//.test(location.pathname);
+  const taskSelector = doc.querySelector<HTMLSelectElement>("#select-task");
+  interface TestCasesCache {
+    testcases?: TestCase[],
+    state: "loading" | "loaded" | "error",
+  }
+  const testcasesCache: { [key: string]: TestCasesCache } = {};
+  if (taskSelector) {
+    const doFetchTestCases = async () => {
+      const taskName = taskSelector.value;
+      const load = !("taskName" in testcasesCache) || testcasesCache[taskName].state == "error";
+      if (!load) return;
+
+      try {
+        testcasesCache[taskName] = { state: "loading" };
+        const testcases = await fetchTestCases(`/contests/${unsafeWindow.contestScreenName}/tasks/${taskName}`);
+        testcasesCache[taskName] = { testcases, state: "loaded" };
+      } catch(e) {
+        testcasesCache[taskName] = { state: "error" };
+      }
+    }
+    taskSelector.addEventListener("change", doFetchTestCases);
+    doFetchTestCases();
+  }
+  
+  async function fetchTestCases(taskUrl: string): Promise<TestCase[]> {
+    const html = await fetch(taskUrl).then(res => res.text());
+    const taskDoc = new DOMParser().parseFromString(html, "text/html");
+    return getTestCases(taskDoc);
+  }
+
+  function getTestCases(doc: Document): TestCase[] {
     const selectors = [
       ["#task-statement p+pre.literal-block", ".section"], // utpc2011_1
       ["#task-statement pre.source-code-for-copy", ".part"],
@@ -167,7 +194,23 @@ async function init() {
       return doc.querySelector(".form-code-submit");
     },
     get testCases(): TestCase[] {
-      return getTestCases();
+      if (isTestCasesHere) {
+        return getTestCases(doc);
+      } else {
+        const taskSelection = doc.querySelector<HTMLSelectElement>("#select-task");
+        if (!taskSelection) {
+          console.error("AtCoder Easy Test v2: Couldn't find task name");
+          return [];
+        }
+        const taskName = taskSelection.value;
+
+        if (!(taskName in testcasesCache) || testcasesCache[taskName].state == "error") {
+          console.error("AtCoder Easy Test v2: Test cases are still not loaded");
+          return [];
+        }
+
+        return testcasesCache[taskName].testcases || [];
+      }
     },
     get jQuery(): any {
       return unsafeWindow["jQuery"];
