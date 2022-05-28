@@ -39,6 +39,23 @@ export default [
 // @grant       GM_setValue
 // ==/UserScript==
 (function() {
+
+    if (typeof GM_getValue !== "function") {
+        if (typeof GM === "object" && typeof GM.getValue === "function") {
+            GM_getValue = GM.getValue;
+            GM_setValue = GM.setValeu;
+        } else {
+            const storage = JSON.parse(localStorage.AtCoderEasyTest || "{}");
+            GM_getValue = (key, defaultValue = null) => ((key in storage) ? storage[key] : defaultValue);
+            GM_setValue = (key, value) => {
+                storage[key] = value;
+                localStorage.AtCoderEasyTest = JSON.stringify(storage);
+            };
+        }
+    }
+
+    if (typeof unsafeWindow !== "object") unsafeWindow = window;
+
                 `.trim(),
             footer: `
 })();
