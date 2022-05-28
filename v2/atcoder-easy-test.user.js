@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.10.1
+// @version     2.10.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -29,6 +29,23 @@
 // @grant       GM_setValue
 // ==/UserScript==
 (function() {
+
+    if (typeof GM_getValue !== "function") {
+        if (typeof GM === "object" && typeof GM.getValue === "function") {
+            GM_getValue = GM.getValue;
+            GM_setValue = GM.setValeu;
+        } else {
+            const storage = JSON.parse(localStorage.AtCoderEasyTest || "{}");
+            GM_getValue = (key, defaultValue = null) => ((key in storage) ? storage[key] : defaultValue);
+            GM_setValue = (key, value) => {
+                storage[key] = value;
+                localStorage.AtCoderEasyTest = JSON.stringify(storage);
+            };
+        }
+    }
+
+    if (typeof unsafeWindow !== "object") unsafeWindow = window;
+    
 function buildParams(data) {
     return Object.entries(data).map(([key, value]) => encodeURIComponent(key) + "=" + encodeURIComponent(value)).join("&");
 }
@@ -1807,11 +1824,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.10.1"),
+    currentProperty: new ObservableValue("2.10.2"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.10.1")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.10.2")),
     get latest() {
         return this.latestProperty.value;
     },
