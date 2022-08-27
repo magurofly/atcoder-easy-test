@@ -6,6 +6,7 @@ interface WandboxRequest {
   code: string,
   stdin?: string,
   codes?: Array<string>,
+  // compiler-option-raw は、改行で区切ってコンパイルオプションを指定する（例: `g++ -DONLINE_JUDGE -I.` なら "-DONLINE_JUDGE\n-I."）
   "compiler-option-raw"?: string,
 }
 
