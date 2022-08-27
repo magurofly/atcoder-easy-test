@@ -45,7 +45,9 @@ const bottomMenuContents = bottomMenu.querySelector("#bottom-menu-contents") as 
 let tabs = new Set();
 let selectedTab: string | null = null;
 
-/** 下メニューの操作 */
+/** 下メニューの操作
+ * 下メニューはいくつかのタブからなる。タブはそれぞれ tabId, ラベル, 中身を持っている。
+ */
 const menuController: BottomMenu = {
   /** タブを選択 */
   selectTab(tabId: string) {
@@ -57,7 +59,7 @@ const menuController: BottomMenu = {
   },
 
   /** 下メニューにタブを追加する */
-  addTab(tabId: string, tabLabel: string, paneContent: Node, options: any = {}): BottomMenuTab {
+  addTab(tabId: string, tabLabel: string, paneContent: Node, options: { closeButton?: boolean } = {}): BottomMenuTab {
     console.log(`AtCoder Easy Test: addTab: ${tabLabel} (${tabId})`, paneContent);
 
     // タブを追加
@@ -65,12 +67,14 @@ const menuController: BottomMenu = {
     tab.textContent = tabLabel;
     tab.id = `bottom-menu-tab-${tabId}`;
     tab.href = "#";
+    tab.dataset.id = tabId;
     tab.dataset.target = `#bottom-menu-pane-${tabId}`;
     tab.dataset.toggle = "tab";
     tab.addEventListener("click", event => {
       event.preventDefault();
       menuController.selectTab(tabId);
     });
+    tabs.add(tab);
     const tabLi = document.createElement("li");
     tabLi.appendChild(tab);
     bottomMenuTabs.appendChild(tabLi);
@@ -93,7 +97,7 @@ const menuController: BottomMenu = {
         if (selectedTab == tabId) {
           selectedTab = null;
           if (tabs.size > 0) {
-            menuController.selectTab(tabs.values().next().value.id);
+            menuController.selectTab(tabs.values().next().value.dataset.id);
           }
         }
       },

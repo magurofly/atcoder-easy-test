@@ -1656,7 +1656,9 @@ async function init() {
     }
     let tabs = new Set();
     let selectedTab = null;
-    /** 下メニューの操作 */
+    /** 下メニューの操作
+     * 下メニューはいくつかのタブからなる。タブはそれぞれ tabId, ラベル, 中身を持っている。
+     */
     const menuController = {
         /** タブを選択 */
         selectTab(tabId) {
@@ -1674,12 +1676,14 @@ async function init() {
             tab.textContent = tabLabel;
             tab.id = `bottom-menu-tab-${tabId}`;
             tab.href = "#";
+            tab.dataset.id = tabId;
             tab.dataset.target = `#bottom-menu-pane-${tabId}`;
             tab.dataset.toggle = "tab";
             tab.addEventListener("click", event => {
                 event.preventDefault();
                 menuController.selectTab(tabId);
             });
+            tabs.add(tab);
             const tabLi = document.createElement("li");
             tabLi.appendChild(tab);
             bottomMenuTabs.appendChild(tabLi);
@@ -1700,7 +1704,7 @@ async function init() {
                     if (selectedTab == tabId) {
                         selectedTab = null;
                         if (tabs.size > 0) {
-                            menuController.selectTab(tabs.values().next().value.id);
+                            menuController.selectTab(tabs.values().next().value.dataset.id);
                         }
                     }
                 },
