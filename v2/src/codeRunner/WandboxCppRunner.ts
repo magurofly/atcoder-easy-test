@@ -37,7 +37,6 @@ export default class WandboxCppRunner extends WandboxRunner {
         code: sourceCode,
         stdin: input,
         codes,
-        "compiler-option-raw": "-I.",
     }, options));
   }
 }
