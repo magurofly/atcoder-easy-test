@@ -21,7 +21,7 @@ export default class ResultTabContent {
   private _result: Result | null;
 
   constructor() {
-    this._uid = Date.now().toString(16);
+    this._uid = Date.now().toString(16) + Math.floor(Math.random() * 256).toString(16);
     this._result = null;
     this._element = html2element(hTabTemplate) as HTMLDivElement;
     this._element.id = `atcoder-easy-test-result-${this._uid}`;
