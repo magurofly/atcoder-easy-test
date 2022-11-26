@@ -155,9 +155,15 @@ async function init() {
         const anchors = eSampleTest.querySelectorAll(".input .title .input-output-copier");
         const count = Math.min(inputs.length, outputs.length, anchors.length);
         for (let i = 0; i < count; i++) {
+          const innerDivs = inputs[i].getElementsByTagName("div")
+          const inputTextArray = []
+          for (let j = 0; j < innerDivs.length; j++) {
+              inputTextArray.push(innerDivs[j].textContent)
+          }
+          const inputText = inputTextArray.join("\n")
           testcases.push({
             title: `Sample ${num++}`,
-            input: inputs[i].textContent,
+            input: inputText,
             output: outputs[i].textContent,
             anchor: anchors[i],
           });

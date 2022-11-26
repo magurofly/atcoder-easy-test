@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.0
+// @version     2.11.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1329,9 +1329,15 @@ async function init$3() {
                 const anchors = eSampleTest.querySelectorAll(".input .title .input-output-copier");
                 const count = Math.min(inputs.length, outputs.length, anchors.length);
                 for (let i = 0; i < count; i++) {
+                    const innerDivs = inputs[i].getElementsByTagName("div");
+                    const inputTextArray = [];
+                    for (let j = 0; j < innerDivs.length; j++) {
+                        inputTextArray.push(innerDivs[j].textContent);
+                    }
+                    const inputText = inputTextArray.join("\n");
                     testcases.push({
                         title: `Sample ${num++}`,
-                        input: inputs[i].textContent,
+                        input: inputText,
                         output: outputs[i].textContent,
                         anchor: anchors[i],
                     });
@@ -1826,11 +1832,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.0"),
+    currentProperty: new ObservableValue("2.11.1"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.1")),
     get latest() {
         return this.latestProperty.value;
     },
