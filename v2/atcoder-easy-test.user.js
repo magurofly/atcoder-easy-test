@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.3
+// @version     2.11.4
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -414,8 +414,11 @@ class CodeRunner {
             const floatPattern = /^[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?$/;
             const superEquals = equals;
             equals = (x, y) => {
-                if (floatPattern.test(x) || floatPattern.test(y))
-                    return Math.abs(parseFloat(x) - parseFloat(y)) <= options.allowableError;
+                if (floatPattern.test(x) || floatPattern.test(y)) {
+                    const a = parseFloat(x);
+                    const b = parseFloat(y);
+                    return Math.abs(a - b) <= Math.max(options.allowableError, Math.abs(b) * options.allowableError);
+                }
                 return superEquals(x, y);
             };
         }
@@ -1833,11 +1836,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.3"),
+    currentProperty: new ObservableValue("2.11.4"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.3")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.4")),
     get latest() {
         return this.latestProperty.value;
     },

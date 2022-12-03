@@ -33,7 +33,11 @@ export default abstract class CodeRunner {
       const floatPattern = /^[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?$/;
       const superEquals = equals;
       equals = (x, y) => {
-        if (floatPattern.test(x) || floatPattern.test(y)) return Math.abs(parseFloat(x) - parseFloat(y)) <= options.allowableError;
+        if (floatPattern.test(x) || floatPattern.test(y)) {
+          const a = parseFloat(x);
+          const b = parseFloat(y);
+          return Math.abs(a - b) <= Math.max(options.allowableError, Math.abs(b) * options.allowableError);
+        }
         return superEquals(x, y);
       };
     }
