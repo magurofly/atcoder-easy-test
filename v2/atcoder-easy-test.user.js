@@ -1063,6 +1063,7 @@ async function init$5() {
     const atcoder = {
         name: "AtCoder",
         language,
+        langMap,
         get sourceCode() {
             return unsafeWindow.getSourceCode();
         },
@@ -1667,12 +1668,11 @@ const runners = {
 site.then(site => {
     if (site.name == "AtCoder") {
         // AtCoderRunner がない場合は、追加する
-        for (const e of document.querySelectorAll("#select-lang option[value]")) {
-            const m = e.textContent.match(/([^ ]+) \(([^)]+)\)/);
+        for (const [languageId, descriptor] of Object.entries(site.langMap)) {
+            const m = descriptor.match(/([^ ]+)(.*)/);
             if (m) {
-                const name = `${m[1]} ${m[2]} AtCoder`;
-                const languageId = e.value;
-                runners[name] = new AtCoderRunner(languageId, e.textContent);
+                const name = `${m[1]} ${m[2].slice(1)} AtCoder`;
+                runners[name] = new AtCoderRunner(languageId, descriptor);
             }
         }
     }

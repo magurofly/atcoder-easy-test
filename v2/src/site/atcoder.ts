@@ -268,6 +268,7 @@ async function init() {
   const atcoder = {
     name: "AtCoder",
     language,
+    langMap,
     get sourceCode(): string {
       return unsafeWindow.getSourceCode();
     },
