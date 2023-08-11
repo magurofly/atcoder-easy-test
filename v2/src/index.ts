@@ -7,7 +7,7 @@ import pSite from "./site";
 import config from "./config";
 import version from "./version";
 
-import { doneOrFail, events, html2element, newElement } from "./util";
+import { doneOrFail, events, html2element, newElement, uuid } from "./util";
 import ResultTabContent from "./ResultTabContent";
 import Options from "./codeRunner/Options";
 import Result from "./codeRunner/Result";
@@ -181,17 +181,18 @@ const atCoderEasyTest = {
   }
 
   // テスト実行
-  function runTest(title: string, input: string, output: string | null = null): [Promise<Result>, Promise<BottomMenuTab>] {
-    const options: Options = { trim: true, split: true, };
+  function runTest(title: string, input: string, output: string | null = null, options: Options = {}): [Promise<Result>, Promise<BottomMenuTab>] {
+    const opts = Object.assign({ trim: true, split: true, }, options);
     if (eAllowableErrorCheck.checked) {
-      options.allowableError = parseFloat(eAllowableError.value);
+      opts.allowableError = parseFloat(eAllowableError.value);
     }
 
-    return atCoderEasyTest.runTest(title, eLanguage.value, site.sourceCode, input, output, options);
+    return atCoderEasyTest.runTest(title, eLanguage.value, site.sourceCode, input, output, opts);
   }
 
   function runAllCases(testcases: TestCase[]): Promise<Result[]> {
-    const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
+    const runGroupId = uuid();
+    const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output, { runGroupId }));
     resultList.addResult(pairs);
     return Promise.all(pairs.map(([pResult, _]) => pResult.then(result => {
       if (result.status == "AC") return Promise.resolve(result);

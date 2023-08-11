@@ -1,8 +1,9 @@
 import Result from "./Result";
+import Options from "./Options";
 import WandboxRunner from "./WandboxRunner";
 
 export default class WandboxCppRunner extends WandboxRunner {
-  async run(sourceCode: string, input: string): Promise<Result> {
+  async run(sourceCode: string, input: string, options: Options = {}): Promise<Result> {
     // ACL を結合する
     const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library/";
     const files = new Map();
@@ -31,12 +32,11 @@ export default class WandboxCppRunner extends WandboxRunner {
       codes.push({ file, code, });
     }
     
-    const options = this.getOptions(sourceCode, input);
     return await this.request(Object.assign({
         compiler: this.name,
         code: sourceCode,
         stdin: input,
         codes,
-    }, options));
+    }, Object.assign(options, this.getOptions(sourceCode, input))));
   }
 }

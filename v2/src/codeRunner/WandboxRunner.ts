@@ -1,4 +1,5 @@
 import Result from "./Result";
+import Options from "./Options";
 import CodeRunner from "./CodeRunner";
 
 interface WandboxRequest {
@@ -25,13 +26,12 @@ export default class WandboxRunner extends CodeRunner {
     return this.options;
   }
 
-  run(sourceCode: string, input: string): Promise<Result> {
-    const options = this.getOptions(sourceCode, input);
+  run(sourceCode: string, input: string, options: Options = {}): Promise<Result> {
     return this.request(Object.assign({
       compiler: this.name,
       code: sourceCode,
       stdin: input,
-    }, options));
+    }, Object.assign(options, this.getOptions(sourceCode, input))));
   }
 
   async request(body: WandboxRequest): Promise<Result> {

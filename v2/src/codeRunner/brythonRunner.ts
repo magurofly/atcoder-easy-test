@@ -1,7 +1,7 @@
 import CustomRunner from "./CustomRunner";
 
 let brythonRunnerLoaded = false;
-const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
+const brythonRunner = new CustomRunner("Brython", async (sourceCode, input, options = {}) => {
   if (!brythonRunnerLoaded) {
     // BrythonRunner を読み込む
     await new Promise((resolve) => {

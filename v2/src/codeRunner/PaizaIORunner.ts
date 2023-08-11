@@ -1,5 +1,6 @@
 import {buildParams} from "../util";
 import Result from "./Result";
+import Options from "./Options";
 import CodeRunner from "./CodeRunner";
 
 export default class PaizaIORunner extends CodeRunner {
@@ -10,7 +11,7 @@ export default class PaizaIORunner extends CodeRunner {
     this.name = name;
   }
   
-  async run(sourceCode: string, input: string): Promise<Result> {
+  async run(sourceCode: string, input: string, options: Options = {}): Promise<Result> {
     let id: string, status: string, error: string;
     try {
       const res = await fetch("https://api.paiza.io/runners/create?" + buildParams({
