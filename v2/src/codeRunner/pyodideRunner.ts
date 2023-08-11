@@ -1,4 +1,5 @@
 import Result from "./Result";
+import Options from "./Options";
 import CustomRunner from "./CustomRunner";
 
 async function loadPyodide(): Promise<any> {
@@ -17,7 +18,7 @@ class __redirect_stdin(contextlib._RedirectStream):
 
 let _pyodide: Promise<any> = Promise.reject("Pyodide is not yet loaded");
 let _serial = Promise.resolve();
-const pyodideRunner = new CustomRunner("Pyodide", (sourceCode: string, input: string): Promise<Result> => new Promise((resolve, reject) => {
+const pyodideRunner = new CustomRunner("Pyodide", (sourceCode: string, input: string, options: Options = {}): Promise<Result> => new Promise((resolve, reject) => {
   _serial = _serial.finally(async () => {
     
     const pyodide = await (_pyodide = _pyodide.catch(loadPyodide));

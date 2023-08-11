@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.6
+// @version     2.11.7
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -394,7 +394,7 @@ class CodeRunner {
     async test(sourceCode, input, expectedOutput, options) {
         let result = { status: "IE", input };
         try {
-            result = await this.run(sourceCode, input);
+            result = await this.run(sourceCode, input, options);
         }
         catch (e) {
             result.error = e.toString();
@@ -454,23 +454,31 @@ let waitAtCoderCustomTest = Promise.resolve();
 const AtCoderCustomTestBase = location.href.replace(/\/tasks\/.+$/, "/custom_test");
 const AtCoderCustomTestResultAPI = AtCoderCustomTestBase + "/json?reload=true";
 const AtCoderCustomTestSubmitAPI = AtCoderCustomTestBase + "/submit/json";
+const ce_groups = new Set();
 class AtCoderRunner extends CodeRunner {
     languageId;
     constructor(languageId, label) {
         super(label, "AtCoder");
         this.languageId = languageId;
     }
-    async run(sourceCode, input) {
-        const promise = this.submit(sourceCode, input);
+    async run(sourceCode, input, options = {}) {
+        const promise = this.submit(sourceCode, input, options);
         waitAtCoderCustomTest = promise;
         return await promise;
     }
-    async submit(sourceCode, input) {
+    async submit(sourceCode, input, options = {}) {
         try {
             await waitAtCoderCustomTest;
         }
         catch (error) {
             console.error(error);
+        }
+        // 同じグループで CE なら実行を省略し CE を返す
+        if ("runGroupId" in options && ce_groups.has(options.runGroupId)) {
+            return {
+                status: "CE",
+                input,
+            };
         }
         const error = await fetch(AtCoderCustomTestSubmitAPI, {
             method: "POST",
@@ -501,8 +509,12 @@ class AtCoderRunner extends CodeRunner {
                 await sleep(data.Interval);
                 continue;
             }
+            const status = (result.ExitCode == 0) ? "OK" : (result.TimeConsumption == -1) ? "CE" : "RE";
+            if (status == "CE" && "runGroupId" in options) {
+                ce_groups.add(options.runGroupId);
+            }
             return {
-                status: (result.ExitCode == 0) ? "OK" : (result.TimeConsumption == -1) ? "CE" : "RE",
+                status,
                 exitCode: result.ExitCode,
                 execTime: result.TimeConsumption,
                 memory: result.MemoryConsumption,
@@ -520,7 +532,7 @@ class PaizaIORunner extends CodeRunner {
         super(label, "PaizaIO");
         this.name = name;
     }
-    async run(sourceCode, input) {
+    async run(sourceCode, input, options = {}) {
         let id, status, error;
         try {
             const res = await fetch("https://api.paiza.io/runners/create?" + buildParams({
@@ -597,13 +609,12 @@ class WandboxRunner extends CodeRunner {
             return this.options(sourceCode, input);
         return this.options;
     }
-    run(sourceCode, input) {
-        const options = this.getOptions(sourceCode, input);
+    run(sourceCode, input, options = {}) {
         return this.request(Object.assign({
             compiler: this.name,
             code: sourceCode,
             stdin: input,
-        }, options));
+        }, Object.assign(options, this.getOptions(sourceCode, input))));
     }
     async request(body) {
         const startTime = Date.now();
@@ -654,7 +665,7 @@ class WandboxRunner extends CodeRunner {
 }
 
 class WandboxCppRunner extends WandboxRunner {
-    async run(sourceCode, input) {
+    async run(sourceCode, input, options = {}) {
         // ACL を結合する
         const ACLBase = "https://cdn.jsdelivr.net/gh/atcoder/ac-library/";
         const files = new Map();
@@ -683,18 +694,17 @@ class WandboxCppRunner extends WandboxRunner {
         for (const [file, code] of files) {
             codes.push({ file, code, });
         }
-        const options = this.getOptions(sourceCode, input);
         return await this.request(Object.assign({
             compiler: this.name,
             code: sourceCode,
             stdin: input,
             codes,
-        }, options));
+        }, Object.assign(options, this.getOptions(sourceCode, input))));
     }
 }
 
 let brythonRunnerLoaded = false;
-const brythonRunner = new CustomRunner("Brython", async (sourceCode, input) => {
+const brythonRunner = new CustomRunner("Brython", async (sourceCode, input, options = {}) => {
     if (!brythonRunnerLoaded) {
         // BrythonRunner を読み込む
         await new Promise((resolve) => {
@@ -751,7 +761,7 @@ class __redirect_stdin(contextlib._RedirectStream):
 }
 let _pyodide = Promise.reject("Pyodide is not yet loaded");
 let _serial = Promise.resolve();
-const pyodideRunner = new CustomRunner("Pyodide", (sourceCode, input) => new Promise((resolve, reject) => {
+const pyodideRunner = new CustomRunner("Pyodide", (sourceCode, input, options = {}) => new Promise((resolve, reject) => {
     _serial = _serial.finally(async () => {
         const pyodide = await (_pyodide = _pyodide.catch(loadPyodide));
         const code = `
@@ -1927,11 +1937,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.6"),
+    currentProperty: new ObservableValue("2.11.7"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.6")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.7")),
     get latest() {
         return this.latestProperty.value;
     },
@@ -2281,15 +2291,16 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
             });
         }
         // テスト実行
-        function runTest(title, input, output = null) {
-            const options = { trim: true, split: true, };
+        function runTest(title, input, output = null, options = {}) {
+            const opts = Object.assign({ trim: true, split: true, }, options);
             if (eAllowableErrorCheck.checked) {
-                options.allowableError = parseFloat(eAllowableError.value);
+                opts.allowableError = parseFloat(eAllowableError.value);
             }
-            return atCoderEasyTest.runTest(title, eLanguage.value, site$1.sourceCode, input, output, options);
+            return atCoderEasyTest.runTest(title, eLanguage.value, site$1.sourceCode, input, output, opts);
         }
         function runAllCases(testcases) {
-            const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output));
+            const runGroupId = uuid();
+            const pairs = testcases.map(testcase => runTest(testcase.title, testcase.input, testcase.output, { runGroupId }));
             resultList.addResult(pairs);
             return Promise.all(pairs.map(([pResult, _]) => pResult.then(result => {
                 if (result.status == "AC")

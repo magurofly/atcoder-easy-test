@@ -1,12 +1,13 @@
 import { buildParams, sleep } from "../util";
 import Result from "./Result";
+import Options from "./Options";
 import CodeRunner from "./CodeRunner";
 
 let waitAtCoderCustomTest: Promise<any> = Promise.resolve();
 const AtCoderCustomTestBase = location.href.replace(/\/tasks\/.+$/, "/custom_test");
 const AtCoderCustomTestResultAPI = AtCoderCustomTestBase + "/json?reload=true";
 const AtCoderCustomTestSubmitAPI = AtCoderCustomTestBase + "/submit/json";
-
+const ce_groups = new Set();
 
 export default class AtCoderRunner extends CodeRunner {
   languageId: string;
@@ -16,17 +17,25 @@ export default class AtCoderRunner extends CodeRunner {
     this.languageId = languageId;
   }
   
-  async run(sourceCode: string, input: string): Promise<Result> {
-    const promise = this.submit(sourceCode, input);
+  async run(sourceCode: string, input: string, options: Options = {}): Promise<Result> {
+    const promise = this.submit(sourceCode, input, options);
     waitAtCoderCustomTest = promise;
     return await promise;
   }
   
-  async submit(sourceCode: string, input: string): Promise<Result> {
+  async submit(sourceCode: string, input: string, options: Options = {}): Promise<Result> {
     try {
       await waitAtCoderCustomTest;
     } catch (error) {
       console.error(error);
+    }
+
+    // 同じグループで CE なら実行を省略し CE を返す
+    if ("runGroupId" in options && ce_groups.has(options.runGroupId)) {
+      return {
+        status: "CE",
+        input,
+      };
     }
     
     const error = await fetch(AtCoderCustomTestSubmitAPI, {
@@ -62,9 +71,14 @@ export default class AtCoderRunner extends CodeRunner {
         await sleep(data.Interval);
         continue;
       }
+
+      const status = (result.ExitCode == 0) ? "OK" : (result.TimeConsumption == -1) ? "CE" : "RE";
+      if (status == "CE" && "runGroupId" in options) {
+        ce_groups.add(options.runGroupId);
+      }
       
       return {
-        status: (result.ExitCode == 0) ? "OK" : (result.TimeConsumption == -1) ? "CE" : "RE",
+        status,
         exitCode: result.ExitCode,
         execTime: result.TimeConsumption,
         memory: result.MemoryConsumption,

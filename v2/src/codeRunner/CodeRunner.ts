@@ -13,7 +13,7 @@ export default abstract class CodeRunner {
   async test(sourceCode: string, input: string, expectedOutput: string | null, options: Options): Promise<Result> {
     let result: Result = { status: "IE", input };
     try {
-      result = await this.run(sourceCode, input);
+      result = await this.run(sourceCode, input, options);
     } catch (e) {
       result.error = e.toString();
       return result;
@@ -61,5 +61,5 @@ export default abstract class CodeRunner {
     return result;
   }
   
-  abstract run(sourceCode: string, input: string): Promise<Result>;
+  abstract run(sourceCode: string, input: string, options?: Options): Promise<Result>;
 };
