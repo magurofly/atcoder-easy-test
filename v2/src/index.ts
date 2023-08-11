@@ -141,8 +141,9 @@ const atCoderEasyTest = {
       const languageId = site.language.value;
       while (eLanguage.firstChild) eLanguage.removeChild(eLanguage.firstChild);
       try {
+        if (!languageId) throw new Error("AtCoder Easy Test: language not set");
         const langs = await codeRunner.getEnvironment(languageId);
-        console.log(`language: ${langs[1]} (${langs[0]})`);
+        console.log(`AtCoder Easy Test: language = ${langs[1]} (${langs[0]})`);
 
         // add <option>
         for (const [languageId, label] of langs) {
@@ -162,7 +163,7 @@ const atCoderEasyTest = {
 
         events.trig("enable");
       } catch (error) {
-        console.log(`language: ? (${languageId})`);
+        console.log(`AtCoder Easy Test: language = ? (${languageId})`);
         console.error(error);
         const option = document.createElement("option");
         option.className = "fg-danger";
