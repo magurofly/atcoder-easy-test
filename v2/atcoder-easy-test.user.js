@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.5
+// @version     2.11.6
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -883,6 +883,97 @@ async function init$5() {
         4065: "Cython 0.29.16",
         4066: "Sed 4.4",
         4067: "Vim 8.2.0460",
+        // newjudge-2308
+        5001: "C++ 20 gcc 12.2",
+        5002: "Go 1.20.6",
+        5003: "C# 11.0 .NET 7.0.7",
+        5004: "Kotlin 1.8.20",
+        5005: "Java OpenJDK 17",
+        5006: "Nim 1.6.14",
+        5007: "V 0.4",
+        5008: "Zig 0.10.1",
+        5009: "JavaScript Node.js 18.16.1",
+        5010: "JavaScript Deno 1.35.1",
+        5011: "R GNU R 4.2.1",
+        5012: "D DMD 2.104.0",
+        5013: "D LDC 1.32.2",
+        5014: "Swift 5.8.1",
+        5015: "Dart 3.0.5",
+        5016: "PHP 8.2.8",
+        5017: "C GCC 12.2.0",
+        5018: "Ruby 3.2.2",
+        5019: "Crystal 1.9.1",
+        5020: "Brainfuck bf 20041219",
+        5021: "F# 7.0 .NET 7.0.7",
+        5022: "Julia 1.9.2",
+        5023: "Bash 5.2.2",
+        5024: "Text cat 8.32",
+        5025: "Haskell GHC 9.4.5",
+        5026: "Fortran GNU Fortran 12.2",
+        5027: "Lua LuaJIT 2.1.0-beta3",
+        5028: "C++ 23 gcc 12.2",
+        5029: "CommonLisp SBCL 2.3.6",
+        5030: "COBOL Free GnuCOBOL 3.1.2",
+        5031: "C++ 23 Clang 16.0.5",
+        5032: "Zsh Zsh 5.9",
+        5033: "SageMath SageMath 9.5",
+        5034: "Sed GNU sed 4.8",
+        5035: "bc bc 1.07.1",
+        5036: "dc dc 1.07.1",
+        5037: "Perl perl  5.34",
+        5038: "AWK GNU Awk 5.0.1",
+        5039: "なでしこ cnako3 3.4.20",
+        5040: "Assembly x64 NASM 2.15.05",
+        5041: "Pascal fpc 3.2.2",
+        5042: "C# 11.0 AOT .NET 7.0.7",
+        5043: "Lua Lua 5.4.6",
+        5044: "Prolog SWI-Prolog 9.0.4",
+        5045: "PowerShell PowerShell 7.3.1",
+        5046: "Scheme Gauche 0.9.12",
+        5047: "Scala 3.3.0 Scala Native 0.4.14",
+        5048: "Visual Basic 16.9 .NET 7.0.7",
+        5049: "Forth gforth 0.7.3",
+        5050: "Clojure babashka 1.3.181",
+        5051: "Erlang Erlang 26.0.2",
+        5052: "TypeScript 5.1 Deno 1.35.1",
+        5053: "C++ 17 gcc 12.2",
+        5054: "Rust rustc 1.70.0",
+        5055: "Python CPython 3.11.4",
+        5056: "Scala Dotty 3.3.0",
+        5057: "Koka koka 2.4.0",
+        5058: "TypeScript 5.1 Node.js 18.16.1",
+        5059: "OCaml ocamlopt 5.0.0",
+        5060: "Raku Rakudo 2023.06",
+        5061: "Vim vim 9.0.0242",
+        5062: "Emacs Lisp Native Compile GNU Emacs 28.2",
+        5063: "Python Mambaforge / CPython 3.10.10",
+        5064: "Clojure clojure 1.11.1",
+        5065: "プロデル mono版プロデル 1.9.1182",
+        5066: "ECLiPSe ECLiPSe 7.1_13",
+        5067: "Nibbles literate form nibbles 1.01",
+        5068: "Ada GNAT 12.2",
+        5069: "jq jq 1.6",
+        5070: "Cyber Cyber v0.2-Latest",
+        5071: "Carp Carp 0.5.5",
+        5072: "C++ 17 Clang 16.0.5",
+        5073: "C++ 20 Clang 16.0.5",
+        5074: "LLVM IR Clang 16.0.5",
+        5075: "Emacs Lisp Byte Compile GNU Emacs 28.2",
+        5076: "Factor Factor 0.98",
+        5077: "D GDC 12.2",
+        5078: "Python PyPy 3.10-v7.3.12",
+        5079: "Whitespace whitespacers 1.0.0",
+        5080: "><> fishr 0.1.0",
+        5081: "ReasonML reason 3.9.0",
+        5082: "Python Cython 0.29.34",
+        5083: "Octave GNU Octave 8.2.0",
+        5084: "Haxe JVM Haxe 4.3.1",
+        5085: "Elixir Elixir 1.15.2",
+        5086: "Mercury Mercury 22.01.6",
+        5087: "Seed7 Seed7 3.2.1",
+        5088: "Emacs Lisp No Compile GNU Emacs 28.2",
+        5089: "Unison Unison M5b",
+        5090: "COBOL GnuCOBOLFixed 3.1.2",
     };
     const languageId = new ObservableValue(unsafeWindow.$("#select-lang select.current").val());
     unsafeWindow.$("#select-lang select").change(() => {
@@ -1836,11 +1927,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.5"),
+    currentProperty: new ObservableValue("2.11.6"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.5")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.6")),
     get latest() {
         return this.latestProperty.value;
     },
@@ -2040,7 +2131,7 @@ class ResultTabContent {
     }
 }
 
-var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">\n  <div class=\"row\">\n      <div class=\"col-xs-12 col-lg-8\">\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\">Test Environment</label>\n              <div class=\"col-sm-10\">\n                  <select class=\"form-control\" id=\"atcoder-easy-test-language\"></select>\n              </div>\n          </div>\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-input\">Standard Input</label>\n              <div class=\"col-sm-10\">\n                  <textarea id=\"atcoder-easy-test-input\" name=\"input\" class=\"form-control\" rows=\"3\"></textarea>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-lg-4\">\n          <details close>\n              <summary>Expected Output</summary>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-allowable-error-check\">Allowable Error</label>\n                  <div class=\"col-sm-10\">\n                      <div class=\"input-group\">\n                          <span class=\"input-group-addon\">\n                              <input id=\"atcoder-easy-test-allowable-error-check\" type=\"checkbox\" checked=\"checked\">\n                          </span>\n                          <input id=\"atcoder-easy-test-allowable-error\" type=\"text\" class=\"form-control\" value=\"1e-6\">\n                      </div>\n                  </div>\n              </div>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-output\">Expected Output</label>\n                  <div class=\"col-sm-10\">\n                      <textarea id=\"atcoder-easy-test-output\" name=\"output\" class=\"form-control\" rows=\"3\"></textarea>\n                  </div>\n              </div>\n          </details>\n      </div>\n      <div class=\"col-xs-12 col-md-6\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group\">\n                  <a id=\"atcoder-easy-test-run\" class=\"btn btn-primary\">Run</a>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-md-6\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group text-right\">\n                  <small>AtCoder Easy Test v<span id=\"atcoder-easy-test-version\"></span></small>\n                  <a id=\"atcoder-easy-test-setting\" class=\"btn btn-xs btn-default\">Setting</a>\n              </div>\n          </div>\n      </div>\n  </div>\n  <style>\n  #atcoder-easy-test-language {\n      border: none;\n      background: transparent;\n      font: inherit;\n      color: #fff;\n  }\n  #atcoder-easy-test-language option {\n      border: none;\n      color: #333;\n      font: inherit;\n  }\n  </style>\n</form>";
+var hRoot = "<form id=\"atcoder-easy-test-container\" class=\"form-horizontal\">\n  <div class=\"row\">\n      <div class=\"col-xs-12 col-lg-8\">\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\">Test Environment</label>\n              <div class=\"col-sm-10\">\n                  <select class=\"form-control\" id=\"atcoder-easy-test-language\" style=\"width: 100% !important\"></select>\n              </div>\n          </div>\n          <div class=\"form-group\">\n              <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-input\">Standard Input</label>\n              <div class=\"col-sm-10\">\n                  <textarea id=\"atcoder-easy-test-input\" name=\"input\" class=\"form-control\" rows=\"3\"></textarea>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-lg-4\">\n          <details close>\n              <summary>Expected Output</summary>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-allowable-error-check\">Allowable Error</label>\n                  <div class=\"col-sm-10\">\n                      <div class=\"input-group\">\n                          <span class=\"input-group-addon\">\n                              <input id=\"atcoder-easy-test-allowable-error-check\" type=\"checkbox\" checked=\"checked\">\n                          </span>\n                          <input id=\"atcoder-easy-test-allowable-error\" type=\"text\" class=\"form-control\" value=\"1e-6\">\n                      </div>\n                  </div>\n              </div>\n              <div class=\"form-group\">\n                  <label class=\"control-label col-sm-2\" for=\"atcoder-easy-test-output\">Expected Output</label>\n                  <div class=\"col-sm-10\">\n                      <textarea id=\"atcoder-easy-test-output\" name=\"output\" class=\"form-control\" rows=\"3\"></textarea>\n                  </div>\n              </div>\n          </details>\n      </div>\n      <div class=\"col-xs-12 col-md-6\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group\">\n                  <a id=\"atcoder-easy-test-run\" class=\"btn btn-primary\">Run</a>\n              </div>\n          </div>\n      </div>\n      <div class=\"col-xs-12 col-md-6\">\n          <div class=\"col-xs-11 col-xs-offset=1\">\n              <div class=\"form-group text-right\">\n                  <small>AtCoder Easy Test v<span id=\"atcoder-easy-test-version\"></span></small>\n                  <a id=\"atcoder-easy-test-setting\" class=\"btn btn-xs btn-default\">Setting</a>\n              </div>\n          </div>\n      </div>\n  </div>\n  <style>\n  #atcoder-easy-test-language {\n      border: none;\n      background: transparent;\n      font: inherit;\n      color: #fff;\n  }\n  #atcoder-easy-test-language option {\n      border: none;\n      color: #333;\n      font: inherit;\n  }\n  </style>\n</form>";
 
 var hStyle = "<style>\n.atcoder-easy-test-result textarea {\n  font-family: monospace;\n  font-weight: normal;\n}\n</style>";
 
@@ -2152,8 +2243,10 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
                 while (eLanguage.firstChild)
                     eLanguage.removeChild(eLanguage.firstChild);
                 try {
+                    if (!languageId)
+                        throw new Error("AtCoder Easy Test: language not set");
                     const langs = await codeRunner.getEnvironment(languageId);
-                    console.log(`language: ${langs[1]} (${langs[0]})`);
+                    console.log(`AtCoder Easy Test: language = ${langs[1]} (${langs[0]})`);
                     // add <option>
                     for (const [languageId, label] of langs) {
                         const option = document.createElement("option");
@@ -2172,7 +2265,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
                     events.trig("enable");
                 }
                 catch (error) {
-                    console.log(`language: ? (${languageId})`);
+                    console.log(`AtCoder Easy Test: language = ? (${languageId})`);
                     console.error(error);
                     const option = document.createElement("option");
                     option.className = "fg-danger";
