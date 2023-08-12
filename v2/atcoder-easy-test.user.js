@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.7
+// @version     2.11.8
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -825,6 +825,10 @@ async function init$5() {
     if (location.host != "atcoder.jp")
         throw "Not AtCoder";
     const doc = unsafeWindow.document;
+    // "言語名 その他の説明..." となっている
+    // 注意:
+    // * 言語名にはスペースが入ってはいけない（スペース以降は説明とみなされる）
+    // * Python2 の言語名は「Python」、 Python3 の言語名は「Python3」
     const langMap = {
         4001: "C GCC 9.2.1",
         4002: "C Clang 10.0.0",
@@ -948,7 +952,7 @@ async function init$5() {
         5052: "TypeScript 5.1 Deno 1.35.1",
         5053: "C++ 17 gcc 12.2",
         5054: "Rust rustc 1.70.0",
-        5055: "Python CPython 3.11.4",
+        5055: "Python3 CPython 3.11.4",
         5056: "Scala Dotty 3.3.0",
         5057: "Koka koka 2.4.0",
         5058: "TypeScript 5.1 Node.js 18.16.1",
@@ -956,7 +960,7 @@ async function init$5() {
         5060: "Raku Rakudo 2023.06",
         5061: "Vim vim 9.0.0242",
         5062: "Emacs Lisp Native Compile GNU Emacs 28.2",
-        5063: "Python Mambaforge / CPython 3.10.10",
+        5063: "Python3 Mambaforge / CPython 3.10.10",
         5064: "Clojure clojure 1.11.1",
         5065: "プロデル mono版プロデル 1.9.1182",
         5066: "ECLiPSe ECLiPSe 7.1_13",
@@ -971,7 +975,7 @@ async function init$5() {
         5075: "Emacs Lisp Byte Compile GNU Emacs 28.2",
         5076: "Factor Factor 0.98",
         5077: "D GDC 12.2",
-        5078: "Python PyPy 3.10-v7.3.12",
+        5078: "Python3 PyPy 3.10-v7.3.12",
         5079: "Whitespace whitespacers 1.0.0",
         5080: "><> fishr 0.1.0",
         5081: "ReasonML reason 3.9.0",
@@ -1937,11 +1941,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.7"),
+    currentProperty: new ObservableValue("2.11.8"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.7")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.8")),
     get latest() {
         return this.latestProperty.value;
     },
