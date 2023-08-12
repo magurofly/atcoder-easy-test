@@ -472,7 +472,7 @@ const codeRunner = (function() {
             new PaizaIORunner("php", "PHP (7.4.10)"),
             new WandboxRunner("php-7.3.3", "PHP (7.3.3)"),
         ],
-        4046: [new WandboxRunner("pypy-head", "PyPy2 (7.3.4-alpha0)")],
+        4046: [new WandboxRunner("pypy-head", "PyPy3 (7.3.4-alpha0)")],
         4047: [new WandboxRunner("pypy-7.2.0-3", "PyPy3 (7.2.0)")],
         4049: [
             new PaizaIORunner("ruby", "Ruby (2.7.1)"),
