@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.8
+// @version     2.11.9
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1079,11 +1079,29 @@ async function init$5() {
         language,
         langMap,
         get sourceCode() {
-            return unsafeWindow.getSourceCode();
+            const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
+            if (typeof unsafeWindow["ace"] != "undefined") {
+                if (!$(".btn-toggle-editor").classList.contains("active")) {
+                    return unsafeWindow["ace"].edit($("#editor")).getValue();
+                }
+                else {
+                    return $("#plain-textarea").value;
+                }
+            }
+            else {
+                return unsafeWindow.getSourceCode();
+            }
         },
         set sourceCode(sourceCode) {
-            doc.querySelector(".plain-textarea").value = sourceCode;
-            unsafeWindow.$(".editor").data("editor").doc.setValue(sourceCode);
+            const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
+            if (typeof unsafeWindow["ace"] != "undefined") {
+                unsafeWindow["ace"].edit($("#editor")).setValue(sourceCode);
+                $("#plain-textarea").value = sourceCode;
+            }
+            else {
+                doc.querySelector(".plain-textarea").value = sourceCode;
+                unsafeWindow.$(".editor").data("editor").doc.setValue(sourceCode);
+            }
         },
         submit() {
             doc.querySelector("#submit").click();
@@ -1941,11 +1959,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.8"),
+    currentProperty: new ObservableValue("2.11.9"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.8")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.9")),
     get latest() {
         return this.latestProperty.value;
     },
