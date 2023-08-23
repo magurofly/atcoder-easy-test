@@ -274,11 +274,26 @@ async function init() {
     language,
     langMap,
     get sourceCode(): string {
-      return unsafeWindow.getSourceCode();
+      const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
+      if (typeof unsafeWindow["ace"] != "undefined") {
+        if (!$(".btn-toggle-editor").classList.contains("active")) {
+          return unsafeWindow["ace"].edit($("#editor")).getValue();
+        } else {
+          return $("#plain-textarea").value;
+        }
+      } else {
+        return unsafeWindow.getSourceCode();
+      }
     },
     set sourceCode(sourceCode: string) {
-      doc.querySelector<HTMLTextAreaElement>(".plain-textarea").value = sourceCode;
-      unsafeWindow.$(".editor").data("editor").doc.setValue(sourceCode);
+      const $ = unsafeWindow.document.querySelector.bind(unsafeWindow.document);
+      if (typeof unsafeWindow["ace"] != "undefined") {
+        unsafeWindow["ace"].edit($("#editor")).setValue(sourceCode);
+        $("#plain-textarea").value = sourceCode;
+      } else {
+        doc.querySelector<HTMLTextAreaElement>(".plain-textarea").value = sourceCode;
+        unsafeWindow.$(".editor").data("editor").doc.setValue(sourceCode);
+      }
     },
     submit(): void {
       doc.querySelector<HTMLElement>("#submit").click();
