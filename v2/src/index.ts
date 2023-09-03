@@ -135,6 +135,7 @@ const atCoderEasyTest = {
       const langSelection = config.get("langSelection", {});
       langSelection[site.language.value] = eLanguage.value;
       config.set("langSelection", langSelection);
+      config.save();
     });
 
     async function setLanguage() {
@@ -157,8 +158,9 @@ const atCoderEasyTest = {
         const langSelection = config.get("langSelection", {});
         if (languageId in langSelection) {
           const prev = langSelection[languageId];
-          const [lang, _] = langs.find(([lang, label]) => lang == prev);
-          if (lang) eLanguage.value = lang;
+          if (langs.some(([lang, _]) => lang == prev)) {
+            eLanguage.value = prev;
+          }
         }
 
         events.trig("enable");

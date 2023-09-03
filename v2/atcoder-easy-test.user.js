@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.9
+// @version     2.11.10
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1959,11 +1959,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.9"),
+    currentProperty: new ObservableValue("2.11.10"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.9")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.10")),
     get latest() {
         return this.latestProperty.value;
     },
@@ -2269,6 +2269,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
                 const langSelection = config.get("langSelection", {});
                 langSelection[site$1.language.value] = eLanguage.value;
                 config.set("langSelection", langSelection);
+                config.save();
             });
             async function setLanguage() {
                 const languageId = site$1.language.value;
@@ -2290,9 +2291,9 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
                     const langSelection = config.get("langSelection", {});
                     if (languageId in langSelection) {
                         const prev = langSelection[languageId];
-                        const [lang, _] = langs.find(([lang, label]) => lang == prev);
-                        if (lang)
-                            eLanguage.value = lang;
+                        if (langs.some(([lang, _]) => lang == prev)) {
+                            eLanguage.value = prev;
+                        }
                     }
                     events.trig("enable");
                 }
