@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.10
+// @version     2.11.11
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1673,8 +1673,10 @@ const runners = {
     "Python PyPy 7.3.4 Wandbox": new WandboxRunner("pypy-2.7-v7.3.4", "PyPy2 (7.3.4)"),
     "Python3 PyPy3 7.3.4 Wandbox": new WandboxRunner("pypy-3.7-v7.3.4", "PyPy3 (7.3.4)"),
     "Ruby paiza.io": new PaizaIORunner("ruby", "Ruby"),
-    "Ruby 3.1.0 Wandbox": new WandboxRunner("ruby-3.1.0", "Ruby (3.1.0)"),
-    "Ruby 2.7.3 Wandbox": new WandboxRunner("ruby-2.7.3", "Ruby (2.7.1)"),
+    "Ruby 3.2.2 Wandbox": new WandboxRunner("ruby-3.2.2", "Ruby (3.2.2)"),
+    "Ruby 3.1.4 Wandbox": new WandboxRunner("ruby-3.1.4", "Ruby (3.1.4)"),
+    "Ruby 3.0.6 Wandbox": new WandboxRunner("ruby-3.0.6", "Ruby (3.0.6)"),
+    "Ruby 2.7.8 Wandbox": new WandboxRunner("ruby-2.7.8", "Ruby (2.7.8)"),
     "Rust 1.42.0 AtCoder": new AtCoderRunner("4050", "Rust (1.42.0)"),
     "Rust 1.50.0 Wandbox": new WandboxRunner("rust-1.50.0", "Rust (1.50.0)"),
     "Rust paiza.io": new PaizaIORunner("rust", "Rust"),
@@ -1959,11 +1961,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.10"),
+    currentProperty: new ObservableValue("2.11.11"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.10")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.11")),
     get latest() {
         return this.latestProperty.value;
     },
