@@ -747,10 +747,10 @@ const brythonRunner = new CustomRunner("Brython", async (sourceCode, input, opti
 });
 
 async function loadPyodide() {
-    const script = await fetch("https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js").then(res => res.text());
+    const script = await fetch("https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js").then((res) => res.text());
     unsafeWindow["Function"](script)();
     const pyodide = await unsafeWindow["loadPyodide"]({
-        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.18.1/full/",
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/",
     });
     await pyodide.runPythonAsync(`
 import contextlib, io, platform
@@ -772,7 +772,12 @@ def __run():
    with contextlib.redirect_stderr(io.StringIO()) as __stderr:
     try:
      pass
-` + sourceCode.split("\n").map(line => "     " + line).join("\n") + `
+` +
+            sourceCode
+                .split("\n")
+                .map((line) => "     " + line)
+                .join("\n") +
+            `
     except SystemExit as e:
      __code = e.code
 `;
@@ -782,19 +787,20 @@ def __run():
         let stderr = "";
         let startTime = -Infinity;
         let endTime = Infinity;
-        pyodide.globals.__stdin = input;
+        pyodide.globals.set("__stdin", input);
         try {
-            pyodide.globals.__code = null;
+            pyodide.globals.set("__code", null);
             await pyodide.loadPackagesFromImports(code);
             await pyodide.runPythonAsync(code);
             startTime = Date.now();
             pyodide.runPython("__run()");
             endTime = Date.now();
-            stdout += pyodide.globals.__stdout.getvalue();
-            stderr += pyodide.globals.__stderr.getvalue();
-            if (typeof pyodide.globals.__code == "number") {
-                exitCode = String(pyodide.globals.__code);
-                if (pyodide.globals.__code != 0)
+            stdout = pyodide.globals.get("__stdout").getvalue();
+            stderr = pyodide.globals.get("__stderr").getvalue();
+            const __code = pyodide.globals.get("__code");
+            if (typeof __code == "number") {
+                exitCode = String(__code);
+                if (__code != 0)
                     status = "RE";
             }
         }
@@ -806,7 +812,7 @@ def __run():
         resolve({
             status,
             exitCode,
-            execTime: (endTime - startTime),
+            execTime: endTime - startTime,
             input,
             output: stdout,
             error: stderr,
