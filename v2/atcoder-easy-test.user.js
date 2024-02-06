@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.11
+// @version     999.999.999
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1634,6 +1634,22 @@ site.catch(() => {
     }
 });
 
+async function fetchWandboxCompilers() {
+    const response = await fetch("https://wandbox.org/api/list.json");
+    const compilers = await response.json();
+    return compilers;
+}
+function toRunner(compiler) {
+    if (compiler.language == "C++") {
+        return new WandboxCppRunner(compiler.name, compiler.language + " " + compiler.name + " + ACL (from Wandbox API)", {
+            "compiler-option-raw": "-I.",
+        });
+    }
+    else {
+        return new WandboxRunner(compiler.name, compiler.language + " " + compiler.name + " (from Wandbox API)");
+    }
+}
+
 const runners = {
     "C GCC 9.3.0 Wandbox": new WandboxRunner("gcc-9.3.0-c", "C (GCC 9.3.0)", { "compiler-option-raw": "-march=native\n-std=gnu11\n-O2\n-DONLINE_JUDGE\n-lm" }),
     "C C17 Clang paiza.io": new PaizaIORunner("c", "C (C17 / Clang)"),
@@ -1705,6 +1721,12 @@ const runners = {
     "COBOL Fixed OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4060", "COBOL - Fixed (OpenCOBOL 1.1.0)"),
     "COBOL Free OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4061", "COBOL - Free (OpenCOBOL 1.1.0)"),
 };
+// wandboxの環境を追加
+fetchWandboxCompilers().then((compilers) => {
+    compilers.map(toRunner).forEach((runner) => {
+        runners[runner.label] = runner;
+    });
+});
 site.then(site => {
     if (site.name == "AtCoder") {
         // AtCoderRunner がない場合は、追加する
@@ -1967,11 +1989,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.11"),
+    currentProperty: new ObservableValue("999.999.999"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.11")),
+    latestProperty: new ObservableValue(config.get("version.latest", "999.999.999")),
     get latest() {
         return this.latestProperty.value;
     },
