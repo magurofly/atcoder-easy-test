@@ -1640,14 +1640,23 @@ async function fetchWandboxCompilers() {
     const compilers = await response.json();
     return compilers;
 }
+function getOptimizationOption(compiler) {
+    // Optimizationという名前のSwitchから、最適化のオプションを取得する
+    return compiler.switches.find((sw) => sw["display-name"] === "Optimization")
+        ?.name;
+}
 function toRunner(compiler) {
+    const optimizationOption = getOptimizationOption(compiler);
     if (compiler.language == "C++") {
         return new WandboxCppRunner(compiler.name, compiler.language + " " + compiler.name + " + ACL (from Wandbox API)", {
             "compiler-option-raw": "-I.",
+            options: optimizationOption,
         });
     }
     else {
-        return new WandboxRunner(compiler.name, compiler.language + " " + compiler.name + " (from Wandbox API)");
+        return new WandboxRunner(compiler.name, compiler.language + " " + compiler.name + " (from Wandbox API)", {
+            options: optimizationOption,
+        });
     }
 }
 
