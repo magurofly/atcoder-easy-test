@@ -13,6 +13,7 @@ import brythonRunner from "./brythonRunner";
 import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
 import config from "../config";
+import { fetchWandboxCompilers, toRunner } from "../wandbox-api";
 
 const runners: { [runnerId: string]: CodeRunner } = {
   "C GCC 9.3.0 Wandbox": new WandboxRunner("gcc-9.3.0-c", "C (GCC 9.3.0)", { "compiler-option-raw": "-march=native\n-std=gnu11\n-O2\n-DONLINE_JUDGE\n-lm" }),
@@ -87,6 +88,13 @@ const runners: { [runnerId: string]: CodeRunner } = {
   "COBOL Fixed OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4060", "COBOL - Fixed (OpenCOBOL 1.1.0)"),
   "COBOL Free OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4061", "COBOL - Free (OpenCOBOL 1.1.0)"),
 };
+
+// wandboxの環境を追加
+fetchWandboxCompilers().then((compilers) => {
+  compilers.map(toRunner).forEach((runner) => {
+    runners[runner.label] = runner;
+  });
+});
 
 pSite.then(site => {
   if (site.name == "AtCoder") {
