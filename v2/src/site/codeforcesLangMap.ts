@@ -31,4 +31,5 @@ export default {
   70: "Python3 PyPy 3.7 (7.3.5, 64bit)",
   72: "Kotlin 1.5.31",
   73: "C++ GNU G++ 11.2.0 (64 bit, winlibs)",
+  89: "C++ GNU G++20 13.2 (64 bit, winlibs)",
 };
