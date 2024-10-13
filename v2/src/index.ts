@@ -131,12 +131,18 @@ const atCoderEasyTest = {
 
   // 言語選択関係
   {
-    eLanguage.addEventListener("change", async () => {
+    async function onEnvChange() {
       const langSelection = config.get("langSelection", {});
       langSelection[site.language.value] = eLanguage.value;
       config.set("langSelection", langSelection);
       config.save();
-    });
+    }
+    if (unsafeWindow["jQuery"] && unsafeWindow["jQuery"].fn.select2) {
+      unsafeWindow["jQuery"](eLanguage).on("change", onEnvChange);
+    } else {
+      eLanguage.addEventListener("change", onEnvChange);
+    }
+
 
     async function setLanguage() {
       const languageId = site.language.value;
