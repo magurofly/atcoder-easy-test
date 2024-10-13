@@ -158,7 +158,7 @@ async function init() {
           let inputText = "";
           for (const node of inputs[i].childNodes) {
             inputText += node.textContent;
-            if (node.nodeType == node.ELEMENT_NODE && (node as HTMLElement).tagName == "DIV") {
+            if (node.nodeType == node.ELEMENT_NODE && ((node as HTMLElement).tagName == "DIV" || (node as HTMLElement).tagName == "BR")) {
               inputText += "\n";
             }
           }
