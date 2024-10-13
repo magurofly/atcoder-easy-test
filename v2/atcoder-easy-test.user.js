@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.17
+// @version     2.12.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1973,11 +1973,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.17"),
+    currentProperty: new ObservableValue("2.12.0"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.17")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.12.0")),
     get latest() {
         return this.latestProperty.value;
     },
