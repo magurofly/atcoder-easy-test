@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.14
+// @version     2.11.15
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1318,7 +1318,13 @@ var langMap = {
     70: "Python3 PyPy 3.7 (7.3.5, 64bit)",
     72: "Kotlin 1.5.31",
     73: "C++ GNU G++ 11.2.0 (64 bit, winlibs)",
+    75: "Rust 1.75.0 (2021)",
+    79: "C# 10, .NET SDK 6.0",
+    83: "Kotlin 1.7.20",
+    87: "Java 21 64bit",
+    88: "Kotlin 1.9.21",
     89: "C++ GNU G++20 13.2 (64 bit, winlibs)",
+    91: "GNU G++23 14.2 (64 bit, msys2)",
 };
 
 config.registerFlag("site.codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
@@ -1969,11 +1975,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.14"),
+    currentProperty: new ObservableValue("2.11.15"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.14")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.15")),
     get latest() {
         return this.latestProperty.value;
     },

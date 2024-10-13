@@ -31,5 +31,11 @@ export default {
   70: "Python3 PyPy 3.7 (7.3.5, 64bit)",
   72: "Kotlin 1.5.31",
   73: "C++ GNU G++ 11.2.0 (64 bit, winlibs)",
+  75: "Rust 1.75.0 (2021)",
+  79: "C# 10, .NET SDK 6.0",
+  83: "Kotlin 1.7.20",
+  87: "Java 21 64bit",
+  88: "Kotlin 1.9.21",
   89: "C++ GNU G++20 13.2 (64 bit, winlibs)",
+  91: "GNU G++23 14.2 (64 bit, msys2)",
 };
