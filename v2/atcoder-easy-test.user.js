@@ -1654,13 +1654,13 @@ function getOptimizationOption(compiler) {
 function toRunner(compiler) {
     const optimizationOption = getOptimizationOption(compiler);
     if (compiler.language == "C++") {
-        return new WandboxCppRunner(compiler.name, compiler.language + " " + compiler.name + " + ACL (from Wandbox API)", {
+        return new WandboxCppRunner(compiler.name, compiler.language + " " + compiler.name + " + ACL", {
             "compiler-option-raw": "-I.",
             options: optimizationOption,
         });
     }
     else {
-        return new WandboxRunner(compiler.name, compiler.language + " " + compiler.name + " (from Wandbox API)", {
+        return new WandboxRunner(compiler.name, compiler.language + " " + compiler.name, {
             options: optimizationOption,
         });
     }
@@ -1708,6 +1708,7 @@ fetchWandboxCompilers().then((compilers) => {
     for (const compiler of compilers) {
         const key = compiler.language + " " + compiler.name;
         runners[key] = toRunner(compiler);
+        console.log("wandbox", key, runners[key]);
     }
 });
 site.then(site => {

@@ -33,7 +33,7 @@ function toRunner(compiler: CompilerInfo) {
   if (compiler.language == "C++") {
     return new WandboxCppRunner(
       compiler.name,
-      compiler.language + " " + compiler.name + " + ACL (from Wandbox API)",
+      compiler.language + " " + compiler.name + " + ACL",
       {
         "compiler-option-raw": "-I.",
         options: optimizationOption,
@@ -42,7 +42,7 @@ function toRunner(compiler: CompilerInfo) {
   } else {
     return new WandboxRunner(
       compiler.name,
-      compiler.language + " " + compiler.name + " (from Wandbox API)",
+      compiler.language + " " + compiler.name,
       {
         options: optimizationOption,
       }
