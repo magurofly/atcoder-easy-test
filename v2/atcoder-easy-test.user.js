@@ -1708,7 +1708,6 @@ fetchWandboxCompilers().then((compilers) => {
     for (const compiler of compilers) {
         const key = compiler.language + " " + compiler.name;
         runners[key] = toRunner(compiler);
-        console.log("wandbox", key, runners[key]);
     }
 });
 site.then(site => {
