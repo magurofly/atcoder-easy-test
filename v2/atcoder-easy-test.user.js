@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.11.15
+// @version     2.11.16
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1472,7 +1472,7 @@ async function init$3() {
                     let inputText = "";
                     for (const node of inputs[i].childNodes) {
                         inputText += node.textContent;
-                        if (node.nodeType == node.ELEMENT_NODE && node.tagName == "DIV") {
+                        if (node.nodeType == node.ELEMENT_NODE && (node.tagName == "DIV" || node.tagName == "BR")) {
                             inputText += "\n";
                         }
                     }
@@ -1975,11 +1975,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.11.15"),
+    currentProperty: new ObservableValue("2.11.16"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.11.15")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.11.16")),
     get latest() {
         return this.latestProperty.value;
     },
