@@ -6,6 +6,7 @@ import WandboxRunner from "../codeRunner/WandboxRunner";
 interface CompilerInfo {
   name: string;
   language: string;
+  version: string;
   switches: Switch[];
 }
 

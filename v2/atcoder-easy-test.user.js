@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.12.0
+// @version     2.12.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1706,7 +1706,11 @@ const runners = {
 // wandboxの環境を追加
 fetchWandboxCompilers().then((compilers) => {
     for (const compiler of compilers) {
-        const key = compiler.language + " " + compiler.name;
+        let language = compiler.language;
+        if (compiler.language === "Python" && /python-3\./.test(compiler.version)) {
+            language = "Python3";
+        }
+        const key = language + " " + compiler.name;
         runners[key] = toRunner(compiler);
         console.log("wandbox", key, runners[key]);
     }
@@ -1973,11 +1977,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.12.0"),
+    currentProperty: new ObservableValue("2.12.1"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.12.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.12.1")),
     get latest() {
         return this.latestProperty.value;
     },

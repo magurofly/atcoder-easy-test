@@ -58,7 +58,11 @@ const runners: { [runnerId: string]: CodeRunner } = {
 // wandboxの環境を追加
 fetchWandboxCompilers().then((compilers) => {
   for (const compiler of compilers) {
-    const key = compiler.language + " " + compiler.name;
+    let language = compiler.language;
+    if (compiler.language === "Python" && /python-3\./.test(compiler.version)) {
+      language = "Python3";
+    }
+    const key = language + " " + compiler.name;
     runners[key] = toRunner(compiler);
     console.log("wandbox", key, runners[key]);
   }
