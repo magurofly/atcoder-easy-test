@@ -1,3 +1,4 @@
+import config from "../config";
 import WandboxCppRunner from "../codeRunner/WandboxCppRunner";
 import WandboxRunner from "../codeRunner/WandboxRunner";
 
@@ -16,9 +17,23 @@ interface Switch {
   "display-name": string | null;
 }
 
+// 設定項目を定義
+config.registerCount("wandboxAPI.cacheLifetime", 24 * 60 * 60 * 1000, "lifetime [ms] of Wandbox compiler list cache");
+
 async function fetchWandboxCompilers() {
+  // キャッシュが有効な場合はキャッシュを使う
+  const cached = config.get("wandboxAPI.cachedCompilerList", { value: null, lastModified: -Infinity });
+  if (Date.now() - cached.lastModified <= config.get("wandboxAPI.cacheLifetime", 24 * 60 * 60 * 1000)) {
+    return cached.value;
+  }
+
+  // キャッシュが無効な場合は fetch
   const response = await fetch("https://wandbox.org/api/list.json");
   const compilers: CompilerInfo[] = await response.json();
+
+  config.set("wandboxAPI.cachedCompilerList", { value: compilers, lastModified: Date.now() });
+  config.save();
+
   return compilers;
 }
 

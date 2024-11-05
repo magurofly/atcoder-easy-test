@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.12.1
+// @version     2.12.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1641,9 +1641,19 @@ class WandboxCppRunner extends WandboxRunner {
     }
 }
 
+// 設定項目を定義
+config.registerCount("wandboxAPI.cacheLifetime", 24 * 60 * 60 * 1000, "lifetime [ms] of Wandbox compiler list cache");
 async function fetchWandboxCompilers() {
+    // キャッシュが有効な場合はキャッシュを使う
+    const cached = config.get("wandboxAPI.cachedCompilerList", { value: null, lastModified: -Infinity });
+    if (Date.now() - cached.lastModified <= config.get("wandboxAPI.cacheLifetime", 24 * 60 * 60 * 1000)) {
+        return cached.value;
+    }
+    // キャッシュが無効な場合は fetch
     const response = await fetch("https://wandbox.org/api/list.json");
     const compilers = await response.json();
+    config.set("wandboxAPI.cachedCompilerList", { value: compilers, lastModified: Date.now() });
+    config.save();
     return compilers;
 }
 function getOptimizationOption(compiler) {
@@ -1704,7 +1714,7 @@ const runners = {
     "COBOL Free OpenCOBOL 1.1.0 AtCoder": new AtCoderRunner("4061", "COBOL - Free (OpenCOBOL 1.1.0)"),
 };
 // wandboxの環境を追加
-fetchWandboxCompilers().then((compilers) => {
+const wandboxPromise = fetchWandboxCompilers().then((compilers) => {
     for (const compiler of compilers) {
         let language = compiler.language;
         if (compiler.language === "Python" && /python-3\./.test(compiler.version)) {
@@ -1761,6 +1771,7 @@ var codeRunner = {
     // 環境の名前の一覧を取得する
     // @return runnerIdとラベルのペアの配列
     async getEnvironment(languageId) {
+        await wandboxPromise; // wandboxAPI がコンパイラ情報を取ってくるのを待つ
         const langs = similarLangs(languageId, Object.keys(runners));
         if (langs.length == 0)
             throw `Undefined language: ${languageId}`;
@@ -1977,11 +1988,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.12.1"),
+    currentProperty: new ObservableValue("2.12.2"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.12.1")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.12.2")),
     get latest() {
         return this.latestProperty.value;
     },
