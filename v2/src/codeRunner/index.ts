@@ -56,7 +56,7 @@ const runners: { [runnerId: string]: CodeRunner } = {
 };
 
 // wandboxの環境を追加
-fetchWandboxCompilers().then((compilers) => {
+const wandboxPromise = fetchWandboxCompilers().then((compilers) => {
   for (const compiler of compilers) {
     let language = compiler.language;
     if (compiler.language === "Python" && /python-3\./.test(compiler.version)) {
@@ -117,6 +117,7 @@ export default {
   // 環境の名前の一覧を取得する
   // @return runnerIdとラベルのペアの配列
   async getEnvironment(languageId: string): Promise<[string, string][]> {
+    await wandboxPromise; // wandboxAPI がコンパイラ情報を取ってくるのを待つ
     const langs = similarLangs(languageId, Object.keys(runners));
     if (langs.length == 0) throw `Undefined language: ${languageId}`;
     return langs.map(runnerId => [runnerId, runners[runnerId].label]);
