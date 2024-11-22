@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.12.2
+// @version     2.13.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -595,49 +595,6 @@ class PaizaIORunner extends CodeRunner {
         return result;
     }
 }
-
-let brythonRunnerLoaded = false;
-const brythonRunner = new CustomRunner("Brython", async (sourceCode, input, options = {}) => {
-    if (!brythonRunnerLoaded) {
-        // BrythonRunner を読み込む
-        await new Promise((resolve) => {
-            const script = document.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/gh/pythonpad/brython-runner/lib/brython-runner.bundle.js";
-            script.onload = () => {
-                brythonRunnerLoaded = true;
-                resolve(null);
-            };
-            document.head.appendChild(script);
-        });
-    }
-    let stdout = "";
-    let stderr = "";
-    let stdinOffset = 0;
-    const BrythonRunner = unsafeWindow.BrythonRunner;
-    const runner = new BrythonRunner({
-        stdout: { write(content) { stdout += content; }, flush() { } },
-        stderr: { write(content) { stderr += content; }, flush() { } },
-        stdin: { async readline() {
-                let index = input.indexOf("\n", stdinOffset) + 1;
-                if (index == 0)
-                    index = input.length;
-                const text = input.slice(stdinOffset, index);
-                stdinOffset = index;
-                return text;
-            } },
-    });
-    const timeStart = Date.now();
-    await runner.runCode(sourceCode);
-    const timeEnd = Date.now();
-    return {
-        status: "OK",
-        exitCode: "0",
-        execTime: (timeEnd - timeStart),
-        input,
-        output: stdout,
-        error: stderr,
-    };
-});
 
 async function loadPyodide() {
     const script = await fetch("https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js").then((res) => res.text());
@@ -1680,7 +1637,6 @@ function toRunner(compiler) {
 const runners = {
     "C C17 Clang paiza.io": new PaizaIORunner("c", "C (C17 / Clang)"),
     "Python3 CPython paiza.io": new PaizaIORunner("python3", "Python3"),
-    "Python3 Brython": brythonRunner,
     "Python3 Pyodide": pyodideRunner,
     "Bash paiza.io": new PaizaIORunner("bash", "Bash"),
     "Clojure paiza.io": new PaizaIORunner("clojure", "Clojure"),
@@ -1988,11 +1944,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.12.2"),
+    currentProperty: new ObservableValue("2.13.0"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.12.2")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.13.0")),
     get latest() {
         return this.latestProperty.value;
     },
