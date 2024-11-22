@@ -9,7 +9,6 @@ import AtCoderRunner from "./AtCoderRunner";
 import PaizaIORunner from "./PaizaIORunner";
 import WandboxRunner from "./WandboxRunner";
 import WandboxCppRunner from "./WandboxCppRunner";
-import brythonRunner from "./brythonRunner";
 import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
 import config from "../config";
@@ -19,7 +18,6 @@ import { fetchWandboxCompilers, toRunner } from "../wandbox-api";
 const runners: { [runnerId: string]: CodeRunner } = {
   "C C17 Clang paiza.io": new PaizaIORunner("c", "C (C17 / Clang)"),
   "Python3 CPython paiza.io": new PaizaIORunner("python3", "Python3"),
-  "Python3 Brython": brythonRunner,
   "Python3 Pyodide": pyodideRunner,
   "Bash paiza.io": new PaizaIORunner("bash", "Bash"),
   "Clojure paiza.io": new PaizaIORunner("clojure", "Clojure"),
