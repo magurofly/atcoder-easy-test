@@ -13,6 +13,7 @@ import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
 import config from "../config";
 import { fetchWandboxCompilers, toRunner } from "../wandbox-api";
+import LocalRunner from "./LocalRunner";
 
 // runners[key] = runner; key = language + " " + environmentInfo
 const runners: { [runnerId: string]: CodeRunner } = {
@@ -78,6 +79,11 @@ pSite.then(site => {
     }
   }
 });
+
+// LocalRunner 関連
+config.registerText("codeRunner.localRunnerURL", "", "URL of Local Runner API"); //TODO: add cf.
+LocalRunner.setRunners(runners);
+LocalRunner.update();
 
 console.info("AtCoder Easy Test: codeRunner OK");
 

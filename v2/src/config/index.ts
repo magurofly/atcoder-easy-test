@@ -2,7 +2,7 @@ import { newElement, uuid } from "../util";
 import settings from "../settings";
 
 interface Option<T> {
-  type: "flag" | "count",
+  type: "flag" | "count" | "text",
   key: string,
   defaultValue: T,
   description: string,
@@ -85,6 +85,17 @@ settings.add("config", (win: Window) => {
         }));
         break;
       }
+      case "text": {
+        control.appendChild(newElement<HTMLInputElement>("input", {
+          id,
+          type: "text",
+          value: config.get(key, defaultValue),
+          onchange() {
+            config.set(key, this.value);
+          },
+        }));
+        break;
+      }
       default:
         throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
     }
@@ -139,6 +150,15 @@ const config = {
   registerCount(key: string, defaultValue: number, description: string) {
     options.push({
       type: "count",
+      key,
+      defaultValue,
+      description,
+    });
+  },
+
+  registerText(key: string, defaultValue: string, description: string) {
+    options.push({
+      type: "text",
       key,
       defaultValue,
       description,

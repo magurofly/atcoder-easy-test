@@ -227,6 +227,17 @@ settings.add("config", (win) => {
                 }));
                 break;
             }
+            case "text": {
+                control.appendChild(newElement("input", {
+                    id,
+                    type: "text",
+                    value: config.get(key, defaultValue),
+                    onchange() {
+                        config.set(key, this.value);
+                    },
+                }));
+                break;
+            }
             default:
                 throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
         }
@@ -280,6 +291,14 @@ const config = {
     registerCount(key, defaultValue, description) {
         options.push({
             type: "count",
+            key,
+            defaultValue,
+            description,
+        });
+    },
+    registerText(key, defaultValue, description) {
+        options.push({
+            type: "text",
             key,
             defaultValue,
             description,
@@ -1633,6 +1652,102 @@ function toRunner(compiler) {
     }
 }
 
+const pattern = /^https?:\/\//;
+let runners$1 = {};
+const currentLocalRunners = [];
+class LocalRunner extends CodeRunner {
+    compilerName;
+    static setRunners(_runners) {
+        runners$1 = _runners;
+    }
+    static async update() {
+        const apiURL = config.getString("codeRunner.localRunnerURL", "");
+        if (!pattern.test(apiURL)) {
+            throw "LocalRunner: invalid localRunnerURL";
+        }
+        for (const key of currentLocalRunners) {
+            delete runners$1[key];
+        }
+        currentLocalRunners.length = 0;
+        const res = await fetch(apiURL, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                mode: "list",
+            }),
+        }).then(r => r.json());
+        for (const { language, compilerName, label } of res) {
+            const key = `${language} ${compilerName} ${label}`;
+            runners$1[key] = new LocalRunner(compilerName, label);
+            currentLocalRunners.push(key);
+        }
+    }
+    constructor(compilerName, label) {
+        super(label, "Local");
+        this.compilerName = compilerName;
+    }
+    async run(sourceCode, input, options = {}) {
+        const apiURL = config.getString("codeRunner.localRunnerURL", "");
+        if (!pattern.test(apiURL)) {
+            throw "LocalRunner: invalid localRunnerURL";
+        }
+        let res;
+        try {
+            res = await fetch(apiURL, {
+                method: "POST",
+                mode: "cors",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    mode: "run",
+                    compilerName: this.compilerName,
+                    sourceCode,
+                    stdin: input,
+                }),
+            }).then(r => r.json());
+        }
+        catch (error) {
+            return {
+                status: "IE",
+                input,
+                error: String(error),
+            };
+        }
+        const result = {
+            status: "OK",
+            exitCode: String(res.exitCode),
+            execTime: +res.time * 1e3,
+            memory: +res.memory * 1e-3,
+            input,
+            output: res.stdout ?? "",
+            error: res.stderr ?? "",
+        };
+        switch (res.status) {
+            case "success": {
+                result.status = "OK";
+                break;
+            }
+            case "compileError": {
+                result.status = "CE";
+                break;
+            }
+            case "runtimeError": {
+                result.status = "RE";
+                break;
+            }
+            case "internalError":
+            default: {
+                result.status = "IE";
+            }
+        }
+        return result;
+    }
+}
+
 // runners[key] = runner; key = language + " " + environmentInfo
 const runners = {
     "C C17 Clang paiza.io": new PaizaIORunner("c", "C (C17 / Clang)"),
@@ -1693,6 +1808,10 @@ site.then(site => {
         }
     }
 });
+// LocalRunner 関連
+config.registerText("codeRunner.localRunnerURL", "", "URL of Local Runner API"); //TODO: add cf.
+LocalRunner.setRunners(runners);
+LocalRunner.update();
 console.info("AtCoder Easy Test: codeRunner OK");
 config.registerCount("codeRunner.maxRetry", 3, "Max count of retry when IE (Internal Error)");
 var codeRunner = {
