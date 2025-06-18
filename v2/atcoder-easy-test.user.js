@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.13.0
+// @version     2.14.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -231,9 +231,9 @@ settings.add("config", (win) => {
                 control.appendChild(newElement("input", {
                     id,
                     type: "text",
-                    value: config.get(key, defaultValue),
+                    value: config.getString(key, defaultValue),
                     onchange() {
-                        config.set(key, this.value);
+                        config.setString(key, this.value);
                     },
                 }));
                 break;
@@ -2063,11 +2063,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.13.0"),
+    currentProperty: new ObservableValue("2.14.0"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.13.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.14.0")),
     get latest() {
         return this.latestProperty.value;
     },

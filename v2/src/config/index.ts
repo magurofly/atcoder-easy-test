@@ -89,9 +89,9 @@ settings.add("config", (win: Window) => {
         control.appendChild(newElement<HTMLInputElement>("input", {
           id,
           type: "text",
-          value: config.get(key, defaultValue),
+          value: config.getString(key, defaultValue),
           onchange() {
-            config.set(key, this.value);
+            config.setString(key, this.value);
           },
         }));
         break;
