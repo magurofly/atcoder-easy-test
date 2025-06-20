@@ -106,15 +106,15 @@ export default class LocalRunner extends CodeRunner {
 
     switch (res.status) {
       case "success": {
-        result.status = "OK";
+        if (res.exitCode == 0) {
+          result.status = "OK";
+        } else {
+          result.status = "RE";
+        }
         break;
       }
       case "compileError": {
         result.status = "CE";
-        break;
-      }
-      case "runtimeError": {
-        result.status = "RE";
         break;
       }
       case "internalError":
