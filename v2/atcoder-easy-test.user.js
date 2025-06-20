@@ -1720,8 +1720,8 @@ class LocalRunner extends CodeRunner {
         const result = {
             status: "OK",
             exitCode: String(res.exitCode),
-            execTime: +res.time * 1e3,
-            memory: +res.memory * 1e-3,
+            execTime: +res.time,
+            memory: +res.memory,
             input,
             output: res.stdout ?? "",
             error: res.stderr ?? "",
