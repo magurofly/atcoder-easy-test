@@ -1728,15 +1728,16 @@ class LocalRunner extends CodeRunner {
         };
         switch (res.status) {
             case "success": {
-                result.status = "OK";
+                if (res.exitCode == 0) {
+                    result.status = "OK";
+                }
+                else {
+                    result.status = "RE";
+                }
                 break;
             }
             case "compileError": {
                 result.status = "CE";
-                break;
-            }
-            case "runtimeError": {
-                result.status = "RE";
                 break;
             }
             case "internalError":
@@ -1809,7 +1810,7 @@ site.then(site => {
     }
 });
 // LocalRunner 関連
-config.registerText("codeRunner.localRunnerURL", "", "URL of Local Runner API"); //TODO: add cf.
+config.registerText("codeRunner.localRunnerURL", "", "URL of Local Runner API (cf. https://github.com/magurofly/atcoder-easy-test/blob/main/v2/docs/LocalRunner.md)"); //TODO: add cf.
 LocalRunner.setRunners(runners);
 LocalRunner.update();
 console.info("AtCoder Easy Test: codeRunner OK");
