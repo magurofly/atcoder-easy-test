@@ -13,6 +13,7 @@ import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
 import config from "../config";
 import { fetchWandboxCompilers, toRunner } from "../wandbox-api";
+import LocalRunner from "./LocalRunner";
 
 // runners[key] = runner; key = language + " " + environmentInfo
 const runners: { [runnerId: string]: CodeRunner } = {
@@ -79,6 +80,11 @@ pSite.then(site => {
   }
 });
 
+// LocalRunner 関連
+config.registerText("codeRunner.localRunnerURL", "", "URL of Local Runner API (cf. https://github.com/magurofly/atcoder-easy-test/blob/main/v2/docs/LocalRunner.md)"); //TODO: add cf.
+LocalRunner.setRunners(runners);
+const localRunnerPromise = LocalRunner.update();
+
 console.info("AtCoder Easy Test: codeRunner OK");
 
 config.registerCount("codeRunner.maxRetry", 3, "Max count of retry when IE (Internal Error)");
@@ -116,6 +122,7 @@ export default {
   // @return runnerIdとラベルのペアの配列
   async getEnvironment(languageId: string): Promise<[string, string][]> {
     await wandboxPromise; // wandboxAPI がコンパイラ情報を取ってくるのを待つ
+    await localRunnerPromise; // LocalRunner がコンパイラ情報を取ってくるのを待つ
     const langs = similarLangs(languageId, Object.keys(runners));
     if (langs.length == 0) throw `Undefined language: ${languageId}`;
     return langs.map(runnerId => [runnerId, runners[runnerId].label]);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.13.0
+// @version     2.14.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -227,6 +227,17 @@ settings.add("config", (win) => {
                 }));
                 break;
             }
+            case "text": {
+                control.appendChild(newElement("input", {
+                    id,
+                    type: "text",
+                    value: config.getString(key, defaultValue),
+                    onchange() {
+                        config.setString(key, this.value);
+                    },
+                }));
+                break;
+            }
             default:
                 throw new TypeError(`AtCoderEasyTest.setting: undefined option type ${type} for ${key}`);
         }
@@ -280,6 +291,14 @@ const config = {
     registerCount(key, defaultValue, description) {
         options.push({
             type: "count",
+            key,
+            defaultValue,
+            description,
+        });
+    },
+    registerText(key, defaultValue, description) {
+        options.push({
+            type: "text",
             key,
             defaultValue,
             description,
@@ -1633,6 +1652,103 @@ function toRunner(compiler) {
     }
 }
 
+const pattern = /^https?:\/\//;
+let runners$1 = {};
+const currentLocalRunners = [];
+class LocalRunner extends CodeRunner {
+    compilerName;
+    static setRunners(_runners) {
+        runners$1 = _runners;
+    }
+    static async update() {
+        const apiURL = config.getString("codeRunner.localRunnerURL", "");
+        if (!pattern.test(apiURL)) {
+            throw "LocalRunner: invalid localRunnerURL";
+        }
+        for (const key of currentLocalRunners) {
+            delete runners$1[key];
+        }
+        currentLocalRunners.length = 0;
+        const res = await fetch(apiURL, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                mode: "list",
+            }),
+        }).then(r => r.json());
+        for (const { language, compilerName, label } of res) {
+            const key = `${language} ${compilerName} ${label}`;
+            runners$1[key] = new LocalRunner(compilerName, label);
+            currentLocalRunners.push(key);
+        }
+    }
+    constructor(compilerName, label) {
+        super(label, "Local");
+        this.compilerName = compilerName;
+    }
+    async run(sourceCode, input, options = {}) {
+        const apiURL = config.getString("codeRunner.localRunnerURL", "");
+        if (!pattern.test(apiURL)) {
+            throw "LocalRunner: invalid localRunnerURL";
+        }
+        let res;
+        try {
+            res = await fetch(apiURL, {
+                method: "POST",
+                mode: "cors",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    mode: "run",
+                    compilerName: this.compilerName,
+                    sourceCode,
+                    stdin: input,
+                }),
+            }).then(r => r.json());
+        }
+        catch (error) {
+            return {
+                status: "IE",
+                input,
+                error: String(error),
+            };
+        }
+        const result = {
+            status: "OK",
+            exitCode: String(res.exitCode),
+            execTime: +res.time,
+            memory: +res.memory,
+            input,
+            output: res.stdout ?? "",
+            error: res.stderr ?? "",
+        };
+        switch (res.status) {
+            case "success": {
+                if (res.exitCode == 0) {
+                    result.status = "OK";
+                }
+                else {
+                    result.status = "RE";
+                }
+                break;
+            }
+            case "compileError": {
+                result.status = "CE";
+                break;
+            }
+            case "internalError":
+            default: {
+                result.status = "IE";
+            }
+        }
+        return result;
+    }
+}
+
 // runners[key] = runner; key = language + " " + environmentInfo
 const runners = {
     "C C17 Clang paiza.io": new PaizaIORunner("c", "C (C17 / Clang)"),
@@ -1693,6 +1809,10 @@ site.then(site => {
         }
     }
 });
+// LocalRunner 関連
+config.registerText("codeRunner.localRunnerURL", "", "URL of Local Runner API (cf. https://github.com/magurofly/atcoder-easy-test/blob/main/v2/docs/LocalRunner.md)"); //TODO: add cf.
+LocalRunner.setRunners(runners);
+const localRunnerPromise = LocalRunner.update();
 console.info("AtCoder Easy Test: codeRunner OK");
 config.registerCount("codeRunner.maxRetry", 3, "Max count of retry when IE (Internal Error)");
 var codeRunner = {
@@ -1728,6 +1848,7 @@ var codeRunner = {
     // @return runnerIdとラベルのペアの配列
     async getEnvironment(languageId) {
         await wandboxPromise; // wandboxAPI がコンパイラ情報を取ってくるのを待つ
+        await localRunnerPromise; // LocalRunner がコンパイラ情報を取ってくるのを待つ
         const langs = similarLangs(languageId, Object.keys(runners));
         if (langs.length == 0)
             throw `Undefined language: ${languageId}`;
@@ -1944,11 +2065,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.13.0"),
+    currentProperty: new ObservableValue("2.14.0"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.13.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.14.0")),
     get latest() {
         return this.latestProperty.value;
     },
