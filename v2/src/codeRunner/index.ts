@@ -83,7 +83,7 @@ pSite.then(site => {
 // LocalRunner 関連
 config.registerText("codeRunner.localRunnerURL", "", "URL of Local Runner API (cf. https://github.com/magurofly/atcoder-easy-test/blob/main/v2/docs/LocalRunner.md)"); //TODO: add cf.
 LocalRunner.setRunners(runners);
-LocalRunner.update();
+const localRunnerPromise = LocalRunner.update();
 
 console.info("AtCoder Easy Test: codeRunner OK");
 
@@ -122,6 +122,7 @@ export default {
   // @return runnerIdとラベルのペアの配列
   async getEnvironment(languageId: string): Promise<[string, string][]> {
     await wandboxPromise; // wandboxAPI がコンパイラ情報を取ってくるのを待つ
+    await localRunnerPromise; // LocalRunner がコンパイラ情報を取ってくるのを待つ
     const langs = similarLangs(languageId, Object.keys(runners));
     if (langs.length == 0) throw `Undefined language: ${languageId}`;
     return langs.map(runnerId => [runnerId, runners[runnerId].label]);
