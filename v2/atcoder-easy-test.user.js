@@ -1662,6 +1662,10 @@ class LocalRunner extends CodeRunner {
     }
     static async update() {
         const apiURL = config.getString("codeRunner.localRunnerURL", "");
+        if (!apiURL) {
+            // 未設定の場合は何もせず即return（例外を投げない）
+            return;
+        }
         if (!pattern.test(apiURL)) {
             throw "LocalRunner: invalid localRunnerURL";
         }
