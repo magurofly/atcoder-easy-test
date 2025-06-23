@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.14.1
+// @version     2.14.2
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1673,16 +1673,23 @@ class LocalRunner extends CodeRunner {
         if (!pattern.test(apiURL)) {
             throw "LocalRunner: invalid localRunnerURL";
         }
-        const res = await fetch(apiURL, {
-            method: "POST",
-            mode: "cors",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                mode: "list",
-            }),
-        }).then(r => r.json());
+        try {
+            const res = await fetch(apiURL, {
+                method: "POST",
+                mode: "cors",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    mode: "list",
+                }),
+            }).then(r => r.json());
+        }
+        catch (e) {
+            // fetch失敗したらreturn（例外を投げない）
+            console.error("LocalRunner:", e);
+            return;
+        }
         for (const { language, compilerName, label } of res) {
             const key = `${language} ${compilerName} ${label}`;
             runners$1[key] = new LocalRunner(compilerName, label);
@@ -2069,11 +2076,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.14.1"),
+    currentProperty: new ObservableValue("2.14.2"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.14.1")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.14.2")),
     get latest() {
         return this.latestProperty.value;
     },

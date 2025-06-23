@@ -47,16 +47,22 @@ export default class LocalRunner extends CodeRunner {
       throw "LocalRunner: invalid localRunnerURL";
     }
 
-    const res = await fetch(apiURL, {
-      method: "POST",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        mode: "list",
-      }),
-    }).then(r => r.json()) as LocalRunnerCompilerInfo[];
+    try {
+      const res = await fetch(apiURL, {
+        method: "POST",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode: "list",
+        }),
+      }).then(r => r.json()) as LocalRunnerCompilerInfo[];
+    } catch(e) {
+      // fetch失敗したらreturn（例外を投げない）
+      console.error("LocalRunner:", e);
+      return;
+    }
 
     for (const { language, compilerName, label } of res) {
       const key = `${language} ${compilerName} ${label}`;
