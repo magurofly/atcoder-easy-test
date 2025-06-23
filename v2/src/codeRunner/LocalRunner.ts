@@ -33,18 +33,19 @@ export default class LocalRunner extends CodeRunner {
 
   static async update() {
     const apiURL = config.getString("codeRunner.localRunnerURL", "");
-    if (!apiURL) {
-      // 未設定の場合は何もせず即return（例外を投げない）
-      return;
-    }
-     if (!pattern.test(apiURL)) {
-      throw "LocalRunner: invalid localRunnerURL";
-    }
 
     for (const key of currentLocalRunners) {
       delete runners[key];
     }
     currentLocalRunners.length = 0;
+
+    if (!apiURL) {
+      // 未設定の場合は登録済みrunnerを削除し即return（例外を投げない）
+      return;
+    }
+    if (!pattern.test(apiURL)) {
+      throw "LocalRunner: invalid localRunnerURL";
+    }
 
     const res = await fetch(apiURL, {
       method: "POST",

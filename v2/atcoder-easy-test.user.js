@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.14.0
+// @version     2.14.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1662,17 +1662,17 @@ class LocalRunner extends CodeRunner {
     }
     static async update() {
         const apiURL = config.getString("codeRunner.localRunnerURL", "");
+        for (const key of currentLocalRunners) {
+            delete runners$1[key];
+        }
+        currentLocalRunners.length = 0;
         if (!apiURL) {
-            // 未設定の場合は何もせず即return（例外を投げない）
+            // 未設定の場合は登録済みrunnerを削除し即return（例外を投げない）
             return;
         }
         if (!pattern.test(apiURL)) {
             throw "LocalRunner: invalid localRunnerURL";
         }
-        for (const key of currentLocalRunners) {
-            delete runners$1[key];
-        }
-        currentLocalRunners.length = 0;
         const res = await fetch(apiURL, {
             method: "POST",
             mode: "cors",
@@ -2069,11 +2069,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.14.0"),
+    currentProperty: new ObservableValue("2.14.1"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.14.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.14.1")),
     get latest() {
         return this.latestProperty.value;
     },
