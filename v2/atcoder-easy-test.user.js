@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.14.2
+// @version     2.14.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1684,16 +1684,16 @@ class LocalRunner extends CodeRunner {
                     mode: "list",
                 }),
             }).then(r => r.json());
+            for (const { language, compilerName, label } of res) {
+                const key = `${language} ${compilerName} ${label}`;
+                runners$1[key] = new LocalRunner(compilerName, label);
+                currentLocalRunners.push(key);
+            }
         }
         catch (e) {
             // fetch失敗したらreturn（例外を投げない）
             console.error("LocalRunner:", e);
             return;
-        }
-        for (const { language, compilerName, label } of res) {
-            const key = `${language} ${compilerName} ${label}`;
-            runners$1[key] = new LocalRunner(compilerName, label);
-            currentLocalRunners.push(key);
         }
     }
     constructor(compilerName, label) {
@@ -2076,11 +2076,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.14.2"),
+    currentProperty: new ObservableValue("2.14.3"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.14.2")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.14.3")),
     get latest() {
         return this.latestProperty.value;
     },

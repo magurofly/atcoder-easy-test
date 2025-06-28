@@ -58,16 +58,16 @@ export default class LocalRunner extends CodeRunner {
           mode: "list",
         }),
       }).then(r => r.json()) as LocalRunnerCompilerInfo[];
+
+      for (const { language, compilerName, label } of res) {
+        const key = `${language} ${compilerName} ${label}`;
+        runners[key] = new LocalRunner(compilerName, label);
+        currentLocalRunners.push(key);
+      }
     } catch(e) {
       // fetch失敗したらreturn（例外を投げない）
       console.error("LocalRunner:", e);
       return;
-    }
-
-    for (const { language, compilerName, label } of res) {
-      const key = `${language} ${compilerName} ${label}`;
-      runners[key] = new LocalRunner(compilerName, label);
-      currentLocalRunners.push(key);
     }
   }
   
