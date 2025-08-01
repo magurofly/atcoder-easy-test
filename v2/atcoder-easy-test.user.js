@@ -2348,6 +2348,8 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
         const eRun = E("run");
         const eSetting = E("setting");
         const eVersion = E("version");
+        let savedCheckboxValue = localStorage.getItem("allowableErrorCheckedState");
+        eAllowableErrorCheck.checked = (savedCheckboxValue === 'true');
         eVersion.textContent = atCoderEasyTest.version.current;
         events.on("enable", () => {
             eRun.classList.remove("disabled");
@@ -2434,6 +2436,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
             eAllowableError.disabled = !eAllowableErrorCheck.checked;
             eAllowableErrorCheck.addEventListener("change", event => {
                 eAllowableError.disabled = !eAllowableErrorCheck.checked;
+                localStorage.setItem("allowableErrorCheckedState", String(eAllowableErrorCheck.checked));
             });
         }
         // テスト実行
