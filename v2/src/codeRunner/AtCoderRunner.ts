@@ -72,7 +72,7 @@ export default class AtCoderRunner extends CodeRunner {
         continue;
       }
 
-      const status = (result.ExitCode == 0) ? "OK" : (result.TimeConsumption == -1) ? "CE" : "RE";
+      const status = (result.ExitCode == 0) ? "OK" : (result.TimeConsumption.toString().startsWith("-")) ? "CE" : "RE";
       if (status == "CE" && "runGroupId" in options) {
         ce_groups.add(options.runGroupId);
       }
@@ -80,8 +80,8 @@ export default class AtCoderRunner extends CodeRunner {
       return {
         status,
         exitCode: result.ExitCode,
-        execTime: result.TimeConsumption,
-        memory: result.MemoryConsumption,
+        execTime: parseInt(result.TimeConsumption),
+        memory: parseInt(result.MemoryConsumption),
         input,
         output: data.Stdout,
         error: data.Stderr,

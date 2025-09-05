@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.14.3
+// @version     2.14.4
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -528,15 +528,15 @@ class AtCoderRunner extends CodeRunner {
                 await sleep(data.Interval);
                 continue;
             }
-            const status = (result.ExitCode == 0) ? "OK" : (result.TimeConsumption == -1) ? "CE" : "RE";
+            const status = (result.ExitCode == 0) ? "OK" : (result.TimeConsumption.toString().startsWith("-")) ? "CE" : "RE";
             if (status == "CE" && "runGroupId" in options) {
                 ce_groups.add(options.runGroupId);
             }
             return {
                 status,
                 exitCode: result.ExitCode,
-                execTime: result.TimeConsumption,
-                memory: result.MemoryConsumption,
+                execTime: parseInt(result.TimeConsumption),
+                memory: parseInt(result.MemoryConsumption),
                 input,
                 output: data.Stdout,
                 error: data.Stderr,
@@ -2076,11 +2076,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.14.3"),
+    currentProperty: new ObservableValue("2.14.4"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.14.3")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.14.4")),
     get latest() {
         return this.latestProperty.value;
     },
