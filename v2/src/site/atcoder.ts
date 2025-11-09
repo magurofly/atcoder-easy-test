@@ -294,6 +294,18 @@ async function init() {
     6117: "Fix 1.1.0-alpha.12",
     6118: "SQL DuckDB 1.3.2",
   };
+
+  // filter langMap
+  const existingLangs = new Set();
+  for (const option of doc.querySelector<HTMLSelectElement>("#select-lang select.current").options) {
+    existingLangs.add(option.value);
+  }
+  for (const key of Object.keys(langMap)) {
+    if (!existingLangs.has(key.toString())) {
+      delete langMap[key];
+    }
+  }
+
   const languageId = new ObservableValue(unsafeWindow.$("#select-lang select.current").val());
   unsafeWindow.$("#select-lang select").change(() => {
     languageId.value = unsafeWindow.$("#select-lang select.current").val();

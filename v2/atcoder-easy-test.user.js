@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.15.0
+// @version     2.15.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -981,6 +981,16 @@ async function init$5() {
         6117: "Fix 1.1.0-alpha.12",
         6118: "SQL DuckDB 1.3.2",
     };
+    // filter langMap
+    const existingLangs = new Set();
+    for (const option of doc.querySelector("#select-lang select.current").options) {
+        existingLangs.add(option.value);
+    }
+    for (const key of Object.keys(langMap)) {
+        if (!existingLangs.has(key.toString())) {
+            delete langMap[key];
+        }
+    }
     const languageId = new ObservableValue(unsafeWindow.$("#select-lang select.current").val());
     unsafeWindow.$("#select-lang select").change(() => {
         languageId.value = unsafeWindow.$("#select-lang select.current").val();
@@ -2193,11 +2203,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.15.0"),
+    currentProperty: new ObservableValue("2.15.1"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.15.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.15.1")),
     get latest() {
         return this.latestProperty.value;
     },
