@@ -94,6 +94,9 @@ const atCoderEasyTest = {
   const eSetting = E<HTMLAnchorElement>("setting");
   const eVersion = E<HTMLSpanElement>("version");
 
+  let savedCheckboxValue: string | null = localStorage.getItem("allowableErrorCheckedState");
+  eAllowableErrorCheck.checked = (savedCheckboxValue === 'true');
+    
   eVersion.textContent = atCoderEasyTest.version.current;
 
   events.on("enable", () => {
@@ -185,6 +188,7 @@ const atCoderEasyTest = {
     eAllowableError.disabled = !eAllowableErrorCheck.checked;
     eAllowableErrorCheck.addEventListener("change", event => {
       eAllowableError.disabled = !eAllowableErrorCheck.checked;
+      localStorage.setItem("allowableErrorCheckedState", String(eAllowableErrorCheck.checked));
     });
   }
 
