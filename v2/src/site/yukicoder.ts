@@ -1,15 +1,21 @@
 import TestCase from "../TestCase";
-import { newElement, ObservableValue } from "../util";
+import { loadScript, newElement, ObservableValue } from "../util";
 
 async function init() {
   if (location.host != "yukicoder.me") throw "Not yukicoder";
 
-  const $ = unsafeWindow.$;
   const doc = unsafeWindow.document;
   const editor = (unsafeWindow as any).ace.edit("rich_source");
-  const eSourceObject = $("#source");
-  const eLang = $("#lang");
-  const eSamples = $(".sample");
+  const eSourceObject = doc.querySelector<HTMLTextAreaElement>("#source");
+  const eLang = doc.querySelector<HTMLSelectElement>("#lang");
+  const eSamples = doc.querySelectorAll(".sample");
+
+  doc.head.appendChild(newElement("link", {
+    rel: "stylesheet",
+    href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
+  }));
+  await loadScript("https://cdn.jsdelivr.net/npm/jquery@1.9.1/jquery.min.js");
+  await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js");
 
   const langMap = {
     "cpp14": "C++ C++14 GCC 11.1.0 + Boost 1.77.0",
@@ -65,20 +71,20 @@ async function init() {
     btnCopyInput.parentElement.insertBefore(newElement("span", { className: "atcoder-easy-test-anchor" }), btnCopyInput);
   }
 
-  const language = new ObservableValue(langMap[eLang.val()]);
-  eLang.on("change", () => {
-    language.value = langMap[eLang.val()];
+  const language = new ObservableValue(langMap[eLang.value]);
+  eLang.addEventListener("change", () => {
+    language.value = langMap[eLang.value];
   });
 
   return {
     name: "yukicoder",
     language,
     get sourceCode(): string {
-      if (eSourceObject.is(":visible")) return eSourceObject.val();
+      if (eSourceObject.checkVisibility()) return eSourceObject.value;
       return editor.getSession().getValue();
     },
     set sourceCode(sourceCode: string) {
-      eSourceObject.val(sourceCode);
+      eSourceObject.value = sourceCode;
       editor.getSession().setValue(sourceCode);
     },
     submit(): void {
@@ -100,19 +106,19 @@ async function init() {
       const testCases = [];
       let sampleId = 1;
       for (let i = 0; i < eSamples.length; i++) {
-        const eSample = eSamples.eq(i);
-        const [eInput, eOutput] = eSample.find("pre");
+        const eSample = eSamples[i];
+        const [eInput, eOutput] = eSample.querySelectorAll("pre");
         testCases.push({
           title: `Sample ${sampleId++}`,
           input: eInput.textContent,
           output: eOutput.textContent,
-          anchor: eSample.find(".atcoder-easy-test-anchor")[0],
+          anchor: eSample.querySelector(".atcoder-easy-test-anchor"),
         });
       }
       return testCases;
     },
     get jQuery(): any {
-      return $;
+      return unsafeWindow["jQuery"];
     },
     get taskURI(): string {
       return location.href;

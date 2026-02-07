@@ -15,11 +15,6 @@ async function init() {
   const doc = unsafeWindow.document;
   const main = doc.querySelector("main");
 
-  doc.head.appendChild(newElement("link", {
-    rel: "stylesheet",
-    href: "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css",
-  }));
-
   await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js");
 
   const language = new ObservableValue("");
