@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.15.2
+// @version     2.15.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1158,6 +1158,14 @@ async function init$4() {
     }));
     await loadScript("https://cdn.jsdelivr.net/npm/jquery@1.9.1/jquery.min.js");
     await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js");
+    // summary タグの矢印が消える対策
+    const correctionStyleSheet = new CSSStyleSheet();
+    correctionStyleSheet.replaceSync(`
+    summary {
+      display: list-item;
+    }
+  `);
+    doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, correctionStyleSheet];
     const langMap = {
         "cpp14": "C++ C++14 GCC 11.1.0 + Boost 1.77.0",
         "cpp17": "C++ C++17 GCC 11.1.0 + Boost 1.77.0",
@@ -2204,11 +2212,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.15.2"),
+    currentProperty: new ObservableValue("2.15.3"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.15.2")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.15.3")),
     get latest() {
         return this.latestProperty.value;
     },
