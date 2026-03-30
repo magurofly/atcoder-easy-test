@@ -16,6 +16,15 @@ async function init() {
   }));
   await loadScript("https://cdn.jsdelivr.net/npm/jquery@1.9.1/jquery.min.js");
   await loadScript("https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js");
+  
+  // summary タグの矢印が消える対策
+  const correctionStyleSheet = new CSSStyleSheet();
+  correctionStyleSheet.replaceSync(`
+    summary {
+      display: list-item;
+    }
+  `);
+  doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, correctionStyleSheet];
 
   const langMap = {
     "cpp14": "C++ C++14 GCC 11.1.0 + Boost 1.77.0",
