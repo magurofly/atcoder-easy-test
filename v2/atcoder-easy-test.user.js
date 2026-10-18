@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.15.3
+// @version     2.16.0
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -615,17 +615,26 @@ class PaizaIORunner extends CodeRunner {
     }
 }
 
+config.registerText("codeRunner.pyodideRunner.requirements", `["ac-library-python"]`, "packages as JSON array of strings (cf. https://micropip.pyodide.org/en/stable/project/api.html#micropip.install)");
 async function loadPyodide() {
     const script = await fetch("https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js").then((res) => res.text());
     unsafeWindow["Function"](script)();
     const pyodide = await unsafeWindow["loadPyodide"]({
         indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/",
     });
+    const librariesLoaded = pyodide.loadPackage("micropip").then(async () => {
+        const micropip = pyodide.pyimport("micropip");
+        const requirements = config.get("codeRunner.pyodideRunner.requirements", ["ac-library-python"]);
+        await micropip.install(requirements, true);
+    }).catch((e) => {
+        console.error("codeRunner.pyodideRunner:", e);
+    });
     await pyodide.runPythonAsync(`
 import contextlib, io, platform
 class __redirect_stdin(contextlib._RedirectStream):
   _stream = "stdin"
 `);
+    await librariesLoaded;
     return pyodide;
 }
 let _pyodide = Promise.reject("Pyodide is not yet loaded");
@@ -2212,11 +2221,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.15.3"),
+    currentProperty: new ObservableValue("2.16.0"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.15.3")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.16.0")),
     get latest() {
         return this.latestProperty.value;
     },
