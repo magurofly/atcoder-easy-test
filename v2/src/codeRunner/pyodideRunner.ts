@@ -1,6 +1,9 @@
 import Result from "./Result";
 import Options from "./Options";
 import CustomRunner from "./CustomRunner";
+import config from "../config";
+
+config.registerText("codeRunner.pyodideRunner.requirements", `["ac-library-python"]`, "packages as JSON array of strings (cf. https://micropip.pyodide.org/en/stable/project/api.html#micropip.install)");
 
 async function loadPyodide(): Promise<any> {
   const script = await fetch(
@@ -10,11 +13,19 @@ async function loadPyodide(): Promise<any> {
   const pyodide = await unsafeWindow["loadPyodide"]({
     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/",
   });
+  const librariesLoaded = pyodide.loadPackage("micropip").then(async () => {
+    const micropip = pyodide.pyimport("micropip");
+    const requirements = config.get<string[]>("codeRunner.pyodideRunner.requirements", ["ac-library-python"]);
+    await micropip.install(requirements, true);
+  }).catch((e: any) => {
+    console.error("codeRunner.pyodideRunner:", e);
+  });
   await pyodide.runPythonAsync(`
 import contextlib, io, platform
 class __redirect_stdin(contextlib._RedirectStream):
   _stream = "stdin"
 `);
+  await librariesLoaded;
   return pyodide;
 }
 
