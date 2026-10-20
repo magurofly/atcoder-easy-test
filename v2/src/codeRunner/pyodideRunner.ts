@@ -2,6 +2,8 @@ import Result from "./Result";
 import Options from "./Options";
 import CustomRunner from "./CustomRunner";
 import config from "../config";
+import pSite from "../site";
+import { events } from "../util";
 
 config.registerText("codeRunner.pyodideRunner.requirements", `["ac-library-python"]`, "packages as JSON array of strings (cf. https://micropip.pyodide.org/en/stable/project/api.html#micropip.install)");
 
@@ -30,6 +32,18 @@ class __redirect_stdin(contextlib._RedirectStream):
 }
 
 let _pyodide: Promise<any> = Promise.reject("Pyodide is not yet loaded");
+pSite.then(site => {
+  function loadHook() {
+    _pyodide.catch(() => {
+      if (config.get("langSelection", {})[site.language.value] === "Python3 Pyodide") {
+        _pyodide = loadPyodide();
+      }
+    });
+  }
+  site.language.addListener(loadHook);
+  events.on("envchange", loadHook);
+});
+
 let _serial = Promise.resolve();
 const pyodideRunner = new CustomRunner(
   "Pyodide",

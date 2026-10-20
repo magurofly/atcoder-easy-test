@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.16.0
+// @version     2.16.1
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -614,89 +614,6 @@ class PaizaIORunner extends CodeRunner {
         return result;
     }
 }
-
-config.registerText("codeRunner.pyodideRunner.requirements", `["ac-library-python"]`, "packages as JSON array of strings (cf. https://micropip.pyodide.org/en/stable/project/api.html#micropip.install)");
-async function loadPyodide() {
-    const script = await fetch("https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js").then((res) => res.text());
-    unsafeWindow["Function"](script)();
-    const pyodide = await unsafeWindow["loadPyodide"]({
-        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/",
-    });
-    const librariesLoaded = pyodide.loadPackage("micropip").then(async () => {
-        const micropip = pyodide.pyimport("micropip");
-        const requirements = config.get("codeRunner.pyodideRunner.requirements", ["ac-library-python"]);
-        await micropip.install(requirements, true);
-    }).catch((e) => {
-        console.error("codeRunner.pyodideRunner:", e);
-    });
-    await pyodide.runPythonAsync(`
-import contextlib, io, platform
-class __redirect_stdin(contextlib._RedirectStream):
-  _stream = "stdin"
-`);
-    await librariesLoaded;
-    return pyodide;
-}
-let _pyodide = Promise.reject("Pyodide is not yet loaded");
-let _serial = Promise.resolve();
-const pyodideRunner = new CustomRunner("Pyodide", (sourceCode, input, options = {}) => new Promise((resolve, reject) => {
-    _serial = _serial.finally(async () => {
-        const pyodide = await (_pyodide = _pyodide.catch(loadPyodide));
-        const code = `
-def __run():
- global __stdout, __stderr, __stdin, __code
- with __redirect_stdin(io.StringIO(__stdin)):
-  with contextlib.redirect_stdout(io.StringIO()) as __stdout:
-   with contextlib.redirect_stderr(io.StringIO()) as __stderr:
-    try:
-     pass
-` +
-            sourceCode
-                .split("\n")
-                .map((line) => "     " + line)
-                .join("\n") +
-            `
-    except SystemExit as e:
-     __code = e.code
-`;
-        let status = "OK";
-        let exitCode = "0";
-        let stdout = "";
-        let stderr = "";
-        let startTime = -Infinity;
-        let endTime = Infinity;
-        pyodide.globals.set("__stdin", input);
-        try {
-            pyodide.globals.set("__code", null);
-            await pyodide.loadPackagesFromImports(code);
-            await pyodide.runPythonAsync(code);
-            startTime = Date.now();
-            pyodide.runPython("__run()");
-            endTime = Date.now();
-            stdout = pyodide.globals.get("__stdout").getvalue();
-            stderr = pyodide.globals.get("__stderr").getvalue();
-            const __code = pyodide.globals.get("__code");
-            if (typeof __code == "number") {
-                exitCode = String(__code);
-                if (__code != 0)
-                    status = "RE";
-            }
-        }
-        catch (error) {
-            status = "RE";
-            exitCode = "-1";
-            stderr += error.toString();
-        }
-        resolve({
-            status,
-            exitCode,
-            execTime: endTime - startTime,
-            input,
-            output: stdout,
-            error: stderr,
-        });
-    });
-}));
 
 function pairs(list) {
     const pairs = [];
@@ -1655,6 +1572,100 @@ site.catch(() => {
     }
 });
 
+config.registerText("codeRunner.pyodideRunner.requirements", `["ac-library-python"]`, "packages as JSON array of strings (cf. https://micropip.pyodide.org/en/stable/project/api.html#micropip.install)");
+async function loadPyodide() {
+    const script = await fetch("https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js").then((res) => res.text());
+    unsafeWindow["Function"](script)();
+    const pyodide = await unsafeWindow["loadPyodide"]({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/",
+    });
+    const librariesLoaded = pyodide.loadPackage("micropip").then(async () => {
+        const micropip = pyodide.pyimport("micropip");
+        const requirements = config.get("codeRunner.pyodideRunner.requirements", ["ac-library-python"]);
+        await micropip.install(requirements, true);
+    }).catch((e) => {
+        console.error("codeRunner.pyodideRunner:", e);
+    });
+    await pyodide.runPythonAsync(`
+import contextlib, io, platform
+class __redirect_stdin(contextlib._RedirectStream):
+  _stream = "stdin"
+`);
+    await librariesLoaded;
+    return pyodide;
+}
+let _pyodide = Promise.reject("Pyodide is not yet loaded");
+site.then(site => {
+    function loadHook() {
+        _pyodide.catch(() => {
+            if (config.get("langSelection", {})[site.language.value] === "Python3 Pyodide") {
+                _pyodide = loadPyodide();
+            }
+        });
+    }
+    site.language.addListener(loadHook);
+    events.on("envchange", loadHook);
+});
+let _serial = Promise.resolve();
+const pyodideRunner = new CustomRunner("Pyodide", (sourceCode, input, options = {}) => new Promise((resolve, reject) => {
+    _serial = _serial.finally(async () => {
+        const pyodide = await (_pyodide = _pyodide.catch(loadPyodide));
+        const code = `
+def __run():
+ global __stdout, __stderr, __stdin, __code
+ with __redirect_stdin(io.StringIO(__stdin)):
+  with contextlib.redirect_stdout(io.StringIO()) as __stdout:
+   with contextlib.redirect_stderr(io.StringIO()) as __stderr:
+    try:
+     pass
+` +
+            sourceCode
+                .split("\n")
+                .map((line) => "     " + line)
+                .join("\n") +
+            `
+    except SystemExit as e:
+     __code = e.code
+`;
+        let status = "OK";
+        let exitCode = "0";
+        let stdout = "";
+        let stderr = "";
+        let startTime = -Infinity;
+        let endTime = Infinity;
+        pyodide.globals.set("__stdin", input);
+        try {
+            pyodide.globals.set("__code", null);
+            await pyodide.loadPackagesFromImports(code);
+            await pyodide.runPythonAsync(code);
+            startTime = Date.now();
+            pyodide.runPython("__run()");
+            endTime = Date.now();
+            stdout = pyodide.globals.get("__stdout").getvalue();
+            stderr = pyodide.globals.get("__stderr").getvalue();
+            const __code = pyodide.globals.get("__code");
+            if (typeof __code == "number") {
+                exitCode = String(__code);
+                if (__code != 0)
+                    status = "RE";
+            }
+        }
+        catch (error) {
+            status = "RE";
+            exitCode = "-1";
+            stderr += error.toString();
+        }
+        resolve({
+            status,
+            exitCode,
+            execTime: endTime - startTime,
+            input,
+            output: stdout,
+            error: stderr,
+        });
+    });
+}));
+
 class WandboxRunner extends CodeRunner {
     name;
     options;
@@ -2221,11 +2232,11 @@ const resultList = {
 };
 
 const version = {
-    currentProperty: new ObservableValue("2.16.0"),
+    currentProperty: new ObservableValue("2.16.1"),
     get current() {
         return this.currentProperty.value;
     },
-    latestProperty: new ObservableValue(config.get("version.latest", "2.16.0")),
+    latestProperty: new ObservableValue(config.get("version.latest", "2.16.1")),
     get latest() {
         return this.latestProperty.value;
     },
@@ -2532,6 +2543,7 @@ var hTestAllSamples = "<button type=\"button\" id=\"atcoder-easy-test-btn-test-a
                 langSelection[site$1.language.value] = eLanguage.value;
                 config.set("langSelection", langSelection);
                 config.save();
+                events.trig("envchange");
             }
             if (unsafeWindow["jQuery"] && unsafeWindow["jQuery"].fn.select2) {
                 unsafeWindow["jQuery"](eLanguage).on("change", onEnvChange);

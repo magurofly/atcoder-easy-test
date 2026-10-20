@@ -136,6 +136,7 @@ const atCoderEasyTest = {
       langSelection[site.language.value] = eLanguage.value;
       config.set("langSelection", langSelection);
       config.save();
+      events.trig("envchange");
     }
     if (unsafeWindow["jQuery"] && unsafeWindow["jQuery"].fn.select2) {
       unsafeWindow["jQuery"](eLanguage).on("change", onEnvChange);
