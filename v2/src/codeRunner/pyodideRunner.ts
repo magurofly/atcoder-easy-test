@@ -4,39 +4,145 @@ import CustomRunner from "./CustomRunner";
 import config from "../config";
 import pSite from "../site";
 import { events } from "../util";
+import workerCode from "./pyodideWorker.txt";
 
 config.registerText("codeRunner.pyodideRunner.requirements", `["ac-library-python"]`, "packages as JSON array of strings (cf. https://micropip.pyodide.org/en/stable/project/api.html#micropip.install)");
+config.registerText("codeRunner.pyodideRunner.timeout", "5000", "code execution timeout [ms]");
 
-async function loadPyodide(): Promise<any> {
-  const script = await fetch(
-    "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/pyodide.js"
-  ).then((res) => res.text());
-  unsafeWindow["Function"](script)();
-  const pyodide = await unsafeWindow["loadPyodide"]({
-    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.0/full/",
-  });
-  const librariesLoaded = pyodide.loadPackage("micropip").then(async () => {
-    const micropip = pyodide.pyimport("micropip");
-    const requirements = config.get<string[]>("codeRunner.pyodideRunner.requirements", ["ac-library-python"]);
-    await micropip.install(requirements, true);
-  }).catch((e: any) => {
-    console.error("codeRunner.pyodideRunner:", e);
-  });
-  await pyodide.runPythonAsync(`
-import contextlib, io, platform
-class __redirect_stdin(contextlib._RedirectStream):
-  _stream = "stdin"
-`);
-  await librariesLoaded;
-  return pyodide;
+class PyodideWorker {
+  worker: Worker;
+  taskStates: Map<number, TaskState>;
+  runId: number;
+
+  constructor() {
+    this.taskStates = new Map();
+    this.worker = this.createWorker();
+    this.runId = 0;
+  }
+
+  createWorker(onready: Function | null = null) {
+    const blob = new Blob([new TextEncoder().encode(workerCode)], { type: "application/javascript" });
+    const url = URL.createObjectURL(blob);
+    const worker = new Worker(url, { type: "module" });
+    URL.revokeObjectURL(url);
+    worker.onmessage = () => {
+      worker.postMessage({
+        type: "install",
+        data: config.get<string[]>("codeRunner.pyodideRunner.requirements", ["ac-library-python"]),
+      });
+      worker.onmessage = this.onmessage.bind(this);
+      if (onready) {
+        onready();
+      }
+    };
+    return worker;
+  }
+
+  onmessage(event: MessageEvent) {
+    const { runId, type, data } = event.data;
+    const taskState = this.taskStates.get(runId) as TaskState;
+    switch (type) {
+      case "start": {
+        const timeout = config.get<number>("codeRunner.pyodideRunner.timeout", 5000);
+        taskState.killTimer = setTimeout(() => {
+          if (taskState.killTimer === undefined) {
+            return;
+          }
+          taskState.killTimer = undefined;
+          this.taskStates.delete(runId);
+
+          taskState.callback?.call(null, {
+            status: "TLE",
+            exitCode: "",
+            execTime: Date.now() - data.startTime,
+            input: taskState.input,
+            output: taskState.output,
+            error: taskState.error,
+          });
+          
+          // terminate worker, reinit and re-run queued codes
+          this.worker.terminate();
+          this.worker = this.createWorker(() => {
+            for (const [runId, taskState] of this.taskStates) {
+              this.worker.postMessage({
+                type: "run",
+                data: {
+                  runId,
+                  sourceCode: taskState.sourceCode,
+                  input: taskState.input,
+                },
+              });
+            }
+          });
+        }, timeout);
+        break;
+      }
+      case "output": {
+        taskState.output += data;
+        break;
+      }
+      case "error": {
+        taskState.error += data;
+        break;
+      }
+      case "finish": {
+        this.taskStates.delete(runId);
+        clearInterval(taskState.killTimer);
+        taskState.killTimer = undefined;
+        data.input = taskState.input;
+        taskState.callback?.call(null, {
+          status: data.status,
+          exitCode: data.exitCode,
+          execTime: data.execTime,
+          input: taskState.input,
+          output: taskState.output,
+          error: taskState.error,
+        });
+        break;
+      }
+    }
+  }
+
+  run(sourceCode: string, input: string) {
+    const runId = this.runId++;
+    return new Promise(resolve => {
+      this.worker.postMessage({
+        type: "run",
+        data: {
+          runId,
+          sourceCode,
+          input,
+        },
+      });
+      this.taskStates.set(runId, new TaskState(sourceCode, input, resolve));
+    });
+  }
 }
 
-let _pyodide: Promise<any> = Promise.reject("Pyodide is not yet loaded");
+class TaskState {
+  sourceCode: string;
+  input: string;
+  output: string;
+  error: string;
+  callback: Function | null;
+  killTimer: number | undefined;
+
+  constructor(sourceCode: string, input: string, callback: Function) {
+    this.sourceCode = sourceCode;
+    this.input = input;
+    this.callback = callback;
+    this.killTimer = undefined;
+    this.output = "";
+    this.error = "";
+  }
+}
+
+let _pyodideWorker: Promise<any> = Promise.reject("Pyodide is not yet loaded");
 pSite.then(site => {
   function loadHook() {
-    _pyodide.catch(() => {
-      if (config.get("langSelection", {})[site.language.value] === "Python3 Pyodide") {
-        _pyodide = loadPyodide();
+    _pyodideWorker.catch(() => {
+      if (config.get<{ [key: string]: string }>("langSelection", {})[site.language.value] === "Python3 Pyodide") {
+        _pyodideWorker = Promise.resolve(new PyodideWorker());
       }
     });
   }
@@ -44,71 +150,9 @@ pSite.then(site => {
   events.on("envchange", loadHook);
 });
 
-let _serial = Promise.resolve();
 const pyodideRunner = new CustomRunner(
   "Pyodide",
-  (sourceCode: string, input: string, options: Options = {}): Promise<Result> =>
-    new Promise((resolve, reject) => {
-      _serial = _serial.finally(async () => {
-        const pyodide = await (_pyodide = _pyodide.catch(loadPyodide));
-
-        const code =
-          `
-def __run():
- global __stdout, __stderr, __stdin, __code
- with __redirect_stdin(io.StringIO(__stdin)):
-  with contextlib.redirect_stdout(io.StringIO()) as __stdout:
-   with contextlib.redirect_stderr(io.StringIO()) as __stderr:
-    try:
-     pass
-` +
-          sourceCode
-            .split("\n")
-            .map((line) => "     " + line)
-            .join("\n") +
-          `
-    except SystemExit as e:
-     __code = e.code
-`;
-
-        let status: "OK" | "RE" = "OK";
-        let exitCode: string = "0";
-        let stdout: string = "";
-        let stderr: string = "";
-        let startTime: number = -Infinity;
-        let endTime: number = Infinity;
-        pyodide.globals.set("__stdin", input);
-
-        try {
-          pyodide.globals.set("__code", null);
-          await pyodide.loadPackagesFromImports(code);
-          await pyodide.runPythonAsync(code);
-          startTime = Date.now();
-          pyodide.runPython("__run()");
-          endTime = Date.now();
-          stdout = pyodide.globals.get("__stdout").getvalue();
-          stderr = pyodide.globals.get("__stderr").getvalue();
-          const __code = pyodide.globals.get("__code");
-          if (typeof __code == "number") {
-            exitCode = String(__code);
-            if (__code != 0) status = "RE";
-          }
-        } catch (error) {
-          status = "RE";
-          exitCode = "-1";
-          stderr += error.toString();
-        }
-
-        resolve({
-          status,
-          exitCode,
-          execTime: endTime - startTime,
-          input,
-          output: stdout,
-          error: stderr,
-        });
-      });
-    })
+  (sourceCode: string, input: string, options: Options = {}): Promise<Result> => _pyodideWorker.then(pyodideWorker => pyodideWorker.run(sourceCode, input))
 );
 
 export default pyodideRunner;

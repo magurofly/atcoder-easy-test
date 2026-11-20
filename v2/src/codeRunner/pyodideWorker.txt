@@ -1,0 +1,90 @@
+import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v314.0.8/full/pyodide.mjs";
+
+const pyodide = await loadPyodide();
+
+await pyodide.loadPackage("micropip");
+const micropip = pyodide.pyimport("micropip");
+
+let serial = Promise.resolve();
+
+const textDecoder = new TextDecoder();
+
+onmessage = event => {
+    const { type, data } = event.data;
+    switch (type) {
+        case "install": {
+            serial = Promise.all([serial, micropip.install(data, true)]).catch(error => {
+                console.error("AtCoder Easy Test v2: PyodideWorker:", error);
+                return Promise.resolve();
+            });
+            break;
+        }
+        case "run": {
+            serial = serial.then(() => run(data));
+            break;
+        }
+    }
+};
+postMessage("ready");
+
+async function run({ sourceCode, input, runId }) {
+    let startTime = -Infinity;
+    let endTime = Infinity;
+    let status = "OK";
+    let exitCode = "0";
+    let stdin = input;
+    do {
+        // compile
+        try {
+            pyodide.setStdin({
+                stdin() {
+                    const ret = stdin;
+                    stdin = null;
+                    return ret;
+                }
+            });
+            pyodide.setStdout({
+                write(out) {
+                    const data = textDecoder.decode(out);
+                    postMessage({ runId, type: "output", data });
+                    return out.byteLength;
+                }
+            });
+            pyodide.setStderr({
+                write(out) {
+                    const data = textDecoder.decode(out);
+                    postMessage({ runId, type: "error", data });
+                    return out.byteLength;
+                }
+            });
+            await pyodide.loadPackagesFromImports(sourceCode);
+            pyodide.globals.set("__code", pyodide.globals.get("compile")(sourceCode, "<code>", "exec"));
+        } catch (error) {
+            status = "CE";
+            exitCode = "";
+            postMessage({ runId, type: "error", data: error.toString() });
+            break;
+        }
+        // run
+        try {
+            startTime = Date.now();
+            postMessage({ runId, type: "start", data: { startTime } });
+            await pyodide.runPythonAsync(`exec(__code)`);
+            endTime = Date.now();
+        } catch (error) {
+            endTime = Math.min(endTime, Date.now());
+            status = "RE";
+            exitCode = "-1";
+            postMessage({ runId, type: "error", data: error.toString() });
+        }
+    } while (false);
+    postMessage({
+        runId,
+        type: "finish",
+        data: {
+            status,
+            exitCode,
+            execTime: endTime - startTime,
+        },
+    });
+}
