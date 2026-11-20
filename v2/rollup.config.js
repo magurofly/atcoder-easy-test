@@ -1,6 +1,7 @@
 import typescript from "rollup-plugin-typescript";
 import html from "rollup-plugin-html";
 import jscc from 'rollup-plugin-jscc';
+import { string } from 'rollup-plugin-string';
 import packageJson from "./package.json";
 
 export default [
@@ -65,6 +66,9 @@ export default [
         plugins: [
             html({
                 include: "**/*.html"
+            }),
+            string({
+                include: "**/*.txt"
             }),
             typescript(),
             jscc({
