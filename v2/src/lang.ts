@@ -4,6 +4,8 @@ export function similarLangs(targetLang: string, candidateLangs: string[]): stri
     const [name, _] = candidateLang.split(" ", 2);
     return name == targetName;
   }).map(candidateLang => {
+    // 末尾の実行環境名 (例: "C++ 23 Clang 21.1.0 AtCoder" の "AtCoder") を除いて一致する候補を先頭にする
+    if (candidateLang.slice(0, candidateLang.lastIndexOf(" ")) == targetLang) return [candidateLang, -1];
     const [_, detail] = candidateLang.split(" ", 2);
     return [candidateLang, similarity(detail, targetDetail)];
   });
