@@ -189,7 +189,7 @@ async function init() {
     6010: "bc GNU bc 1.08.2",
     6011: "Befunge 93 TBC 1.0",
     6012: "Brainfuck Tritium 1.2.73",
-    6013: "C 23 Clang Clang 21.1.0",
+    6013: "C 23 Clang 21.1.0",
     6014: "C 23 GCC 14.2.0",
     6015: "C# 13.0 .NET 9.0.8",
     6016: "C# 13.0 .NET Native AOT 9.0.8",
@@ -293,6 +293,7 @@ async function init() {
     6116: "C++ 23 Clang 21.1.0",
     6117: "Fix 1.1.0-alpha.12",
     6118: "SQL DuckDB 1.3.2",
+    6119: "Visual Basic 16.9 .NET 9.0.8",
   };
 
   // filter langMap
