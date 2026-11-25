@@ -12,7 +12,7 @@ import WandboxCppRunner from "./WandboxCppRunner";
 import pyodideRunner from "./pyodideRunner";
 import pSite from "../site";
 import config from "../config";
-import { fetchWandboxCompilers, toRunner } from "../wandbox-api";
+import { fetchWandboxCompilers, isPython3Compiler, toRunner } from "../wandbox-api";
 import LocalRunner from "./LocalRunner";
 
 // runners[key] = runner; key = language + " " + environmentInfo
@@ -58,7 +58,7 @@ const runners: { [runnerId: string]: CodeRunner } = {
 const wandboxPromise = fetchWandboxCompilers().then((compilers) => {
   for (const compiler of compilers) {
     let language = compiler.language;
-    if (compiler.language === "Python" && /python-3\./.test(compiler.version)) {
+    if (compiler.language === "Python" && isPython3Compiler(compiler)) {
       language = "Python3";
     }
     const key = language + " " + compiler.name;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.16.2
+// @version     2.16.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1836,6 +1836,15 @@ function getOptimizationOption(compiler) {
     return compiler.switches.find((sw) => sw["display-name"] === "Optimization")
         ?.name;
 }
+function isPython3Compiler(compiler) {
+    if (/^3\./.test(compiler.version))
+        return true;
+    if (/python-3\./.test(compiler.version))
+        return true;
+    if (compiler.name === "cpython-head")
+        return true;
+    return /^(?:cpython|pypy)-3\./.test(compiler.name);
+}
 function toRunner(compiler) {
     const optimizationOption = getOptimizationOption(compiler);
     if (compiler.language == "C++") {
@@ -1999,7 +2008,7 @@ const runners = {
 const wandboxPromise = fetchWandboxCompilers().then((compilers) => {
     for (const compiler of compilers) {
         let language = compiler.language;
-        if (compiler.language === "Python" && /python-3\./.test(compiler.version)) {
+        if (compiler.language === "Python" && isPython3Compiler(compiler)) {
             language = "Python3";
         }
         const key = language + " " + compiler.name;
