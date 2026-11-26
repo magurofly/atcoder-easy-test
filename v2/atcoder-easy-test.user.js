@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        AtCoder Easy Test v2
 // @namespace   https://atcoder.jp/
-// @version     2.16.2
+// @version     2.16.3
 // @description Make testing sample cases easy
 // @author      magurofly
 // @license     MIT
@@ -1222,44 +1222,48 @@ class Editor {
 
 var langMap = {
     3: "Delphi 7",
-    4: "Pascal Free Pascal 3.0.2",
-    6: "PHP 7.2.13",
+    4: "Pascal Free Pascal 3.2.2",
+    6: "PHP 8.1.7",
     7: "Python 2.7.18",
     9: "C# Mono 6.8",
     12: "Haskell GHC 8.10.1",
     13: "Perl 5.20.1",
     19: "OCaml 4.02.1",
     20: "Scala 2.12.8",
-    28: "D DMD32 v2.091.0",
-    31: "Python3 3.8.10",
-    32: "Go 1.15.6",
+    28: "D DMD32 v2.105.0",
+    31: "Python3 3.13.2",
+    32: "Go 1.22.2",
     34: "JavaScript V8 4.8.0",
-    36: "Java 1.8.0_241",
-    40: "Python PyPy2 2.7 (7.3.0)",
-    41: "Python3 PyPy3 3.7 (7.3.0)",
+    36: "Java 8 32bit",
+    40: "Python PyPy2 2.7.13 (7.3.0)",
+    41: "Python3 PyPy3 3.6.9 (7.3.0)",
     43: "C C11 GCC 5.1.0",
     48: "Kotlin 1.5.31",
     49: "Rust 1.49.0",
     50: "C++ C++14 G++ 6.4.0",
-    51: "Pascal PascalABC.NET 3.4.1",
+    51: "Pascal PascalABC.NET 3.8.3",
     52: "C++ C++17 Clang++",
     54: "C++ C++17 G++ 7.3.0",
-    55: "JavaScript Node.js 12.6.3",
+    55: "JavaScript Node.js 15.8.0 (64bit)",
     59: "C++ Microsoft Visual C++ 2017",
     60: "Java 11.0.6",
     61: "C++ C++17 9.2.0 (64 bit, msys 2)",
     65: "C# 8, .NET Core 3.1",
-    67: "Ruby 3.0.0",
-    70: "Python3 PyPy 3.7 (7.3.5, 64bit)",
+    67: "Ruby 3.2.2",
+    70: "Python3 PyPy 3.10 (7.3.15, 64bit)",
     72: "Kotlin 1.5.31",
     73: "C++ GNU G++ 11.2.0 (64 bit, winlibs)",
-    75: "Rust 1.75.0 (2021)",
+    75: "Rust 1.89.0 (2021)",
     79: "C# 10, .NET SDK 6.0",
     83: "Kotlin 1.7.20",
     87: "Java 21 64bit",
     88: "Kotlin 1.9.21",
     89: "C++ GNU G++20 13.2 (64 bit, winlibs)",
-    91: "GNU G++23 14.2 (64 bit, msys2)",
+    91: "C++ GNU G++23 14.2 (64 bit, msys2)",
+    96: "C# 13, .NET SDK 9",
+    97: "F# 9, .NET SDK 9",
+    98: "Rust 1.89.0 (2024)",
+    99: "Kotlin 2.2.0",
 };
 
 config.registerFlag("site.codeforces.showEditor", true, "Show Editor in Codeforces Problem Page");
@@ -1836,6 +1840,15 @@ function getOptimizationOption(compiler) {
     return compiler.switches.find((sw) => sw["display-name"] === "Optimization")
         ?.name;
 }
+function isPython3Compiler(compiler) {
+    if (/^3\./.test(compiler.version))
+        return true;
+    if (/python-3\./.test(compiler.version))
+        return true;
+    if (compiler.name === "cpython-head")
+        return true;
+    return /^(?:cpython|pypy)-3\./.test(compiler.name);
+}
 function toRunner(compiler) {
     const optimizationOption = getOptimizationOption(compiler);
     if (compiler.language == "C++") {
@@ -1999,7 +2012,7 @@ const runners = {
 const wandboxPromise = fetchWandboxCompilers().then((compilers) => {
     for (const compiler of compilers) {
         let language = compiler.language;
-        if (compiler.language === "Python" && /python-3\./.test(compiler.version)) {
+        if (compiler.language === "Python" && isPython3Compiler(compiler)) {
             language = "Python3";
         }
         const key = language + " " + compiler.name;

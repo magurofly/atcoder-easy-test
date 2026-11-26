@@ -37,6 +37,17 @@ async function fetchWandboxCompilers() {
   return compilers;
 }
 
+// Wandbox の Python は language がすべて "Python"。
+// CPython の version は "3.13.18"、PyPy の version は "8.0.1 cpython-3.12.15"。
+// version に "python-3." が含まれるかだけを見ると、PyPy だけが Python3 になり CPython が漏れる。
+function isPython3Compiler(compiler: CompilerInfo): boolean {
+  if (/^3\./.test(compiler.version)) return true;
+  if (/python-3\./.test(compiler.version)) return true;
+  // version が空の cpython-head は python3
+  if (compiler.name === "cpython-head") return true;
+  return /^(?:cpython|pypy)-3\./.test(compiler.name);
+}
+
 function getOptimizationOption(compiler: CompilerInfo) {
   // Optimizationという名前のSwitchから、最適化のオプションを取得する
   return compiler.switches.find((sw) => sw["display-name"] === "Optimization")
@@ -66,4 +77,4 @@ function toRunner(compiler: CompilerInfo) {
   }
 }
 
-export { fetchWandboxCompilers, toRunner };
+export { fetchWandboxCompilers, isPython3Compiler, toRunner };
